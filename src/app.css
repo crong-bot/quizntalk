@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 클래스 형태로 넣어주면 된다. */
+@layer utilities {
+    #scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 8px;
+    }
+
+    #scrollbar::-webkit-scrollbar-track {
+        border-radius: 100vh;
+        background: #F2F2F2;
+    }
+
+    #scrollbar::-webkit-scrollbar-thumb {
+        background: #dedede;
+        border-radius: 100vh;
+        /* border: 1px solid #d2d2d2; */
+    }
+
+    #scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #b4cdff;
+    }
+
+    @variants responsive {
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    }
+
+}
