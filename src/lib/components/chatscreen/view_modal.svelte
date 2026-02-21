@@ -1,43 +1,49 @@
 <script>
-	import { onMount, beforeUpdate } from 'svelte';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	//import Content from '../../../routes/study/data.json';
+	import { page } from '$app/stores';
 
 	export let data;
 
-	let lesson_name,
-		chapter,
-		current_content,
-		current_title,
-		current_number,
-		current_info,
-		current_chapterlist;
+	// 표시용 상태
+	let lessonKey = '';
+	let chapter = 0;
 
-	[lesson_name, chapter] = [...$page.url.pathname.split('/').slice(-2)];
-	console.log('aa' + data.post.title);
-	//let a = data.find((record) => record.slug === lesson_name);
+	let current_title = '';
+	let current_number = '';
+	let current_info = '';
+	let current_chapterlist = [];
 
-	//console.log(a.list);
-	current_chapterlist = data.post.list;
-	current_title = data.post.title;
-	current_number = data.post.slug;
-	current_info = data.post.title;
-	// current_chapterlist = [...Content[0][lesson_name]['list']];
-	// current_title = [Content[0][lesson_name]['title']];
-	// current_number = [Content[0][lesson_name]['number']];
-	// current_info = [Content[0][lesson_name]['info']];
+	$: console.log('MODAL data.post =', data?.post);
+
+	// ✅ chapter만 URL에서 읽고, lessonKey는 data에서 읽기
+	$: {
+		const pathname = $page?.url?.pathname ?? '';
+		const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+		chapter = Number(parts.at(-1) ?? '0') || 0;
+	}
+
+	// ✅ data.post 들어오면 모달 내용 세팅 (목차는 list만!)
+	$: if (data?.post) {
+		// ✅ lecture_content.json 메타에서 오는 값들
+		lessonKey = data.post.slug ?? data.post.url ?? ''; // slug/url 둘 중 네가 내려주는 걸로 통일
+		current_title = data.post.title ?? '';
+		current_number = data.post.number ?? data.post.slug ?? '';
+		current_info = data.post.info ?? '';
+
+		// ✅ 목차는 무조건 list
+		current_chapterlist = Array.isArray(data.post.list) ? data.post.list : [];
+	} else {
+		lessonKey = '';
+		current_title = '';
+		current_number = '';
+		current_info = '';
+		current_chapterlist = [];
+	}
 
 	function linkPage(index) {
-		let currentnum, currentpath, currentlesson;
-		let a = window.location.pathname;
-		currentnum = a.slice(-1); // a=>"/study/lessonname/num"
-		currentnum = Number(currentnum); // num
-		currentpath = a.slice(0, -1); // "/study/lessonname"
-		currentlesson = a.split('/').slice(-2, -1)[0];
-		let url = currentpath + (index + 1);
-		console.log(url);
-		goto(url);
+		if (!lessonKey) return;
+		// ✅ 0-based chapter 이동
+		goto(`/study/${lessonKey}/${index}`);
 	}
 </script>
 
@@ -52,17 +58,26 @@
 			{current_title}
 		</div>
 	</div>
+
 	<div class="font-light text-sm bg-white">
-		{#each current_chapterlist as list, index}
-			<div on:click={() => linkPage(index)} class="py-2 cursor-pointer">
-				{#if chapter == index + 1}
-					<span class="w-6 inline-block">🔥</span>
-				{:else}
-					<span class="w-6 inline-block" />
-				{/if}
-				<span class="font-bold text-sm text-bluetext mr-2 inline">{'0' + (index + 1)}</span>
-				<span class="text-graytext text-xs inline"> {list}</span>
-			</div>
-		{/each}
+		{#if current_chapterlist.length === 0}
+			<div class="text-graytext text-xs px-4 py-2">목차가 없습니다.</div>
+		{:else}
+			{#each current_chapterlist as item, index (index)}
+				<div on:click={() => linkPage(index)} class="py-2 cursor-pointer">
+					{#if chapter === index}
+						<span class="w-6 inline-block">🔥</span>
+					{:else}
+						<span class="w-6 inline-block" />
+					{/if}
+
+					<span class="font-bold text-sm text-bluetext mr-2 inline">
+						{'0' + (index + 1)}
+					</span>
+
+					<span class="text-graytext text-xs inline">{item}</span>
+				</div>
+			{/each}
+		{/if}
 	</div>
 </div>

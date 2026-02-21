@@ -1,17 +1,18 @@
+import { classModules } from '$lib/components/classmodule/registry.js';
+
 export async function load({ data }) {
-    const { post } = data;
+	const { post } = data;
+	const components = {};
 
-    const components = {};
+	for (const step of post.steps) {
+		if (step.kind !== 'module') continue;
 
-    for (const module of post.content) {
-        if (module.type != 'chat1' && module.type != 'chat2' && module.type != 'quiz') {
-            components[module.type] = (await import(`../../../lib/components/classmodule/${module.type}.svelte`)).default;
+		const key = `/src/lib/components/classmodule/${step.module}.svelte`;
+		const loader = classModules[key];
+		if (!loader) throw new Error(`Module not found: ${key}`);
 
-        }
-    }
+		components[step.module] = (await loader()).default;
+	}
 
-    return {
-        post,
-        components
-    };
+	return { post, components };
 }

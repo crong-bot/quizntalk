@@ -1,8 +1,9 @@
 <script>
-	import Sidebar from '$lib/components/chatscreen/view_sidebar.svelte';
-	import Modal from '$lib/components/chatscreen/view_modal.svelte';
 	import View_button from '$lib/components/chatscreen/view_button.svelte';
+	import Modal from '$lib/components/chatscreen/view_modal.svelte';
+	import Sidebar from '$lib/components/chatscreen/view_sidebar.svelte';
 	//import View_tool from '$lib/view_tool.svelte';
+	import { moduleRegistry } from '$lib/components/classmodule/moduledeliver.js';
 	import { onMount } from 'svelte';
 	import { Toaster } from 'svelte-french-toast';
 	import ChatBubble from '../../../lib/components/chatscreen/chat_bubble.svelte';
@@ -13,11 +14,11 @@
 	export let bubbleContainer_channel;
 	let chat_direction = true;
 	let example = {
-    one: 'sdfsdf',
-    two: 'twotwo',
-    three: 'sdggs',
-    four: 'fourfo',
-  };
+		one: 'sdfsdf',
+		two: 'twotwo',
+		three: 'sdggs',
+		four: 'fourfo'
+	};
 
 	onMount(() => {
 		//slot의 child들을 순회해서 숨기기(chatBubble,module을 시작과 동시에 숨긴다.)
@@ -55,7 +56,7 @@
 					<!-- 채팅 화면부분 -->
 					<div id="chat_box_container" class="relative h-vh85 mx-8 mt-8 bg-white rounded-3xl">
 						<div bind:this={htmlchild} id="scrollbar" class="overflow-y-auto h-vh85 pr-1 pl-2 pt-1">
-							{#each data.post.content as { type, dial, choice, quiztype }, index (index)}
+							<!-- {#each data.post.content as { type, dial, choice, quiztype }, index (index)}
 								{#if type == 'chat1'}
 									<ChatBubble {chat_direction}>{dial}</ChatBubble>
 								{:else if type == 'chat2'}
@@ -65,11 +66,27 @@
 								{:else}
 									<svelte:component this={data.components[type]} />
 								{/if}
+							{/each} -->
+							{#each data.post.steps as step, index (index)}
+								{#if step.kind === 'chat'}
+									<ChatBubble chat_direction={step.role === 'teacher'}>
+										{step.text}
+									</ChatBubble>
+								{:else if step.kind === 'quiz'}
+									<Quiz
+										{step}
+										lessonKey={data.post.slug}
+										chapter={data.chapter ?? 0}
+										stepIndex={index}
+									/>
+								{:else if step.kind === 'module'}
+									<svelte:component this={moduleRegistry[step.module]} {...step.props} />
+								{/if}
 							{/each}
 						</div>
 					</div>
 					<!-- 채팅 화면부분 -->
-					<View_button childs={htmlchild} />
+					<View_button childs={htmlchild} lessonKey={data.post.slug} chapter={data.chapter ?? 0} />
 				</div>
 				<Modal {data}></Modal>
 			</div>

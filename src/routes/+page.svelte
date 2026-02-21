@@ -1,15 +1,22 @@
 <script>
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcome_fallback from '$lib/images/svelte-welcome.png';
-	import HoverButton from '../lib/components/hoverButton.svelte';
-	import '../app.css';
 	import Nav from '$lib/components/nav.svelte';
+	import '../app.css';
+	import HoverButton from '../lib/components/hoverButton.svelte';
+
+	import { goto } from '$app/navigation';
+	import { authUser } from '$lib/stores/authUser';
+
+	function goStart() {
+		// ✅ 원트랙: 로그인되어있으면 학습, 아니면 로그인
+		if ($authUser) goto('/study');
+		else goto('/login');
+	}
 </script>
 
+<Nav />
 <div class="w-1280 m-auto">
 	<!-- <div class="min-h-screen flex flex-col"> -->
-	<Nav />
+
 	<!-- <div class="relative flex flex-grow "> -->
 	<main class="">
 		<div id="landing_wrapper" class="flex flex-col">
@@ -35,9 +42,20 @@
 					<p class="font-dodum font-normal text-base leading-7">
 						QuizNTalk로 통해 인공지능의 원리를 파악해보세요.
 					</p>
-					<a href="/study" class="mt-8">
+					<div class="mt-8">
+						{#if $authUser}
+							<button on:click={() => goto('/study')}>
+								<HoverButton hoverBtnContent={'AI 학습하기'} />
+							</button>
+						{:else}
+							<button on:click={() => goto('/login')}>
+								<HoverButton hoverBtnContent={'로그인'} />
+							</button>
+						{/if}
+					</div>
+					<!-- <a href="/study" class="mt-8">
 						<HoverButton hoverBtnContent={'시작하기'}></HoverButton>
-					</a>
+					</a> -->
 					<!-- <p class="ml-4 mt-2 text-xs">Still confused? Check our 1min video</p> -->
 				</div>
 				<div>
@@ -64,10 +82,22 @@
 					<p class="font-dodum font-normal text-base leading-7">
 						STEP.AI에 자신의 수업을 만들어서 공유하세요.
 					</p>
-					<a href="/study">
+					<div class="mt-8 flex items-center space-x-4">
+						{#if $authUser}
+							<button on:click={() => goto('/library')}>
+								<HoverButton hoverBtnContent={'내 수업실'} />
+							</button>
+						{:else}
+							<button on:click={() => goto('/login')}>
+								<HoverButton hoverBtnContent={'시작하기'} />
+							</button>
+						{/if}
+					</div>
+
+					<!-- <a href="/study">
 						<HoverButton hoverBtnContent={'시작하기'}></HoverButton>
-					</a>
-					<p class="ml-4 mt-2 text-xs font-bold">Still confused? Check our 1min video</p>
+					</a> -->
+					<!-- <p class="ml-4 mt-2 text-xs font-bold">Still confused? Check our 1min video</p> -->
 				</div>
 			</div>
 

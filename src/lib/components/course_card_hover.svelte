@@ -10,7 +10,10 @@
 	export let course_card_image;
 </script>
 
-<a href="/study/{course_card_adress}" class="group relative w-56 h-56 block bg-black rounded-3xl">
+<a
+	href={`/study/local/${course_card_adress}/0`}
+	class="group relative w-56 h-56 block bg-black rounded-3xl"
+>
 	<img
 		alt="Developer"
 		src={course_card_image}

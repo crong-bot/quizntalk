@@ -1,100 +1,157 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { LessonManager } from '$lib/stores/LessonManager.js';
 	import { onMount } from 'svelte';
-	import { LessonManager } from '../../../stores/LessonManager';
-	import toast, { Toaster } from 'svelte-french-toast';
+	import toast from 'svelte-french-toast';
 
 	let next_url;
-	let chatNum = 0;
-	export let childs;
-	let afterBubble = false;
+	let chatNum = 0; // 지금까지 몇 번째 버블을 보여줬는지 (childs.children 인덱스)
+
+	let afterBubble = false; // “지금 block(퀴즈/모듈) 이후라서 진행이 막힌 상태인가?”
 	let loading = true;
+	//props
+	export let childs; // 스크롤 가능한 채팅 컨테이너 DOM (bind:this={htmlchild})
+	export let lessonKey; // progress에서 레슨을 식별하는 키 (예: "ai/cognitive/1")
+	export let chapter = 0; // 현재 페이지(챕터) 번호
 
 	onMount(() => {});
+	const getChapterState = (lessonKey, chapter) =>
+		$LessonManager?.progress?.[lessonKey]?.[chapter] ?? { success: false, lock: false };
+
+	const setChapterState = (lessonKey, chapter, patch) => {
+		LessonManager.update((s) => {
+			s.progress ??= {};
+			s.progress[lessonKey] ??= {};
+			s.progress[lessonKey][chapter] = {
+				...(s.progress[lessonKey][chapter] ?? { success: false, lock: false }),
+				...patch
+			};
+			return s;
+		});
+	};
 	// chat bubble 받아옴. 순회해서 보이게 했다가 안보이게 했다가.
 	const getBubbles = () => {
-		if (chatNum > childs.children.length - 1) {
-			return;
-		}
-		let num, path, lessonname, totalpages;
-		[num, path, lessonname] = get_location();
-		//after bubble = true 정답 false 면 리턴
-		// after bubble =true 정답 true 면 afterBubble=false
-		if (afterBubble == true && $LessonManager[lessonname][num]['success'] == false) {
-			return;
-		} else if (afterBubble == true && $LessonManager[lessonname][num]['success'] == true) {
-			afterBubble = false;
-		}
-		//bubble 화면에 보이게 하기
+		if (chatNum > childs.children.length - 1) return;
+
+		const state = getChapterState(lessonKey, chapter);
+
+		// // 모듈(또는 퀴즈) 이후면 success가 true 될 때까지 멈춤
+		if (afterBubble && state.success === false) return;
+		if (afterBubble && state.success === true) afterBubble = false;
+
+		// bubble 보여주기
 		childs.children[chatNum].style.display = '';
 
-		//Bubble이 모듈이면 다음으로 넘어가지 않게 버튼 락해주는 코드
-		//console.log(childs.children[chatNum].id);
-		if (childs.children[chatNum].id != 'bubble') {
-			$LessonManager[lessonname][num]['lock'] = true;
+		const el = childs.children[chatNum];
+		const shouldBlock = el?.dataset?.block === 'true';
+
+		if (shouldBlock) {
+			setChapterState(lessonKey, chapter, { lock: true, success: false });
 			afterBubble = true;
-			//childs.children[chatNum].style.display = "";
 		}
+
 		childs.scrollTo(0, childs.scrollHeight - childs.clientHeight);
-		//checkSuccess();
 		chatNum++;
 	};
 
+	// const getBubbles = () => {
+	// 	if (chatNum > childs.children.length - 1) {
+	// 		return;
+	// 	}
+	// 	let num, path, lessonname, totalpages;
+	// 	[num, path, lessonname] = get_location();
+	// 	//after bubble = true 정답 false 면 리턴
+	// 	// after bubble =true 정답 true 면 afterBubble=false
+	// 	if (afterBubble == true && $LessonManager[lessonname][num]['success'] == false) {
+	// 		return;
+	// 	} else if (afterBubble == true && $LessonManager[lessonname][num]['success'] == true) {
+	// 		afterBubble = false;
+	// 	}
+	// 	//bubble 화면에 보이게 하기
+	// 	childs.children[chatNum].style.display = '';
+
+	// 	//Bubble이 모듈이면 다음으로 넘어가지 않게 버튼 락해주는 코드
+	// 	//console.log(childs.children[chatNum].id);
+	// 	if (childs.children[chatNum].id != 'bubble') {
+	// 		$LessonManager[lessonname][num]['lock'] = true;
+	// 		afterBubble = true;
+	// 		//childs.children[chatNum].style.display = "";
+	// 	}
+	// 	childs.scrollTo(0, childs.scrollHeight - childs.clientHeight);
+	// 	//checkSuccess();
+	// 	chatNum++;
+	// };
+
 	//function for get presen page and path
+	// const get_location = () => {
+	// 	let currentnum, currentpath, currentlesson;
+	// 	let a = window.location.pathname;
+	// 	currentnum = a.slice(-1); // a=>"/study/lessonname/num"
+	// 	currentnum = Number(currentnum); // num
+	// 	currentpath = a.slice(0, -1); // "/study/lessonname/num"
+	// 	currentlesson = a.split('/').slice(-2, -1)[0]; // lessonname
+	// 	return [currentnum, currentpath, currentlesson];
+	// };
+
+	//정답일 경우 락을 해제한다.
+
 	const get_location = () => {
-		let currentnum, currentpath, currentlesson;
-		let a = window.location.pathname;
-		currentnum = a.slice(-1); // a=>"/study/lessonname/num"
-		currentnum = Number(currentnum); // num
-		currentpath = a.slice(0, -1); // "/study/lessonname/num"
-		currentlesson = a.split('/').slice(-2, -1)[0]; // lessonname
+		const parts = window.location.pathname.split('/').filter(Boolean);
+		// 예: ["study","lesson_rgb","12"]
+		const currentnum = Number(parts.at(-1));
+		const currentlesson = parts.at(-2);
+		const currentpath = '/' + parts.slice(0, -1).join('/') + '/'; // "/study/lesson_rgb/"
 		return [currentnum, currentpath, currentlesson];
 	};
 
-	//정답일 경우 락을 해제한다.
-	const checkSuccess = () => {
-		let num, path, lessonname;
-		[num, path, lessonname] = get_location();
-		//console.log($LessonManager[lessonname][num]['success'] + ' success');
-		//print($LessonManager[lessonname][num]["lock"] + " in view_button");
-		if ($LessonManager[lessonname][num]['success'] == true) {
-			//unlockModule
-			$LessonManager[lessonname][num]['lock'] = false;
-			//lockstate = false;
-		}
-	};
-
+	// ✅ 챕터 이동 (이전/다음)
 	const back_action = () => {
-		let num, path;
-		[num, path] = get_location();
-		num -= 1;
-		number = path + num;
+		const prev = Math.max(0, chapter - 1);
+		goto(`/study/${lessonKey}/${prev}`);
 	};
 
 	const foward_action = () => {
-		let pagenum, path, lessonname, totalpages;
-		[pagenum, path, lessonname] = get_location();
+		const state = getChapterState(lessonKey, chapter);
 
-		// 다음 페이지로 가려면 현재 레슨번호에 1씩 더해줘야 되니까 따로 nownum으로 저장
-		let nextpage = pagenum + 1;
-
-		next_url = path + nextpage;
-		totalpages = Object.keys($LessonManager[lessonname]).length;
-		//총페이지의 수를 totalpages에 받아온 다음 그 페이지 넘지 않으면 다음페이지로 넘김
-
-		if ($LessonManager[lessonname][pagenum]['success'] == true && totalpages > pagenum) {
-			goto(`${next_url}`);
-		} else if (totalpages <= pagenum) {
-			loading = false;
-			//console.log("마지막페이지입니다.!!");
-			toast('마지막페이지입니다.!!', {
-				icon: '🧱⛔️',
-				style:
-					'font-family: Dodum; font-size:20px; border-radius: 200px; background: #333; color: #fff;',
-				position: 'bottom-center'
-			});
+		// 현재 챕터가 성공이어야 다음으로 이동
+		if (!state.success) {
+			toast('먼저 퀴즈를 완료해주세요.', { icon: '🔒', position: 'bottom-center' });
+			return;
 		}
+
+		// 마지막 챕터면 종료 토스트
+		if (chapter >= totalPages) {
+			toast('마지막페이지입니다.!!', { icon: '🧱⛔️', position: 'bottom-center' });
+			return;
+		}
+
+		goto(`/study/${lessonKey}/${chapter + 1}`);
 	};
+
+	// const foward_action = () => {
+	// 	let pagenum, path, lessonname, totalpages;
+	// 	[pagenum, path, lessonname] = get_location();
+
+	// 	// 다음 페이지로 가려면 현재 레슨번호에 1씩 더해줘야 되니까 따로 nownum으로 저장
+	// 	let nextpage = pagenum + 1;
+
+	// 	next_url = path + nextpage;
+	// 	totalpages = Object.keys($LessonManager[lessonname]).length;
+	// 	//총페이지의 수를 totalpages에 받아온 다음 그 페이지 넘지 않으면 다음페이지로 넘김
+
+	// 	if ($LessonManager[lessonname][pagenum]['success'] == true && totalpages > pagenum) {
+	// 		goto(`${next_url}`);
+	// 	} else if (totalpages <= pagenum) {
+	// 		loading = false;
+	// 		//console.log("마지막페이지입니다.!!");
+	// 		toast('마지막페이지입니다.!!', {
+	// 			icon: '🧱⛔️',
+	// 			style:
+	// 				'font-family: Dodum; font-size:20px; border-radius: 200px; background: #333; color: #fff;',
+	// 			position: 'bottom-center'
+	// 		});
+	// 	}
+	// };
 </script>
 
 <!-- 이렇게 히든으로 하지 않으면 페이지를 바꿀때마다 잠깐씩 보임. -->
