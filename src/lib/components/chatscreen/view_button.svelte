@@ -160,7 +160,7 @@
 </div> -->
 <!-- <Toaster /> -->
 
-<div class="flex space-x-6 justify-center py-2 mb-2 mt-2">
+<div class="flex flex-wrap justify-center gap-3 py-2 mb-2 mt-2">
 	<!-- //---rewind button -->
 
 	<button>
@@ -217,26 +217,31 @@
 
 <style>
 	button {
-		padding: 1.2em 1.2em;
+		padding: 0.75rem; /* 모바일 기본 */
 		font-size: 12px;
-		text-transform: uppercase;
-		letter-spacing: 2.5px;
-		font-weight: 500;
+		letter-spacing: 1px;
+		font-weight: 600;
 		color: #216dfb;
 		background-color: #fff;
 		border: none;
-		border-radius: 45px;
+		border-radius: 9999px;
 		box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease 0s;
+		transition: all 0.2s ease;
 		cursor: pointer;
 		outline: none;
 	}
 
-	button:hover {
-		background-color: #216dfb;
-		box-shadow: 0px 15px 20px rgba(46, 83, 229, 0.4);
-		color: #fff;
-		transform: translateY(-7px);
+	@media (min-width: 1024px) {
+		button {
+			padding: 1.2em 1.2em;
+			letter-spacing: 2.5px;
+		}
+		button:hover {
+			background-color: #216dfb;
+			box-shadow: 0px 15px 20px rgba(46, 83, 229, 0.4);
+			color: #fff;
+			transform: translateY(-7px);
+		}
 	}
 
 	button:active {

@@ -18,9 +18,9 @@ import {
  */
 export async function saveLesson({
 	lessonId,
+	courseId,
 	ownerUid,
-	courseId, // ✅ 추가
-	order = 0, // ✅ 추가
+	order,
 	title,
 	info,
 	list,
@@ -41,7 +41,7 @@ export async function saveLesson({
 		lessonId,
 		ownerUid,
 		courseId,
-		order,
+		...(order !== undefined ? { order } : {}),
 		title: title ?? '',
 		info: info ?? '',
 		list: Array.isArray(list) ? list : [],

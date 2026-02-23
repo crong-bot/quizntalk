@@ -1,9 +1,17 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Nav from '$lib/components/nav.svelte';
 	import { saveLesson } from '$lib/firebase/lessons';
 	import { authUser } from '$lib/stores/authUser';
 	import '../../app.css';
+
+	let courseId = '';
+
+	$: {
+		const q = $page.url.searchParams;
+		courseId = q.get('courseId') ?? '';
+	}
 
 	// --- 기본 데이터 구조(너가 쓰는 steps 형식 최대한 맞춤) ---
 	// step.kind: 'chat' | 'quiz' | 'module'
@@ -216,8 +224,10 @@
 		try {
 			const payload = buildPayload();
 			await saveLesson({
-				lessonId: payload.lessonId, // ✅ 문서ID
+				lessonId: payload.lessonId,
+				courseId,
 				ownerUid: $authUser.uid,
+
 				title: payload.title,
 				info: payload.info,
 				list: payload.list,

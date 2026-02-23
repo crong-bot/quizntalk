@@ -89,6 +89,8 @@ export async function addLessonToCourse({ courseId, ownerUid, title = '새 차�
 		const course = courseSnap.data();
 		const nextOrder = Number(course.lessonCount ?? 0);
 
+		if (nextOrder >= 12) throw new Error('차시는 최대 12개까지 가능합니다.');
+
 		tx.set(lessonRef, {
 			lessonId: newLessonId,
 			ownerUid,
@@ -200,4 +202,23 @@ export async function deleteLessonFromCourse({ courseId, lessonDocId }) {
 	await batch.commit();
 
 	return { lessonCount: remaining.length, firstLessonId };
+}
+
+export async function deleteCourse({ courseId }) {
+	if (!courseId) throw new Error('courseId가 필요합니다.');
+
+	// 코스에 딸린 lessons 조회 (최대 12)
+	const q = query(collection(db, 'lessons'), where('courseId', '==', courseId));
+	const snap = await getDocs(q);
+
+	const batch = writeBatch(db);
+
+	// lessons 삭제
+	snap.docs.forEach((d) => batch.delete(doc(db, 'lessons', d.id)));
+
+	// courses 삭제
+	batch.delete(doc(db, 'courses', courseId));
+
+	await batch.commit();
+	return true;
 }

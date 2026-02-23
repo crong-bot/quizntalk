@@ -9,6 +9,7 @@
 	import {
 		addLessonToCourse,
 		createCourse,
+		deleteCourse,
 		deleteLessonFromCourse,
 		listLessonsByCourse,
 		listMyCourses,
@@ -38,6 +39,35 @@
 
 	let showAlert = false;
 	let alertMessage = '';
+
+	let showDeleteCourse = false;
+	let deleteCourseTarget = { courseId: '', title: '' };
+
+	let openLessonMenu = ''; // lessonId
+
+	function openDeleteCourseDialog(courseId, title) {
+		showDeleteCourse = true;
+		deleteCourseTarget = { courseId, title: title ?? '' };
+	}
+
+	async function submitDeleteCourse() {
+		const u = $authUser;
+		if (!u) return;
+
+		try {
+			loading = true;
+			showDeleteCourse = false;
+
+			await deleteCourse({ courseId: deleteCourseTarget.courseId });
+
+			await refresh(u.uid);
+		} catch (e) {
+			console.error(e);
+			error = e?.message ?? '코스 삭제 실패';
+		} finally {
+			loading = false;
+		}
+	}
 
 	function openAlert(msg) {
 		alertMessage = msg;
@@ -115,6 +145,11 @@
 
 	// ✅ Add lesson dialog
 	function openAddLessonDialog(course) {
+		const currentCount = lessonsByCourse[course.id]?.length ?? course.lessonCount ?? 0;
+		if (currentCount >= 12) {
+			openAlert('차시는 최대 12개까지 만들 수 있어요.');
+			return;
+		}
 		targetCourse = course;
 		lessonTitleInput = (course?.lessonCount ?? 0) === 0 ? '1차시' : '새 차시';
 		showAddLesson = true;
@@ -139,7 +174,11 @@
 				title
 			});
 
-			goto(`/builder?lessonId=${encodeURIComponent(lessonId)}`);
+			goto(
+				`/builder?courseId=${encodeURIComponent(targetCourse.id)}&lessonId=${encodeURIComponent(
+					lessonId
+				)}`
+			);
 		} catch (e) {
 			console.error(e);
 			error = e?.message ?? '차시 추가 실패';
@@ -295,10 +334,29 @@
 			loading = false;
 		}
 	}
+	function toggleLessonMenu(id) {
+		openLessonMenu = openLessonMenu === id ? '' : id;
+	}
+
+	// 바깥 클릭 시 닫기
+	function closeMenus() {
+		openLessonMenu = '';
+	}
+	function handleClick() {
+		console.log('clicked');
+	}
 </script>
 
 <Nav />
 
+{#if openLessonMenu}
+	<button
+		type="button"
+		class="fixed inset-0 z-10 bg-transparent cursor-default"
+		aria-label="메뉴 닫기"
+		on:click={closeMenus}
+	/>
+{/if}
 <div class="w-1280 m-auto px-10 py-10">
 	<div class="flex items-end justify-between">
 		<div>
@@ -339,16 +397,25 @@
 						</div>
 
 						<button
-							class="shrink-0 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"
-							on:click={() => openAddLessonDialog(c)}
+							class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-rose-200 text-rose-600 font-bold hover:bg-rose-50"
+							on:click={() => openDeleteCourseDialog(c.id, c.title || '강의')}
 						>
-							+ 차시
+							삭제
 						</button>
 					</div>
 
 					{#if Array.isArray(lessonsByCourse[c.id]) && lessonsByCourse[c.id].length > 0}
-						<div class="mt-5 text-slate-400 text-xs font-semibold">차시 목록</div>
+						<div class="mt-5 flex items-center justify-between gap-3">
+							<div class="text-slate-400 text-xs font-semibold">차시 목록</div>
 
+							<button
+								type="button"
+								class="shrink-0 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"
+								on:click={() => openAddLessonDialog(c)}
+							>
+								+ 차시
+							</button>
+						</div>
 						<ul class="mt-2 space-y-2">
 							{#each lessonsByCourse[c.id] as l, i (getLessonId(l))}
 								<li
@@ -404,60 +471,97 @@
 										</div>
 									</div>
 
-									<!-- ✅ right: actions (기성앱처럼 정돈) -->
-									<div class="shrink-0 flex flex-col gap-2 items-end">
-										<div class="flex gap-2">
-											<button
-												class="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
-												on:click|stopPropagation={() => openLesson(l)}
-												on:mousedown|stopPropagation
-											>
-												열기
-											</button>
+									<div class="shrink-0 relative">
+										<button
+											class="px-3 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
+											on:click|stopPropagation={() => toggleLessonMenu(getLessonId(l))}
+											on:mousedown|stopPropagation
+											aria-label="차시 메뉴"
+										>
+											⋯
+										</button>
 
-											<button
-												class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"
-												on:click|stopPropagation={() => editLesson(l)}
+										{#if openLessonMenu === getLessonId(l)}
+											<div
+												class="absolute right-0 mt-2 w-44 rounded-2xl border border-slate-200 bg-white shadow-lg p-2 z-20"
+												on:click|stopPropagation
 												on:mousedown|stopPropagation
 											>
-												편집
-											</button>
-										</div>
+												<button
+													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
+													on:click={() => {
+														openLesson(l);
+														openLessonMenu = '';
+													}}
+												>
+													열기
+												</button>
 
-										<div class="flex gap-2">
-											<button
-												class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold hover:bg-slate-50"
-												on:click|stopPropagation={() => openRenameLessonDialog(l)}
-												on:mousedown|stopPropagation
-											>
-												이름
-											</button>
+												<button
+													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
+													on:click={() => {
+														editLesson(l);
+														openLessonMenu = '';
+													}}
+												>
+													편집
+												</button>
 
-											<button
-												class="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-rose-600 text-xs font-bold hover:bg-rose-50"
-												on:click|stopPropagation={() =>
-													openDeleteLessonDialog(c.id, l.id ?? l.lessonId, l.title || '차시')}
-												on:mousedown|stopPropagation
-											>
-												삭제
-											</button>
-										</div>
+												<button
+													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
+													on:click={() => {
+														openRenameLessonDialog(l);
+														openLessonMenu = '';
+													}}
+												>
+													이름 변경
+												</button>
+
+												<div class="h-px bg-slate-100 my-1"></div>
+
+												<button
+													class="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 text-sm font-bold text-rose-600"
+													on:click={() => {
+														openDeleteLessonDialog(c.id, l.id ?? l.lessonId, l.title || '차시');
+														openLessonMenu = '';
+													}}
+												>
+													삭제
+												</button>
+											</div>
+										{/if}
 									</div>
 								</li>
 							{/each}
 						</ul>
 					{:else}
+						<div class="mt-5 flex items-center justify-between gap-3">
+							<div class="text-slate-400 text-xs font-semibold">차시 목록</div>
+
+							<button
+								type="button"
+								class="shrink-0 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"
+								on:click={() => openAddLessonDialog(c)}
+							>
+								+ 차시
+							</button>
+						</div>
 						<div class="mt-5 rounded-2xl bg-slate-50 border border-slate-100 p-4">
 							<div class="text-slate-700 font-bold">차시가 아직 없어요</div>
 							<div class="text-slate-500 text-sm mt-1">
-								오른쪽 위 “+ 차시”로 첫 차시를 추가해줘.
+								오른쪽 위 “+ 차시”로 첫 차시를 추가해주세요.
 							</div>
 						</div>
 					{/if}
 
 					<div class="mt-4">
 						<LessonShare
-							lesson={{ id: c.id, ownerUid: c.ownerUid, title: c.title, inviteCode: c.inviteCode }}
+							lesson={{
+								id: c.id,
+								ownerUid: c.ownerUid,
+								title: c.title,
+								inviteCode: c.inviteCode
+							}}
 							authUid={$authUser?.uid ?? ''}
 						/>
 					</div>
@@ -647,6 +751,36 @@
 				<button
 					class="px-4 py-3 rounded-2xl bg-rose-600 text-white font-bold hover:bg-rose-700"
 					on:click={submitDeleteLesson}
+				>
+					삭제하기
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+{#if showDeleteCourse}
+	<div class="fixed inset-0 z-50 flex items-center justify-center">
+		<div class="absolute inset-0 bg-black/40" on:click={() => (showDeleteCourse = false)}></div>
+
+		<div class="relative bg-white rounded-3xl p-6 w-[520px] shadow-xl">
+			<div class="text-sm text-slate-500">강의 삭제</div>
+			<div class="text-lg font-bold mt-2 text-slate-900">
+				“{deleteCourseTarget.title}”를 삭제할까요?
+			</div>
+			<div class="text-sm text-slate-500 mt-2">
+				이 강의 안의 모든 차시도 같이 삭제됩니다. (복구 불가)
+			</div>
+
+			<div class="mt-6 flex justify-end gap-2">
+				<button
+					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
+					on:click={() => (showDeleteCourse = false)}
+				>
+					취소
+				</button>
+				<button
+					class="px-4 py-3 rounded-2xl bg-rose-600 text-white font-bold hover:bg-rose-700"
+					on:click={submitDeleteCourse}
 				>
 					삭제하기
 				</button>
