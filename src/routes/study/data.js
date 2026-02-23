@@ -45,7 +45,11 @@ export const posts = [
 
 		steps: [
 			{ kind: 'chat', role: 'teacher', text: '다음 사진은 무엇일까요?' },
-			{ kind: 'module', module: 'cognitive/cognitive11', props: { transition_delay: 200 } },
+			{
+				kind: 'module',
+				module: 'cognitive/cognitive11',
+				props: { block: true, transition_delay: 200 }
+			},
 
 			{ kind: 'chat', role: 'student', text: '고양이요!' },
 

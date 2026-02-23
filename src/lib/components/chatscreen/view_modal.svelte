@@ -37,7 +37,7 @@
 	}
 </script>
 
-<div class="font-gmarket bg-white h-full pt-24 px-4 pb-8 col-span-2">
+<div class="font-gmarket bg-white h-full pt-24 px-4 pb-8 min-w-0">
 	<div id="modal-title-container">
 		<div class="font-light text-graytext text-sm">Course</div>
 

@@ -6,6 +6,10 @@ html {
 	scrollbar-gutter: stable;
 	overflow-y: scroll;
 }
+html,
+body {
+	overflow-x: hidden;
+}
 /* 클래스 형태로 넣어주면 된다. */
 @layer utilities {
 	#scrollbar::-webkit-scrollbar {

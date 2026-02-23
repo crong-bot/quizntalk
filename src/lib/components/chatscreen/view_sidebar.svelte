@@ -2,11 +2,11 @@
 	export let current_chapterlist = [];
 </script>
 
-<div class="bg-white h-full col-span-3 pl-4">
+<div class="bg-white h-full pl-4 min-w-0">
 	<!-- view layout title -->
-	<div class=" flex-row items-center justify-between pt-10 pb-10">
+	<div class="flex flex-row items-center justify-between pt-10 pb-10">
 		<a href="/">
-			<img class="object-cover w-30 h-20" src="/logo.png" alt="logo" />
+			<img class="object-contain max-w-[140px] h-12" src="/logo.png" alt="logo" />
 		</a>
 	</div>
 	<!-- view layout menu dropdown -->

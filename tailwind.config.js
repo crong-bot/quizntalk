@@ -3,6 +3,12 @@ export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
 
 	theme: {
+		screens: {
+			sm: '390px',
+			md: '820px',
+			lg: '1024px',
+			xl: '1280px'
+		},
 		extend: {
 			fontFamily: {
 				dongle: ['Dongle', 'sans-serif'],
@@ -10,11 +16,7 @@ export default {
 				gmarket: ['GmarketSans', 'sans-serif'],
 				nanum: ['Nanum Gothic', 'sans-serif']
 			},
-			screens: {
-				sm: '390px',
-				md: '820px',
-				lg: '1024px'
-			},
+
 			height: {
 				h: '90vh',
 				hs: '80vh',

@@ -5,23 +5,24 @@
 	import Sidebar from '$lib/components/chatscreen/view_sidebar.svelte';
 	import { moduleRegistry } from '$lib/components/classmodule/moduledeliver.js';
 	import Quiz from '$lib/components/quizmodule.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { LessonManager } from '$lib/stores/LessonManager.js';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { Toaster } from 'svelte-french-toast';
 
 	export let data;
 
-	let htmlchild;
-
-	// ✅ 공통 키: local(내장)면 post.slug, user(업로드)면 post.id(문서ID) 또는 data.lessonId
-	$: post = data?.post ?? null;
-	$: lessonKey = data?.lessonKey ?? post?.slug ?? post?.id ?? data?.lessonId ?? '';
-
-	// ✅ 기존 코드 호환: chapter를 step(인덱스)로 사용
-	$: chapter = data?.chapter ?? 0;
-
-	// ✅ 모바일 드로어 상태
+	let scrollEl; // ✅ 스크롤 컨테이너
 	let showSidebarDrawer = false;
 	let showModalDrawer = false;
+
+	$: post = data?.post ?? null;
+	$: lessonKey = data?.lessonKey ?? post?.slug ?? post?.id ?? data?.lessonId ?? '';
+	$: chapter = data?.chapter ?? 0;
+
+	// ✅ "총 챕터 수" (너 프로젝트 기준에 맞게 계산)
+	// 보통 /study/{lessonKey}/{chapter} 에서 chapter가 페이지면
+	// lessons.length - 1 이 마지막 인덱스인 경우가 많음.
+	$: totalPages = Math.max(0, (data?.lessons?.length ?? 1) - 1);
 
 	function closeDrawers() {
 		showSidebarDrawer = false;
@@ -32,13 +33,124 @@
 		if (e.key === 'Escape') closeDrawers();
 	}
 
-	onMount(() => {
-		if (!htmlchild?.children) return;
-		for (const i of htmlchild.children) {
-			i.style.display = 'none';
+	// ----------------------------
+	// ✅ 진행(Progress) helpers
+	// ----------------------------
+	const getProg = () => $LessonManager?.progress?.[lessonKey]?.[chapter] ?? {};
+	const setProg = (patch) => {
+		LessonManager.update((s) => {
+			s.progress ??= {};
+			s.progress[lessonKey] ??= {};
+			s.progress[lessonKey][chapter] = {
+				...(s.progress[lessonKey][chapter] ?? {}),
+				...patch
+			};
+			return s;
+		});
+	};
+
+	// ----------------------------
+	// ✅ "몇 번째 step까지 보여줄지" (핵심)
+	// ----------------------------
+	let revealedIndex = -1; // 지금까지 보여준 마지막 step index
+	let blockingIndex = null; // 잠금을 만든 step index (quiz/module)
+
+	// 챕터/레슨 바뀌면 저장된 reveal을 복원
+	$: {
+		const p = getProg();
+		const savedReveal = typeof p.reveal === 'number' ? p.reveal : -1;
+		const savedBlocking = typeof p.blockingIndex === 'number' ? p.blockingIndex : null;
+
+		// lessonKey/chapter 바뀔 때만 세팅되게 가드
+		// (Svelte 반응형 특성상 자주 도는 걸 막기 위해)
+		// 조건: post가 있고, revealedIndex가 초기상태거나 chapter가 바뀐 경우에만 "복원"
+		if (
+			post &&
+			(revealedIndex === -1 || p._chapterMarker !== chapter || p._lessonMarker !== lessonKey)
+		) {
+			revealedIndex = savedReveal;
+			blockingIndex = savedBlocking;
+
+			// 마커 저장 (이거 없으면 반응형 루프 가능)
+			setProg({ _chapterMarker: chapter, _lessonMarker: lessonKey });
 		}
+	}
+
+	// ✅ 잠금 상태: "blockingIndex가 있고, 해당 퀴즈가 아직 success가 아니면" 잠금
+	$: locked = (() => {
+		const p = getProg();
+		if (blockingIndex == null) return false;
+		// Quiz 컴포넌트가 setProgress({ success: true, lock:false, stepIndex }) 해주고 있으니 그걸 이용
+		if (p.stepIndex !== blockingIndex) return false;
+		return p.success !== true; // success true면 잠금 해제
+	})();
+
+	// ✅ revealedIndex가 block step(quiz/module)을 포함하면, 자동 잠금 걸기
+	function enforceBlockingIfNeeded() {
+		if (!post?.steps) return;
+
+		const step = post.steps[revealedIndex];
+		if (!step) return;
+
+		const isBlock =
+			step.kind === 'quiz' ||
+			(step.kind === 'module' && (step.block === true || step?.props?.block === true));
+		if (!isBlock) return;
+
+		// 이미 다른 block으로 잠긴 상태면 유지
+		if (blockingIndex !== null) return;
+
+		blockingIndex = revealedIndex;
+		setProg({ lock: true, success: false, stepIndex: revealedIndex, blockingIndex: revealedIndex });
+	}
+
+	async function scrollToBottom() {
+		await tick();
+		if (!scrollEl) return;
+		scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' });
+	}
+
+	// ✅ 다음 step 하나 공개
+	async function next() {
+		if (!post?.steps || post.steps.length === 0) return;
+		if (locked) return;
+
+		const nextIdx = Math.min(revealedIndex + 1, post.steps.length - 1);
+
+		// 이미 끝까지 보여줬으면 아무것도 안 함
+		if (nextIdx === revealedIndex) return;
+
+		revealedIndex = nextIdx;
+		setProg({ reveal: revealedIndex });
+
+		enforceBlockingIfNeeded();
+		await scrollToBottom();
+	}
+
+	// ✅ 퀴즈가 풀렸을 때(=progress success true), block 해제
+	$: {
+		const p = getProg();
+		// 지금 잠금 만든 step이 성공이면 unlock
+		if (blockingIndex != null && p.stepIndex === blockingIndex && p.success === true) {
+			blockingIndex = null;
+			setProg({ lock: false, blockingIndex: null });
+		}
+	}
+
+	onMount(async () => {
 		window.addEventListener('keydown', onKeydown);
+
+		// 처음 진입했는데 reveal이 없으면 첫 step 자동 1개 보여주기
+		await tick();
+		if (revealedIndex < 0) {
+			await next();
+		} else {
+			// 복원된 경우에도 block 체크
+			enforceBlockingIfNeeded();
+			await scrollToBottom();
+		}
 	});
+
 	onDestroy(() => {
 		window.removeEventListener('keydown', onKeydown);
 	});
@@ -49,8 +161,8 @@
 <div class="min-h-screen w-full max-w-[1280px] mx-auto flex flex-col">
 	<div class="relative flex flex-grow">
 		<main id="mainframe" class="flex-1">
-			<!-- ✅ 모바일 상단 바 (lg 이상에서는 숨김) -->
-			<div class="lg:hidden sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-100">
+			<!-- ✅ md 미만: 상단바 + drawer -->
+			<div class="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-100">
 				<div class="flex items-center justify-between px-3 py-2">
 					<button
 						type="button"
@@ -80,20 +192,18 @@
 				</div>
 			</div>
 
-			<!-- ✅ 모바일 오버레이 (드로어 열렸을 때만) -->
 			{#if showSidebarDrawer || showModalDrawer}
 				<button
 					type="button"
-					class="lg:hidden fixed inset-0 z-40 bg-black/40"
+					class="md:hidden fixed inset-0 z-40 bg-black/40"
 					aria-label="닫기"
 					on:click={closeDrawers}
 				/>
 			{/if}
 
-			<!-- ✅ 모바일 Sidebar Drawer (왼쪽) -->
 			<aside
-				class="lg:hidden fixed top-0 left-0 z-50 h-full w-[82%] max-w-[320px] bg-white shadow-2xl
-         transform transition-transform duration-200 -translate-x-full"
+				class="md:hidden fixed top-0 left-0 z-50 h-dvh w-[82%] max-w-[320px] bg-white shadow-2xl
+        transform transition-transform duration-200 -translate-x-full"
 				class:translate-x-0={showSidebarDrawer}
 				aria-hidden={!showSidebarDrawer}
 			>
@@ -113,10 +223,9 @@
 				</div>
 			</aside>
 
-			<!-- ✅ 모바일 Modal Drawer (오른쪽) -->
 			<aside
-				class="lg:hidden fixed top-0 right-0 z-50 h-full w-[82%] max-w-[320px] bg-white shadow-2xl
-         transform transition-transform duration-200 translate-x-full"
+				class="md:hidden fixed top-0 right-0 z-50 h-dvh w-[82%] max-w-[320px] bg-white shadow-2xl
+        transform transition-transform duration-200 translate-x-full"
 				class:translate-x-0={showModalDrawer}
 				aria-hidden={!showModalDrawer}
 			>
@@ -141,20 +250,22 @@
 				</div>
 			</aside>
 
-			<!-- ✅ 데스크탑 레이아웃 -->
-			<div id="view" class="w-full grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-1">
-				<!-- Sidebar: 데스크탑에서만 표시 -->
-				<div class="hidden lg:block lg:col-span-3 min-w-0">
+			<!-- ✅ 데스크탑/태블릿 레이아웃 -->
+			<div id="view" class="w-full grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-1">
+				<div class="hidden md:block md:col-span-3 min-w-0">
 					<Sidebar course={data.course} lessons={data.lessons} />
 				</div>
 
-				<!-- Main -->
-				<div id="main_content" class="lg:col-span-7 flex flex-col rounded-lg">
+				<div id="main_content" class="md:col-span-9 lg:col-span-7 min-w-0 flex flex-col rounded-lg">
 					<div
 						id="chat_box_container"
-						class="relative h-[85vh] mx-3 mt-3 lg:mx-8 lg:mt-8 bg-white rounded-3xl"
+						class="relative h-[85vh] mx-3 mt-3 md:mx-6 md:mt-6 lg:mx-8 lg:mt-8 bg-white rounded-3xl min-w-0"
 					>
-						<div bind:this={htmlchild} id="scrollbar" class="overflow-y-auto h-full pr-1 pl-2 pt-1">
+						<div
+							bind:this={scrollEl}
+							id="scrollbar"
+							class="overflow-y-auto h-full pr-1 pl-2 pt-1 min-w-0"
+						>
 							{#if !post}
 								<div class="p-6 text-slate-500">
 									레슨 데이터를 불러오는 중이거나 존재하지 않습니다.
@@ -163,37 +274,51 @@
 								<div class="p-6 text-slate-500">steps가 비어있습니다.</div>
 							{:else}
 								{#each post.steps as step, index (index)}
-									{#if step.kind === 'chat'}
-										<ChatBubble chat_direction={step.role === 'teacher'}>
-											{step.text}
-										</ChatBubble>
-									{:else if step.kind === 'quiz'}
-										<Quiz {step} {lessonKey} {chapter} stepIndex={index} />
-									{:else if step.kind === 'module'}
-										{#if moduleRegistry?.[step.module]}
-											<svelte:component this={moduleRegistry[step.module]} {...step.props ?? {}} />
-										{:else if data?.components?.[step.module]}
-											<svelte:component this={data.components[step.module]} {...step.props ?? {}} />
+									{#if index <= revealedIndex}
+										{#if step.kind === 'chat'}
+											<div class="min-w-0">
+												<ChatBubble chat_direction={step.role === 'teacher'}>
+													{step.text}
+												</ChatBubble>
+											</div>
+										{:else if step.kind === 'quiz'}
+											<div class="min-w-0">
+												<Quiz {step} {lessonKey} {chapter} stepIndex={index} />
+											</div>
+										{:else if step.kind === 'module'}
+											<div class="min-w-0">
+												{#if moduleRegistry?.[step.module]}
+													<svelte:component
+														this={moduleRegistry[step.module]}
+														{...step.props ?? {}}
+													/>
+												{:else if data?.components?.[step.module]}
+													<svelte:component
+														this={data.components[step.module]}
+														{...step.props ?? {}}
+													/>
+												{:else}
+													<div class="p-4 m-2 rounded-xl bg-rose-50 text-rose-700 text-sm">
+														모듈을 찾을 수 없음: {step.module}
+													</div>
+												{/if}
+											</div>
 										{:else}
-											<div class="p-4 m-2 rounded-xl bg-rose-50 text-rose-700 text-sm">
-												모듈을 찾을 수 없음: {step.module}
+											<div class="p-4 m-2 rounded-xl bg-slate-100 text-slate-700 text-sm">
+												알 수 없는 step.kind: {step.kind}
 											</div>
 										{/if}
-									{:else}
-										<div class="p-4 m-2 rounded-xl bg-slate-100 text-slate-700 text-sm">
-											알 수 없는 step.kind: {step.kind}
-										</div>
 									{/if}
 								{/each}
 							{/if}
 						</div>
 					</div>
 
-					<View_button childs={htmlchild} {lessonKey} {chapter} />
+					<!-- ✅ DOM 넘기기 X / 상태만 넘기기 -->
+					<View_button onNext={next} {locked} {lessonKey} {chapter} {totalPages} />
 				</div>
 
-				<!-- Modal: 데스크탑에서만 표시 -->
-				<div class="hidden lg:block lg:col-span-2">
+				<div class="hidden lg:block lg:col-span-2 min-w-0">
 					<Modal
 						course={data.course}
 						lessons={data.lessons}
@@ -205,7 +330,6 @@
 		</main>
 	</div>
 </div>
-<h1 class="fixed top-2 left-2 z-[9999] bg-red-500 text-white px-2 py-1">STUDY PLAYER FILE</h1>
 
 <style>
 	:global([slot='main']) {
