@@ -26,7 +26,7 @@
 		</p>
 
 		<p class="text-xl font-bold text-white sm:text-2xl">
-			{course_card_number}
+			<!-- {course_card_number} -->
 			{course_card_title}
 		</p>
 

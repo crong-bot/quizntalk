@@ -4,18 +4,22 @@
 	export let activeItem;
 
 	const dispatch = createEventDispatcher();
+	const select = (id) => dispatch('tabChange', id);
 </script>
 
 <div
-	class="flex mt-2 overflow-x-auto overflow-y-hidden border-b sm:font-gmarket sm:font-thin sm:text-sm border-gray-200 whitespace-nowrap dark:border-gray-700"
+	class="flex mt-2 gap-2 overflow-x-auto overflow-y-hidden sm:font-gmarket sm:text-sm whitespace-nowrap"
 >
-	{#each items as item}
+	{#each items as item (item.id)}
 		<button
-			on:click={() => dispatch('tabChange', item)}
-			class:active={item === activeItem}
-			class="inline-flex items-center font-gmarket font-medium text-zinc-400 h-10 px-4 -mb-px text-center bg-transparent border-b-4 sm:font-thin dark:border-blue-400 dark:text-blue-300 whitespace-nowrap focus:outline-none"
+			type="button"
+			on:click={() => select(item.id)}
+			class="px-4 py-2 rounded-2xl text-sm font-bold transition
+        {activeItem === item.id
+				? 'bg-slate-900 text-white'
+				: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}"
 		>
-			{item}
+			{item.label}
 		</button>
 	{/each}
 
@@ -45,5 +49,6 @@
 	.active {
 		color: #6a92fb;
 		border-color: #6a92fb;
+		font-weight: 700;
 	}
 </style>

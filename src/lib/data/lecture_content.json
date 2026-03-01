@@ -1,59 +1,229 @@
-[
-    {
-        "url": "lesson_cognitive",
-        "title": "인공지능의 인식",
-        "number": "인식 - 1",
-        "info": "2개/10분",
-        "list": [
-            "사람과 인공지능의 인식 차이 ",
-            "인공지능이 인식하는 방법"
-        ],
-        "1": "1페이지",
-        "2": "2페이지",
-        "3": "5페이지"
-    },
-    {
-        "url": "lesson_rgb",
-        "title": "RGB의 이해 1",
-        "number": "인식 - 2",
-        "info": "5개/30분",
-        "list": [
-            "이해",
-            "컴퓨터의 색",
-            "색 조합해보기",
-            "RGB란?",
-            "RGB로 색 만들어보기"
-        ],
-        "1": "1페이지",
-        "2": "2페이지",
-        "3": "5페이지"
-    },
-    {
-        "url": "lesson_sound",
-        "title": "소리를 숫자로",
-        "number": "인식 - 3",
-        "info": "3개/15분",
-        "list": [
-            "사람이 소리를 인식하는 방법",
-            "소리마다 다른 진동",
-            "마이크가 진동을 숫자로 바꾸는 방법"
-        ],
-        "1": "1페이지",
-        "2": "2페이지",
-        "3": "3페이지"
-    },
-    {
-        "url": "lesson_text",
-        "title": "문자를 숫자로",
-        "number": "인식 - 3",
-        "info": "3개/15분",
-        "list": [
-            "사람이 소리를 인식하는 방법",
-            "소리마다 다른 진동",
-            "마이크가 진동을 숫자로 바꾸는 방법"
-        ],
-        "1": "1페이지",
-        "2": "2페이지",
-        "3": "3페이지"
-    }
-]
+{
+	"tabs": [
+		{
+			"id": "ai",
+			"title": "단원",
+			"sections": [
+				{
+					"id": "recognition",
+					"title": "인식",
+					"subtitle": "AI는 숫자로 세상을 봐요.",
+					"courses": [
+						{
+							"course": "cognitive",
+							"title": "1. AI는 세상을 어떻게 이해할까요?",
+							"summary": "AI는 눈이 없는데 어떻게 사람같을까요?",
+							"list": ["사람과 인공지능의 인식 차이", "인공지능이 인식하는 방법"],
+							"info": "2개/5분",
+							"lessons": [
+								{
+									"order": 1,
+									"lessonId": "lesson_cognitive_1",
+									"title": "사람과 인공지능의 인식 차이"
+								},
+								{
+									"order": 2,
+									"lessonId": "lesson_cognitive_2",
+									"title": "인공지능이 인식하는 방법"
+								}
+							]
+						},
+						{
+							"course": "rgb",
+							"title": "2. 사진을 숫자로",
+							"summary": "RGB의 이해-컴퓨터가 색을 표현하는 방법",
+							"list": [
+								"RGB의 이해",
+								"컴퓨터의 색",
+								"색 조합해보기",
+								"RGB란?",
+								"RGB로 색 만들어보기"
+							],
+							"info": "5개/30분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_rgb_1", "title": "RGB의 이해" },
+								{ "order": 2, "lessonId": "lesson_rgb_2", "title": "컴퓨터의 색" },
+								{ "order": 3, "lessonId": "lesson_rgb_3", "title": "색 조합해보기" },
+								{ "order": 4, "lessonId": "lesson_rgb_4", "title": "RGB란?" },
+								{ "order": 5, "lessonId": "lesson_rgb_5", "title": "RGB로 색 만들어보기" }
+							]
+						},
+						{
+							"course": "sound",
+							"title": "3. 소리를 숫자로",
+							"summary": "소리(진동)가 데이터가 되는 과정",
+							"list": [
+								"사람이 소리를 인식하는 방법",
+								"소리마다 다른 진동",
+								"마이크가 진동을 숫자로 바꾸는 방법"
+							],
+							"info": "3개/15분",
+							"lessons": [
+								{
+									"order": 1,
+									"lessonId": "lesson_sound_1",
+									"title": "사람이 소리를 인식하는 방법"
+								},
+								{ "order": 2, "lessonId": "lesson_sound_2", "title": "소리마다 다른 진동" },
+								{
+									"order": 3,
+									"lessonId": "lesson_sound_3",
+									"title": "마이크가 진동을 숫자로 바꾸는 방법"
+								}
+							]
+						},
+						{
+							"course": "text",
+							"title": "4. 문자를 숫자로",
+							"summary": "문자를 코드로 바꾸는 원리",
+							"list": [
+								"사람이 문자를 인식하는 방법",
+								"문자마다 다른 코드",
+								"컴퓨터가 문자를 숫자로 바꾸는 방법"
+							],
+							"info": "3개/15분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_text_1", "title": "사람이 문자를 인식하는 방법" },
+								{ "order": 2, "lessonId": "lesson_text_2", "title": "문자마다 다른 코드" },
+								{
+									"order": 3,
+									"lessonId": "lesson_text_3",
+									"title": "컴퓨터가 문자를 숫자로 바꾸는 방법"
+								}
+							]
+						}
+					]
+				},
+				{
+					"id": "learning",
+					"title": "학습",
+					"subtitle": "AI는 숫자 속에서 규칙을 발견해요.",
+					"courses": [
+						{
+							"course": "pattern",
+							"title": "숫자에서 규칙 찾기",
+							"summary": "AI가 숫자 속에서 반복되는 규칙을 찾는 방법",
+							"list": ["숫자의 규칙 찾기", "반복되는 패턴 발견하기"],
+							"info": "2개/15분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_find_1", "title": "숫자의 규칙 찾기" },
+								{ "order": 2, "lessonId": "lesson_find_2", "title": "반복되는 패턴 발견하기" }
+							]
+						},
+						{
+							"course": "classification",
+							"title": "규칙으로 구분하기",
+							"summary": "숫자의 특징을 이용해 대상을 분류하는 방법",
+							"list": ["공통 특징 찾기", "비슷한 것끼리 묶기", "새로운 데이터를 분류해보기"],
+							"info": "2개/20분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_class_1", "title": "공통 특징 찾기" },
+								{ "order": 2, "lessonId": "lesson_class_2", "title": "비슷한 것끼리 묶기" }
+							]
+						},
+						{
+							"course": "feature",
+							"title": "중요한 숫자 찾기",
+							"summary": "AI가 중요한 숫자를 골라내는 방법",
+							"list": ["중요한 숫자는 무엇일까?", "덜 중요한 정보는 빼보기"],
+							"info": "3개/20분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_feature_1", "title": "중요한 숫자는 무엇일까?" },
+								{ "order": 2, "lessonId": "lesson_feature_2", "title": "덜 중요한 정보는 빼보기" }
+							]
+						}
+					]
+				},
+				{
+					"id": "training",
+					"title": "훈련",
+					"subtitle": "찾은 패턴으로 예측하고 틀리면 스스로 조정해요.",
+					"courses": [
+						{
+							"course": "prediction",
+							"title": "중요한 숫자 찾기",
+							"summary": "AI가 배운 규칙으로 결과를 예측하는 과정",
+							"list": ["배운 규칙으로 결과 맞혀보기", "AI의 첫 번째 예측", "예측은 항상 맞을까?"],
+							"info": "3개/20분",
+							"lessons": [
+								{
+									"order": 1,
+									"lessonId": "lesson_prediction_1",
+									"title": "배운 규칙으로 결과 맞혀보기"
+								},
+								{ "order": 2, "lessonId": "lesson_prediction_2", "title": "AI의 첫 번째 예측" },
+								{ "order": 3, "lessonId": "lesson_prediction_3", "title": "예측은 항상 맞을까?" }
+							]
+						},
+						{
+							"course": "error",
+							"title": "틀린 이유 찾기",
+							"summary": "AI가 틀렸을 때 무엇이 잘못되었는지 확인하는 과정",
+							"list": ["틀린 문제 찾아보기", "왜 틀렸을까?", "오차란 무엇일까?"],
+							"info": "3개/20분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_error_1", "title": "틀린 문제 찾아보기" },
+								{ "order": 2, "lessonId": "lesson_error_2", "title": "왜 틀렸을까?" },
+								{ "order": 3, "lessonId": "lesson_error_3", "title": "오차란 무엇일까?" }
+							]
+						},
+						{
+							"course": "adjustment",
+							"title": "스스로 조정하기",
+							"summary": "AI가 틀린 부분을 수정하고 다시 시도하는 과정",
+							"list": [
+								"중요한 숫자 조절하기",
+								"가중치란 무엇일까?",
+								"다시 예측해보기",
+								"반복하면 정확도가 올라간다"
+							],
+							"info": "4개/25분",
+							"lessons": [
+								{ "order": 1, "lessonId": "lesson_adjust_1", "title": "중요한 숫자 조절하기" },
+								{ "order": 2, "lessonId": "lesson_adjust_2", "title": "가중치란 무엇일까?" },
+								{ "order": 3, "lessonId": "lesson_adjust_3", "title": "다시 예측해보기" },
+								{ "order": 4, "lessonId": "lesson_adjust_4", "title": "반복하면 정확도가 올라간다" }
+							]
+						}
+					]
+				}
+			]
+		},
+
+		{
+			"id": "data",
+			"title": "AI와 데이터",
+			"sections": [
+				{
+					"id": "recognition",
+					"title": "데이터 수집과 학습",
+					"subtitle": "데이터를 수집하는 방법과 데이터 학습",
+					"courses": [
+						{
+							"course": "cognitive",
+							"title": "인공지능의 인식",
+							"summary": "사람과 인공지능의 인식 차이",
+							"list": ["사람과 인공지능의 인식 차이", "인공지능이 인식하는 방법"],
+							"info": "2개/10분",
+							"lessons": [
+								{
+									"order": 1,
+									"lessonId": "lesson_cognitive_1",
+									"title": "사람과 인공지능의 인식 차이"
+								},
+								{
+									"order": 2,
+									"lessonId": "lesson_cognitive_2",
+									"title": "인공지능이 인식하는 방법"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{ "id": "apply", "title": "AI의 활용", "sections": [] },
+		{ "id": "ethics", "title": "AI 윤리", "sections": [] },
+		{ "id": "project", "title": "프로젝트 만들기", "sections": [] }
+	]
+}

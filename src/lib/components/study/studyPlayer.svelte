@@ -7,7 +7,7 @@
 	import Quiz from '$lib/components/quizmodule.svelte';
 	import { LessonManager } from '$lib/stores/LessonManager.js';
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { Toaster } from 'svelte-french-toast';
+	import toast, { Toaster } from 'svelte-french-toast';
 
 	export let data;
 
@@ -113,13 +113,22 @@
 	// ✅ 다음 step 하나 공개
 	async function next() {
 		if (!post?.steps || post.steps.length === 0) return;
-		if (locked) return;
+		// 잠겨있으면 안내
+		if (locked) {
+			toast('먼저 퀴즈를 완료해주세요.', { icon: '🔒', position: 'bottom-center' });
+			return;
+		}
 
-		const nextIdx = Math.min(revealedIndex + 1, post.steps.length - 1);
+		const lastIdx = post.steps.length - 1;
 
-		// 이미 끝까지 보여줬으면 아무것도 안 함
-		if (nextIdx === revealedIndex) return;
+		// ✅ 이미 끝까지 보여줬으면 "끝났습니다"
+		if (revealedIndex >= lastIdx) {
+			toast('끝났습니다.', { icon: '💯💯', position: 'bottom-center' });
+			return;
+		}
 
+		// 다음 step 공개
+		const nextIdx = Math.min(revealedIndex + 1, lastIdx);
 		revealedIndex = nextIdx;
 		setProg({ reveal: revealedIndex });
 
@@ -277,7 +286,11 @@
 									{#if index <= revealedIndex}
 										{#if step.kind === 'chat'}
 											<div class="min-w-0">
-												<ChatBubble chat_direction={step.role === 'teacher'}>
+												<ChatBubble
+													isTeacher={step.role === 'teacher'}
+													name={post?.actors?.[step.role]?.name}
+													badges={post?.actors?.[step.role]?.badges}
+												>
 													{step.text}
 												</ChatBubble>
 											</div>
@@ -324,6 +337,8 @@
 						lessons={data.lessons}
 						currentLessonId={data.lessonKey}
 						currentLessonTitle={data.post?.title}
+						prevCourse={data.prevCourse}
+						nextCourse={data.nextCourse}
 					/>
 				</div>
 			</div>

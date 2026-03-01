@@ -1,17 +1,7 @@
-import { posts } from './data'
+import lecture from '$lib/data/lecture_content.json';
 
-// export function load() {
-//     return {
-//         summaries: posts.map((post) => ({
-//             slug: post.slug,
-//             title: post.title
-//         }))
-//     };
-// }
-
-export function load({ params }) {
-
-    return { posts }
-
+export function load() {
+	return {
+		lecture
+	};
 }
-

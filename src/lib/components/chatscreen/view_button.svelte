@@ -28,10 +28,10 @@
 			return;
 		}
 
-		if (chapter >= totalPages) {
-			toast('마지막페이지입니다.!!', { icon: '🧱⛔️', position: 'bottom-center' });
-			return;
-		}
+		// if (chapter >= totalPages) {
+		// 	toast('마지막페이지입니다.!!', { icon: '🧱⛔️', position: 'bottom-center' });
+		// 	return;
+		// }
 
 		goto(`/study/${lessonKey}/${chapter + 1}`);
 	};
