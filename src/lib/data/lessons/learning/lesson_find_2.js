@@ -1,5 +1,5 @@
 export default {
-	slug: 'lesson_rule_dog_2',
+	slug: 'lesson_find_2',
 	title: '강아지 데이터의 공통점 찾기',
 	category: '학습',
 	thumbnail: '/dog.png',
@@ -13,28 +13,53 @@ export default {
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '이번엔 “강아지 데이터”야. 고양이랑 뭐가 다를지 찾아볼까?'
+			text: '이제 표지판을 숫자로 바꿔보겠습니다.'
 		},
-		{ kind: 'chat', role: 'student', text: '강아지는 꼬리가 더 큰가요?' },
-		{ kind: 'chat', role: 'teacher', text: '가능성 있어! 숫자를 보고 진짜 그런지 확인해보자.' },
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '아까처럼 공통점 후보를 골라서 “강아지 규칙”을 만들어봐.'
+			text: '표지판을 아주 작은 점, 즉 픽셀로 나눠볼게요.'
+		},
+		{
+			kind: 'chat',
+			role: 'student',
+			text: '점으로 나누면 그냥 모자이크처럼 보일 것 같아요!'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '맞아요! AI는 그 점 하나하나를 숫자로 바꿔서 봅니다.'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '검은색은 1, 흰색은 0처럼 바꿀 수 있어요.'
 		},
 
-		{ kind: 'module', module: 'learning/catdog_rule_2', props: { block: false } },
-
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '좋아! 이제 고양이 규칙과 강아지 규칙이 둘 다 생겼다.'
+			text: '지금 보이는 0과 1이 바로 AI가 보는 숫자입니다.'
 		},
-		{ kind: 'chat', role: 'student', text: '규칙이 있으면 이제 맞힐 수 있겠는데요?' },
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '바로 그거야. 다음은 “새 친구”를 보고 고양이인지 강아지인지 구분해볼 거야!'
+			text: '그리고 이 숫자들을 한 줄로 쭉 펼친 것을 벡터라고 해요.'
+		},
+		{
+			kind: 'chat',
+			role: 'student',
+			text: '아! 그래서 숫자가 한 줄로 길게 늘어났군요!'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '이 벡터가 AI 안으로 들어가서 학습을 시작합니다.'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '이제 우리는 숫자를 이용해 규칙을 찾는 단계로 가보겠습니다.'
 		}
 	]
 };

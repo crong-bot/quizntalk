@@ -1,5 +1,5 @@
 export default {
-	slug: 'lesson_feature_weight_2',
+	slug: 'lesson_weight_2',
 	title: '중요도를 바꾸면 결과도 바뀐다',
 	category: '학습',
 	thumbnail: '/slider.png',
@@ -23,7 +23,7 @@ export default {
 		},
 		{ kind: 'chat', role: 'teacher', text: '목표는 정확도 70% 넘기기!' },
 
-		{ kind: 'module', module: 'learning/feature_weight_slider_2', props: { block: false } },
+		{ kind: 'module', module: 'learning/weight/weight2', props: { block: false } },
 
 		{
 			kind: 'chat',

@@ -40,7 +40,7 @@
 
 			<p>홈!!</p>
 		</a>
-		<a href="/about" class="flex flex-row items-center space-x-3 leading-loose"
+		<a href="/study" class="flex flex-row items-center space-x-3 leading-loose"
 			><svg
 				xmlns="http://www.w3.org/2000/svg"
 				width="24"

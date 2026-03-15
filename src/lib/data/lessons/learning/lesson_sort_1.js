@@ -1,5 +1,5 @@
 export default {
-	slug: 'lesson_class_easy_1',
+	slug: 'lesson_sort_1',
 	title: '새 친구는 고양이일까 강아지일까?',
 	category: '학습',
 	thumbnail: '/quiz.png',
@@ -22,7 +22,7 @@ export default {
 			text: '팁! 아까 만든 규칙을 떠올려. 귀/수염/꼬리 중 어떤 게 고양이 쪽이었지?'
 		},
 
-		{ kind: 'module', module: 'learning/catdog_classifier_1', props: { block: false } },
+		{ kind: 'module', module: 'learning/sort/sort1', props: { block: false } },
 
 		{ kind: 'chat', role: 'teacher', text: '어때? 규칙이 있으면 생각보다 잘 맞히지?' },
 		{ kind: 'chat', role: 'student', text: '맞아요! 근데 가끔 헷갈릴 것 같아요.' },

@@ -1,5 +1,5 @@
 export default {
-	slug: 'lesson_class_hard_2',
+	slug: 'lesson_sort_2',
 	title: '헷갈리는 친구들 분류하기',
 	category: '학습',
 	thumbnail: '/hard.png',
@@ -23,7 +23,7 @@ export default {
 		},
 		{ kind: 'chat', role: 'teacher', text: '해보면서 “왜 헷갈렸는지” 생각해보자.' },
 
-		{ kind: 'module', module: 'learning/catdog_classifier_2', props: { block: false } },
+		{ kind: 'module', module: 'learning/sort/sort2', props: { block: false } },
 
 		{ kind: 'chat', role: 'teacher', text: '어땠어? 어떤 문제에서 특히 헷갈렸어?' },
 		{ kind: 'chat', role: 'student', text: '귀는 고양이 같은데 꼬리는 강아지 같은 애요!' },

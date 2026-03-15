@@ -39,13 +39,13 @@
 				<div class="mt-10 text-slate-500">아직 준비 중인 탭입니다.</div>
 			{:else}
 				{#each sections as section (section.id)}
-					<div class="mt-7 w-full">
+					<div class="mt-7 mb-20 w-full">
 						<div class="bg-white mb-3 font-gmarket font-bold text-xl pl-4 py-3 rounded-2xl">
 							<p class="text-blue-400">{section.title}</p>
 							<p class="text-slate-700 font-medium">{section.subtitle}</p>
 						</div>
 
-						<div class="grid grid-cols-5 gap-6">
+						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 max-w-4xl">
 							{#each section.courses as c, i (c.course)}
 								<CourseCardHover
 									course_card_cartegory={activeTab?.title ?? 'Course'}

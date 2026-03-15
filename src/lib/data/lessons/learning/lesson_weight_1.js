@@ -1,5 +1,5 @@
 export default {
-	slug: 'lesson_feature_pick_1',
+	slug: 'lesson_weight_1',
 	title: '어떤 숫자가 가장 중요할까?',
 	category: '학습',
 	thumbnail: '/star.png',
@@ -23,7 +23,7 @@ export default {
 			text: '귀/수염/꼬리 중에서 뭐가 제일 중요할지 골라보고, 그거만 보고 맞혀볼 거야.'
 		},
 
-		{ kind: 'module', module: 'learning/feature_picker_1', props: { block: false } },
+		{ kind: 'module', module: 'learning/weight/weight1', props: { block: false } },
 
 		{
 			kind: 'chat',

@@ -10,9 +10,42 @@ import l9 from './congnitive/lesson_sound_2.js';
 import l10 from './congnitive/lesson_sound_3.js';
 import l11 from './learning/lesson_find_1.js';
 import l12 from './learning/lesson_find_2.js';
+import l13 from './learning/lesson_sort_1.js';
+import l14 from './learning/lesson_sort_2.js';
+import l15 from './learning/lesson_weight_1.js';
+import l16 from './learning/lesson_weight_2.js';
+import l17 from './trainning/lesson_predict_1.js';
+import l18 from './trainning/lesson_predict_2.js';
+import l19 from './trainning/lesson_reason_1.js';
+import l20 from './trainning/lesson_reason_2.js';
+import l21 from './trainning/lesson_tune_1.js';
+import l22 from './trainning/lesson_tune_2.js';
 // 계속 추가
 
-const allLessons = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12];
+const allLessons = [
+	l1,
+	l2,
+	l3,
+	l4,
+	l5,
+	l6,
+	l7,
+	l8,
+	l9,
+	l10,
+	l11,
+	l12,
+	l13,
+	l14,
+	l15,
+	l16,
+	l17,
+	l18,
+	l19,
+	l20,
+	l21,
+	l22
+];
 
 // 1️⃣ 카테고리 그룹화
 const grouped = {};

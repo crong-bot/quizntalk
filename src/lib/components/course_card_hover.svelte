@@ -12,16 +12,16 @@
 
 <a
 	href={`/study/local/${course_card_adress}/0`}
-	class="group relative w-56 h-56 block bg-black rounded-3xl"
+	class="group relative block w-full aspect-square max-w-48 mx-auto bg-black rounded-3xl overflow-hidden"
 >
 	<img
 		alt="Developer"
 		src={course_card_image}
-		class="absolute inset-0 h-full w-full opacity-75 transition-opacity group-hover:opacity-50 rounded-3xl border-none overflow-hidden"
+		class="absolute inset-0 h-full w-full opacity-75 transition-opacity group-hover:opacity-50"
 	/>
 
-	<div class="relative p-4 sm:p-6 lg:p-8">
-		<p class="text-sm font-medium uppercase tracking-widest text-pink-500">
+	<div class="relative p-3">
+		<p class="text-[10px] font-medium uppercase tracking-widest text-pink-500">
 			{course_card_cartegory}
 		</p>
 

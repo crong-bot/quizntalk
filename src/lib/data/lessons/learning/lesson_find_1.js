@@ -14,39 +14,83 @@ export default // 1-1
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '오늘은 고양이/강아지를 “숫자 3개”로 본다고 상상해볼 거에요.'
-		},
-		{ kind: 'chat', role: 'student', text: '동물을 숫자로요? 이상한데요?' },
-		{
-			kind: 'chat',
-			role: 'teacher',
-			text: '맞아, 진짜 숫자는 아니고 “특징 점수”라고 생각하면 돼. 예를 들어 귀/수염/꼬리 같은 거!'
+			text: '여러분, 오늘은 우리가 자율주행 자동차 AI 개발자가 됩니다.'
 		},
 		{
 			kind: 'chat',
-			role: 'teacher',
-			text: '자, 지금부터는 “고양이 데이터”만 볼 거야. 공통점이 뭐가 보이니?'
+			role: 'student',
+			text: '진짜요? 우리가 자동차를 만들어요?'
 		},
-		{ kind: 'chat', role: 'student', text: '음… 귀랑 수염 숫자가 좀 큰 것 같아요.' },
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '오! 관찰 시작 좋다. 그럼 후보 중에서 “고양이 규칙”을 골라서 만들어보자.'
+			text: '네. 그런데 자동차가 스스로 운전하려면 꼭 필요한 기능이 있어요.'
 		},
-
-		{ kind: 'module', module: 'find/find1', props: { block: false } },
-
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '좋아! 이렇게 “공통 특징”을 뽑아내는 게 규칙 찾기야.'
+			text: '만약 자동차가 이 표지판을 못 본다면 어떻게 될까요?'
 		},
-		{ kind: 'chat', role: 'student', text: '그럼 AI도 이렇게 규칙을 만들어요?' },
+		{
+			kind: 'chat',
+			role: 'student',
+			text: '멈춰야 할 때 안 멈출 수도 있어요!'
+		},
 		{
 			kind: 'chat',
 			role: 'teacher',
-			text: '응. AI는 데이터를 많이 보고 “자주 나오는 특징”을 찾아서 규칙을 만들려고 해.'
+			text: '맞아요. 그래서 자율주행 자동차는 표지판을 정확하게 인식해야 합니다.'
 		},
-		{ kind: 'chat', role: 'teacher', text: '이제 강아지도 똑같이 해보면, 둘이 비교가 되겠지?' }
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '그럼 이제 우리가 직접 표지판을 인식하는 AI를 만들어볼까요?'
+		},
+		{
+			kind: 'chat',
+			role: 'student',
+			text: '어떻게 만들어요? 사람이 가르쳐줘야 하나요?'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '좋은 질문이에요. AI는 사람처럼 눈으로 이해하지 않아요.'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: 'AI는 표지판을 다른 방식으로 봅니다. 바로 “숫자”로 바꿔서 학습해요.'
+		},
+		{
+			kind: 'quiz',
+			quiz: {
+				questionNum: 1,
+				type: 'multiple',
+				question: 'AI는 표지판을 어떻게 학습할까요?',
+				choices: [
+					'그림을 그대로 이해한다',
+					'색깔만 본다',
+					'숫자로 바꿔서 학습한다',
+					'사람이 대신 운전한다'
+				],
+				answerIndex: 2,
+				explanation: 'AI는 이미지를 숫자로 변환해 벡터 형태로 학습합니다.'
+			}
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '맞아요! AI는 그림을 그대로 이해하지 않아요.'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '표지판을 작은 점(픽셀)으로 나누고, 그 점을 0과 1 같은 숫자로 바꿔서 학습합니다.'
+		},
+		{
+			kind: 'chat',
+			role: 'teacher',
+			text: '그럼 이제 표지판을 숫자로 바꿔서 AI가 어떻게 보는지 직접 확인해봅시다.'
+		}
 	]
 };
