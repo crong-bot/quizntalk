@@ -188,18 +188,16 @@
 	}
 
 	// ✅ lesson actions
-	function openLesson(l) {
-		const id = getLessonId(l);
-		if (!id) return openAlert('lessonId를 찾지 못했어.');
-		goto(`/study/u/${encodeURIComponent(id)}/0`);
+	function openLesson(courseId, stepIndex) {
+		if (!courseId) return openAlert('courseId를 찾지 못했어.');
+		goto(`study/c/${encodeURIComponent(courseId)}/${stepIndex}`);
 	}
 
-	function editLesson(l) {
+	function editLesson(courseId, l) {
 		const id = getLessonId(l);
 		if (!id) return openAlert('lessonId를 찾지 못했어.');
-		goto(`/builder?lessonId=${encodeURIComponent(id)}`);
+		goto(`/builder?courseId=${encodeURIComponent(courseId)}&lessonId=${encodeURIComponent(id)}`);
 	}
-
 	function openRenameLessonDialog(l) {
 		const id = getLessonId(l);
 		if (!id) return openAlert('lessonId를 찾지 못했어.');
@@ -490,7 +488,7 @@
 												<button
 													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
 													on:click={() => {
-														openLesson(l);
+														openLesson(c.id, i);
 														openLessonMenu = '';
 													}}
 												>
@@ -500,7 +498,7 @@
 												<button
 													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
 													on:click={() => {
-														editLesson(l);
+														editLesson(c.id, l);
 														openLessonMenu = '';
 													}}
 												>

@@ -191,7 +191,7 @@
 							<button
 								class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700"
 								role="menuitem"
-								on:click={() => go('/classroom')}
+								on:click={() => go('/player')}
 							>
 								강의실
 							</button>

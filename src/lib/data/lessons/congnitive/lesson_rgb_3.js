@@ -45,7 +45,10 @@ export default {
 		{
 			kind: 'module',
 			module: 'rgb1/rgb13',
-			props: { block: false }
+			props: {
+				block: true,
+				answer: ['red', 'green', 'blue']
+			}
 		}
 	]
 };

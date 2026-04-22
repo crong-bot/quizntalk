@@ -8,32 +8,46 @@
 	export let locked = false; // 퀴즈/모듈 때문에 막혔는지
 	export let lessonKey = ''; // progress key
 	export let chapter = 0; // 현재 챕터
-	export let totalPages = 9999; // 마지막 챕터 체크용 (부모에서 계산해서 넘겨)
+	//export let totalPages = 9999; // 마지막 챕터 체크용 (부모에서 계산해서 넘겨)
+	export let totalPages = 0;
+	export let courseId = '';
 
-	const getChapterState = (lessonKey, chapter) =>
-		$LessonManager?.progress?.[lessonKey]?.[chapter] ?? { success: false, lock: false };
+	const getChapterState = (lessonKey, chapter) => {
+		const progress = $LessonManager?.progress ?? {};
+		const lessonProgress = progress[lessonKey] ?? {};
 
+		const state = lessonProgress[chapter + 1];
+		console.log('getChapterState', {
+			lessonKey,
+			chapter,
+			lessonProgress,
+			state
+		});
+
+		return state ?? { success: false, lock: false };
+	};
 	// ✅ 챕터 이동 (이전/다음)
 	const back_action = () => {
-		const prev = Math.max(0, chapter - 1);
-		goto(`/study/${lessonKey}/${prev}`);
-	};
+		if (chapter <= 0) {
+			toast('첫 강의입니다.', { icon: '📘', position: 'bottom-center' });
+			return;
+		}
 
+		goto(`/study/local/${encodeURIComponent(courseId)}/${chapter - 1}`);
+	};
 	const foward_action = () => {
 		const state = getChapterState(lessonKey, chapter);
+		if (chapter >= totalPages) {
+			toast('마지막 강의입니다.', { icon: '🧱', position: 'bottom-center' });
+			return;
+		}
 
-		// 현재 챕터가 성공이어야 다음으로 이동
 		if (!state.success) {
 			toast('먼저 퀴즈를 완료해주세요.', { icon: '🔒', position: 'bottom-center' });
 			return;
 		}
 
-		// if (chapter >= totalPages) {
-		// 	toast('마지막페이지입니다.!!', { icon: '🧱⛔️', position: 'bottom-center' });
-		// 	return;
-		// }
-
-		goto(`/study/${lessonKey}/${chapter + 1}`);
+		goto(`/study/local/${encodeURIComponent(courseId)}/${chapter + 1}`);
 	};
 
 	$: playDisabled = !!locked; // locked면 "다음" 못 누름

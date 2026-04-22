@@ -65,7 +65,10 @@ export default {
 		{
 			kind: 'module',
 			module: 'cognitive/cognitive23',
-			props: { block: false }
+			props: {
+				block: true,
+				answer: ['255', '0']
+			}
 		},
 		{
 			kind: 'chat',
