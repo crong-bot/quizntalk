@@ -10,9 +10,7 @@
 	$: rgb = stageData?.rgb || { r: 255, g: 165, b: 0 };
 </script>
 
-<div
-	class="rounded-[28px] border border-slate-200/80 bg-violet-50 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.03)]"
->
+<div class="rounded-[28px] border border-slate-200/80 bg-violet-50 p-6">
 	<h3 class="text-[28px] font-extrabold tracking-[-0.03em] text-violet-900">
 		{stage?.conceptTitle}
 	</h3>

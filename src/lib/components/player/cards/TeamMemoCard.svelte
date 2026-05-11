@@ -14,9 +14,7 @@
 	}
 </script>
 
-<div
-	class="rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.05)]"
->
+<div class="rounded-[28px] border border-slate-200/80 bg-white p-6">
 	<h3 class="text-[30px] font-extrabold tracking-[-0.03em] text-slate-900">우리 팀 메모</h3>
 
 	<div class="mt-5 grid grid-cols-1 gap-3">

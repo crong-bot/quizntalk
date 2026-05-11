@@ -1,6 +1,5 @@
 <script>
-	import PlayerShell from '$lib/components/player/PlayerShell.svelte';
-	import { sampleProjectLesson } from '$lib/data/sampleAiLesson.js';
+	import JsonMissionWorkspace from '$lib/components/workplace/JsonMissionWorkspace.svelte';
 </script>
 
-<PlayerShell lesson={sampleProjectLesson} />
+<JsonMissionWorkspace />
