@@ -25,9 +25,9 @@ function getParseErrorMessage(errorCode) {
 		case ParseErrorCode.InvalidNumberFormat:
 			return '숫자 모양이 올바르지 않아요.';
 		case ParseErrorCode.PropertyNameExpected:
-			return '키 이름이 필요해요. 예: "배터리"';
+			return '키 이름이 필요해요. 예: "기지번호"';
 		case ParseErrorCode.ValueExpected:
-			return '값이 필요해요. 예: true, 80, "생명유지장치"';
+			return '값이 필요해요. 예: true, 80, "전력센터"';
 		case ParseErrorCode.ColonExpected:
 			return '키와 값 사이에는 콜론(:)이 필요해요.';
 		case ParseErrorCode.CommaExpected:
@@ -59,7 +59,7 @@ function parseJsonWithFriendlyError(jsonText) {
 	if (errors.length === 0) {
 		return {
 			ok: true,
-			parsed
+			data: parsed
 		};
 	}
 
@@ -78,84 +78,179 @@ ${caretLine}`
 	};
 }
 
-export function validatePowerMission(jsonText) {
-	const parseResult = parseJsonWithFriendlyError(jsonText);
+function getValueType(value) {
+	if (typeof value === 'string') return '문자열';
+	if (typeof value === 'number') return '숫자';
+	if (typeof value === 'boolean') return '불리언';
+	if (Array.isArray(value)) return '배열';
+	if (value === null) return 'null';
+	if (typeof value === 'object') return '객체';
 
-	if (!parseResult.ok) {
-		return {
-			ok: false,
-			type: 'syntax',
-			messages: [
-				{
-					type: 'error',
-					text: parseResult.message
-				}
-			]
-		};
-	}
+	return typeof value;
+}
 
-	const parsed = parseResult.parsed;
-	const messages = [];
-
-	if (!parsed?.전력) {
-		return {
-			ok: false,
-			type: 'mission',
-			messages: [
-				{
-					type: 'error',
-					text: '"전력" 묶음이 필요해요. 예: "전력": { ... }'
-				}
-			]
-		};
-	}
-
-	if (parsed.전력.태양광패널 === true) {
-		messages.push({
-			type: 'success',
-			text: '태양광패널 확인 완료'
-		});
-	} else {
-		messages.push({
-			type: 'error',
-			text: '태양광패널은 true여야 해요. 예: "태양광패널": true'
-		});
-	}
-
-	if (typeof parsed.전력.배터리 === 'number' && parsed.전력.배터리 >= 50) {
-		messages.push({
-			type: 'success',
-			text: '배터리 확인 완료'
-		});
-	} else {
-		messages.push({
-			type: 'error',
-			text: '배터리는 50 이상의 숫자여야 해요. 예: "배터리": 80'
-		});
-	}
-
-	if (parsed.전력.우선공급 === '생명유지장치') {
-		messages.push({
-			type: 'success',
-			text: '우선공급 확인 완료'
-		});
-	} else if (parsed.전력.우선공급 == null || parsed.전력.우선공급 === '') {
-		messages.push({
-			type: 'warning',
-			text: '우선공급 값이 비어 있어요. 단서의 “생명유지장치”를 떠올려 보세요.'
-		});
-	} else {
-		messages.push({
-			type: 'error',
-			text: '우선공급은 "생명유지장치"여야 해요.'
-		});
-	}
-
-	const ok = messages.every((message) => message.type === 'success');
-
+function makeResult(ok, type, messages, extra = {}) {
 	return {
 		ok,
-		type: ok ? 'success' : 'mission',
+		type,
+		messages,
+		...extra
+	};
+}
+
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateExactAnswer(parsed, answer) {
+	const messages = [];
+
+	if (!isPlainObject(parsed)) {
+		return {
+			ok: false,
+			messages: [
+				{
+					type: 'error',
+					text: 'JSON은 { }로 감싼 객체 형태여야 합니다.'
+				}
+			]
+		};
+	}
+
+	for (const key of Object.keys(answer)) {
+		const expectedValue = answer[key];
+		const userValue = parsed[key];
+
+		if (!(key in parsed)) {
+			messages.push({
+				type: 'error',
+				text: `"${key}" 키가 없습니다.`
+			});
+			continue;
+		}
+
+		if (typeof userValue !== typeof expectedValue) {
+			messages.push({
+				type: 'error',
+				text: `"${key}" 값의 자료형이 다릅니다. ${getValueType(expectedValue)}로 입력해야 합니다.`
+			});
+			continue;
+		}
+
+		if (userValue !== expectedValue) {
+			messages.push({
+				type: 'warning',
+				text: `"${key}" 값이 다릅니다. 단서를 다시 확인하세요.`
+			});
+			continue;
+		}
+
+		messages.push({
+			type: 'success',
+			text: `"${key}" 값이 맞습니다.`
+		});
+	}
+
+	return {
+		ok: messages.every((message) => message.type === 'success'),
 		messages
 	};
+}
+
+function validateFinalPiece(parsed, finalPiece) {
+	if (!isPlainObject(parsed)) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: 'JSON은 { }로 감싼 객체 형태여야 합니다.'
+			}
+		]);
+	}
+
+	const { key, value } = finalPiece;
+	const userValue = parsed[key];
+
+	if (!(key in parsed)) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: `"${key}" 키가 없습니다.`
+			}
+		]);
+	}
+
+	if (typeof userValue !== typeof value) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: `"${key}" 값은 ${getValueType(value)}로 입력해야 합니다.`
+			}
+		]);
+	}
+
+	if (userValue !== value) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'warning',
+				text: `"${key}" 값이 다릅니다. 단서를 다시 확인하세요.`
+			}
+		]);
+	}
+
+	return makeResult(
+		true,
+		'condition',
+		[
+			{
+				type: 'success',
+				text: `"${key}" 값 제출 준비가 완료되었습니다.`
+			}
+		],
+		{
+			finalPiece
+		}
+	);
+}
+
+export function validateMissionJson({ jsonText, course, missionIndex, roleId }) {
+	const parsedResult = parseJsonWithFriendlyError(jsonText);
+
+	if (!parsedResult.ok) {
+		return makeResult(false, 'syntax', [
+			{
+				type: 'error',
+				text: parsedResult.message
+			}
+		]);
+	}
+
+	const mission = course?.missions?.[missionIndex];
+
+	if (!mission) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: '현재 미션 정보를 찾을 수 없습니다.'
+			}
+		]);
+	}
+
+	const roleMission = mission.roleMissions?.[roleId];
+
+	if (!roleMission) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: '현재 역할의 미션 정보를 찾을 수 없습니다.'
+			}
+		]);
+	}
+
+	if (mission.type === 'team-final') {
+		return validateFinalPiece(parsedResult.data, roleMission.finalPiece);
+	}
+
+	const result = validateExactAnswer(parsedResult.data, roleMission.answer);
+
+	return makeResult(result.ok, result.ok ? 'success' : 'condition', result.messages);
 }

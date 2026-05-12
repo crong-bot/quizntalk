@@ -1,6 +1,6 @@
 <script>
-	import { powerMission } from './missionData';
-	import { validatePowerMission } from './missionValidator';
+	import { moonBaseCourse } from './missionData';
+	import { validateMissionJson } from './missionValidator';
 
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
 	import JsonEditorPanel from './JsonEditorPanel.svelte';
@@ -8,11 +8,21 @@
 	import SharedSimulationPanel from './SharedSimulationPanel.svelte';
 	import TeamExecutionBoard from './TeamExecutionBoard.svelte';
 	import { mapJsonToSimulationState, mergeSimulationState } from './simulation/simulationMapper';
-	let jsonText = powerMission.initialJson;
+
+	let course = moonBaseCourse;
+	let jsonText = course.missions[0].initialJson;
 	let status = 'editing';
 	let canExecute = false;
 	let hasExecuted = false;
-	let themeId = 'spaceBase';
+	let themeId = course.themeId;
+	let showMissionCompleteModal = false;
+	let completedMissionIndex = null;
+	let pendingNextMissionIndex = null;
+
+	let showFinalReadyModal = false;
+	let showFinalSuccessModal = false;
+
+	let isFinalSequencePlaying = false;
 
 	let simulationState = {
 		layers: {}
@@ -60,7 +70,19 @@
 	}
 
 	function checkJson() {
-		if (currentPlayer?.missionProgress[currentMissionIndex] === 'cleared') {
+		if (status === 'cleared') {
+			consoleLogs = [
+				{
+					type: 'success',
+					text: '이미 코스를 클리어했습니다.'
+				}
+			];
+			return;
+		}
+
+		const currentProgress = currentPlayer?.missionProgress[currentMissionIndex];
+
+		if (currentProgress === 'cleared' || currentProgress === 'submitted') {
 			consoleLogs = [
 				{
 					type: 'warning',
@@ -83,7 +105,13 @@
 		}
 
 		verificationEnergy -= 1;
-		const result = validatePowerMission(jsonText);
+
+		const result = validateMissionJson({
+			jsonText,
+			course,
+			missionIndex: currentMissionIndex,
+			roleId: currentPlayer.roleId
+		});
 
 		canExecute = result.ok;
 		status = result.ok ? 'checked' : 'editing';
@@ -91,23 +119,41 @@
 		consoleLogs = [
 			{
 				type: 'info',
-				text: 'JSON 복구 명령 검사를 시작합니다.'
+				text:
+					currentMission?.type === 'team-final'
+						? '최종 동기화 값을 검사합니다.'
+						: 'JSON 명령 검사를 시작합니다.'
 			},
 			...result.messages,
 			{
 				type: result.ok ? 'success' : result.type === 'syntax' ? 'error' : 'warning',
 				text: result.ok
-					? '검사 통과. 실행하기를 누르면 공용 월드에 반영됩니다.'
+					? currentMission?.type === 'team-final'
+						? '검사 통과. 제출하기를 누르면 팀 최종 JSON에 반영됩니다.'
+						: '검사 통과. 실행하기를 누르면 공용 월드에 반영됩니다.'
 					: result.type === 'syntax'
 					  ? '문법 오류로 실행할 수 없습니다.'
 					  : '조건이 맞지 않습니다. 단서를 다시 확인하세요.'
 			}
 		];
 	}
-
 	function executeMission() {
 		if (!canExecute) return;
-		if (currentPlayer?.missionProgress[currentMissionIndex] === 'cleared') {
+
+		if (status === 'cleared') {
+			consoleLogs = [
+				...consoleLogs,
+				{
+					type: 'success',
+					text: '이미 코스를 클리어했습니다.'
+				}
+			];
+			return;
+		}
+
+		const currentProgress = currentPlayer?.missionProgress[currentMissionIndex];
+
+		if (currentProgress === 'cleared' || currentProgress === 'submitted') {
 			consoleLogs = [
 				...consoleLogs,
 				{
@@ -119,23 +165,41 @@
 			return;
 		}
 
-		const result = mapJsonToSimulationState(themeId, jsonText);
+		const validateResult = validateMissionJson({
+			jsonText,
+			course,
+			missionIndex: currentMissionIndex,
+			roleId: currentPlayer.roleId
+		});
 
-		if (!result.ok) {
+		if (!validateResult.ok) {
 			status = 'editing';
+			canExecute = false;
 
 			consoleLogs = [
 				...consoleLogs,
+				...validateResult.messages,
 				{
 					type: 'error',
-					text: result.message
+					text: '다시 검사한 결과 조건이 맞지 않아 실행할 수 없습니다.'
 				}
 			];
 
 			return;
 		}
 
-		simulationState = mergeSimulationState(simulationState, result.state);
+		if (currentMission.type === 'team-final') {
+			handleFinalMissionSubmit(validateResult.finalPiece);
+			return;
+		}
+
+		const mapResult = mapJsonToSimulationState(themeId, jsonText);
+
+		if (mapResult.ok) {
+			simulationState = mergeSimulationState(simulationState, mapResult.state);
+		} else {
+			simulationState = mergeLayerState(simulationState, getMissionSuccessLayer());
+		}
 
 		hasExecuted = true;
 		status = 'executed';
@@ -144,26 +208,40 @@
 			...consoleLogs,
 			{
 				type: 'send',
-				text: '복구 명령을 공용 시뮬레이션으로 전송합니다.'
+				text: '명령을 공용 시뮬레이션으로 전송합니다.'
 			},
 			{
 				type: 'success',
-				text: result.message
-			},
-			{
-				type: 'success',
-				text: '전력센터 광원 레이어가 활성화되었습니다.'
+				text: `${currentPlayer.roleName} 요원의 미션 ${currentMissionIndex + 1}이 완료되었습니다.`
 			}
 		];
+
 		markCurrentPlayerMissionCleared();
 		unlockNextMissionIfReady();
 	}
 
 	function resetMission() {
-		jsonText = powerMission.initialJson;
+		currentPlayerId = 'player_1';
+		currentMissionIndex = 0;
+		verificationEnergy = maxVerificationEnergy;
+		finalSubmissions = {};
+
+		showMissionCompleteModal = false;
+		completedMissionIndex = null;
+		pendingNextMissionIndex = null;
+		showFinalReadyModal = false;
+		showFinalSuccessModal = false;
+		isFinalSequencePlaying = false;
+
+		jsonText = course.missions[0].initialJson;
 		status = 'editing';
 		canExecute = false;
 		hasExecuted = false;
+
+		players = players.map((player) => ({
+			...player,
+			missionProgress: ['playing', 'locked', 'locked']
+		}));
 
 		simulationState = {
 			layers: {}
@@ -187,6 +265,7 @@
 			id: 'player_1',
 			name: '민서',
 			avatarSrc: '/images/avatars/1.png',
+			roleId: 'power',
 			roleName: '전력',
 			missionProgress: ['playing', 'locked', 'locked']
 		},
@@ -194,26 +273,47 @@
 			id: 'player_2',
 			name: '준호',
 			avatarSrc: '/images/avatars/2.png',
+			roleId: 'oxygen',
 			roleName: '산소',
 			missionProgress: ['playing', 'locked', 'locked']
 		},
 		{
 			id: 'player_3',
-			name: '서연1',
+			name: '서연',
 			avatarSrc: '/images/avatars/3.png',
+			roleId: 'communication',
 			roleName: '통신',
 			missionProgress: ['playing', 'locked', 'locked']
 		},
 		{
 			id: 'player_4',
-			name: '도윤ㅈ',
+			name: '도윤',
 			avatarSrc: '/images/avatars/4.png',
+			roleId: 'rover',
 			roleName: '탐사로봇',
 			missionProgress: ['playing', 'locked', 'locked']
 		}
 	];
-	$: currentPlayer = players.find((player) => player.id === currentPlayerId);
 
+	$: currentPlayer = players.find((player) => player.id === currentPlayerId);
+	$: currentMission = course.missions[currentMissionIndex];
+	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
+	function setJsonForCurrentMission() {
+		if (!currentMission) return;
+
+		jsonText = currentMission.initialJson;
+		status = 'editing';
+		canExecute = false;
+		hasExecuted = false;
+	}
+
+	function selectPlayer(playerId) {
+		currentPlayerId = playerId;
+
+		requestAnimationFrame(() => {
+			setJsonForCurrentMission();
+		});
+	}
 	function isCurrentMissionClearedByAllPlayers() {
 		return players.every((player) => {
 			return player.missionProgress[currentMissionIndex] === 'cleared';
@@ -249,8 +349,15 @@
 			return;
 		}
 
-		if (currentMissionIndex >= 2) {
+		completedMissionIndex = currentMissionIndex;
+
+		if (currentMissionIndex >= course.missions.length - 1) {
+			pendingNextMissionIndex = null;
+			showMissionCompleteModal = true;
+
 			status = 'cleared';
+			canExecute = false;
+			hasExecuted = true;
 
 			consoleLogs = [
 				...consoleLogs,
@@ -263,7 +370,28 @@
 			return;
 		}
 
-		const nextMissionIndex = currentMissionIndex + 1;
+		pendingNextMissionIndex = currentMissionIndex + 1;
+		showMissionCompleteModal = true;
+
+		consoleLogs = [
+			...consoleLogs,
+			{
+				type: 'success',
+				text: `모든 요원이 미션 ${currentMissionIndex + 1}을 완료했습니다.`
+			},
+			{
+				type: 'info',
+				text: `미션 ${pendingNextMissionIndex + 1}이 열릴 준비가 되었습니다.`
+			}
+		];
+	}
+	function startPendingMission() {
+		if (pendingNextMissionIndex === null) {
+			showMissionCompleteModal = false;
+			return;
+		}
+
+		const nextMissionIndex = pendingNextMissionIndex;
 
 		players = players.map((player) => {
 			const nextProgress = [...player.missionProgress];
@@ -277,19 +405,274 @@
 
 		currentMissionIndex = nextMissionIndex;
 
-		jsonText = powerMission.initialJson;
-		status = 'editing';
-		canExecute = false;
-		hasExecuted = false;
+		setJsonForCurrentMission();
+
+		showMissionCompleteModal = false;
+		completedMissionIndex = null;
+		pendingNextMissionIndex = null;
 
 		consoleLogs = [
 			{
 				type: 'success',
-				text: `모든 요원이 미션 ${currentMissionIndex}을 완료했습니다.`
+				text: `미션 ${currentMissionIndex + 1}이 시작되었습니다.`
 			},
 			{
 				type: 'info',
-				text: `미션 ${currentMissionIndex + 1}이 열렸습니다.`
+				text: '새로운 단서를 확인하고 JSON 값을 완성하세요.'
+			}
+		];
+	}
+	function getMissionSuccessLayer() {
+		if (currentMission?.id === 'connect') {
+			return {
+				layers: {
+					screenOn: true
+				}
+			};
+		}
+
+		if (currentMission?.id === 'power-link') {
+			return {
+				layers: {
+					powerGlow: true
+				}
+			};
+		}
+
+		if (currentMission?.id === 'final-sync') {
+			return {
+				layers: {
+					systemOnline: true,
+					energyLines: true,
+					basePulse: true
+				}
+			};
+		}
+
+		return {
+			layers: {}
+		};
+	}
+
+	function mergeLayerState(prevState, nextState) {
+		return {
+			...prevState,
+			layers: {
+				...(prevState.layers ?? {}),
+				...(nextState.layers ?? {})
+			}
+		};
+	}
+	let finalSubmissions = {};
+
+	function markCurrentPlayerMissionSubmitted() {
+		players = players.map((player) => {
+			if (player.id !== currentPlayerId) return player;
+
+			const nextProgress = [...player.missionProgress];
+			nextProgress[currentMissionIndex] = 'submitted';
+
+			return {
+				...player,
+				missionProgress: nextProgress
+			};
+		});
+	}
+
+	function isFinalMissionSubmittedByAllPlayers() {
+		return players.every((player) => {
+			return player.missionProgress[currentMissionIndex] === 'submitted';
+		});
+	}
+
+	function buildFinalJsonFromSubmissions() {
+		return {
+			전력: finalSubmissions.power?.value ?? 0,
+			산소: finalSubmissions.oxygen?.value ?? false,
+			통신코드: finalSubmissions.communication?.value ?? '',
+			탐사로봇: finalSubmissions.rover?.value ?? false
+		};
+	}
+
+	function handleFinalMissionSubmit(finalPiece) {
+		finalSubmissions = {
+			...finalSubmissions,
+			[currentPlayer.roleId]: finalPiece
+		};
+
+		markCurrentPlayerMissionSubmitted();
+
+		canExecute = false;
+		status = 'submitted';
+
+		consoleLogs = [
+			...consoleLogs,
+			{
+				type: 'success',
+				text: `${currentPlayer.roleName} 요원의 최종 값이 제출되었습니다.`
+			}
+		];
+
+		if (!isFinalMissionSubmittedByAllPlayers()) {
+			consoleLogs = [
+				...consoleLogs,
+				{
+					type: 'info',
+					text: '다른 요원의 최종 제출을 기다리는 중입니다.'
+				}
+			];
+
+			return;
+		}
+
+		const finalJson = buildFinalJsonFromSubmissions();
+
+		jsonText = JSON.stringify(finalJson, null, 2);
+
+		completedMissionIndex = currentMissionIndex;
+		pendingNextMissionIndex = null;
+
+		showFinalReadyModal = true;
+		showMissionCompleteModal = false;
+		showFinalSuccessModal = false;
+		isFinalSequencePlaying = false;
+
+		status = 'finalReady';
+		hasExecuted = false;
+
+		consoleLogs = [
+			...consoleLogs,
+			{
+				type: 'success',
+				text: '모든 최종 값이 모였습니다. 최종 JSON이 완성되었습니다.'
+			},
+			{
+				type: 'info',
+				text: '최종 실행하기를 누르면 공용 시뮬레이션에 반영됩니다.'
+			}
+		];
+	}
+	function debugCompleteCurrentMissionForAll() {
+		players = players.map((player) => {
+			const nextProgress = [...player.missionProgress];
+			nextProgress[currentMissionIndex] =
+				currentMission?.type === 'team-final' ? 'submitted' : 'cleared';
+
+			return {
+				...player,
+				missionProgress: nextProgress
+			};
+		});
+
+		if (currentMission?.type === 'team-final') {
+			finalSubmissions = {
+				power: {
+					key: '전력',
+					value: 100
+				},
+				oxygen: {
+					key: '산소',
+					value: true
+				},
+				communication: {
+					key: '통신코드',
+					value: 'AD32'
+				},
+				rover: {
+					key: '탐사로봇',
+					value: true
+				}
+			};
+
+			const finalJson = buildFinalJsonFromSubmissions();
+
+			jsonText = JSON.stringify(finalJson, null, 2);
+
+			players = players.map((player) => {
+				const nextProgress = [...player.missionProgress];
+				nextProgress[currentMissionIndex] = 'submitted';
+
+				return {
+					...player,
+					missionProgress: nextProgress
+				};
+			});
+
+			completedMissionIndex = currentMissionIndex;
+			pendingNextMissionIndex = null;
+
+			showFinalReadyModal = true;
+			showMissionCompleteModal = false;
+			showFinalSuccessModal = false;
+			isFinalSequencePlaying = false;
+
+			canExecute = false;
+			status = 'finalReady';
+
+			consoleLogs = [
+				{
+					type: 'success',
+					text: '테스트: 모든 최종 값이 모였습니다. 최종 JSON이 완성되었습니다.'
+				},
+				{
+					type: 'info',
+					text: '최종 실행하기를 누르면 공용 시뮬레이션에 반영됩니다.'
+				}
+			];
+
+			return;
+		}
+
+		simulationState = mergeLayerState(simulationState, getMissionSuccessLayer());
+
+		consoleLogs = [
+			{
+				type: 'success',
+				text: `테스트: 모든 요원이 미션 ${currentMissionIndex + 1}을 완료했습니다.`
+			}
+		];
+
+		unlockNextMissionIfReady();
+	}
+
+	function runFinalSequence() {
+		showFinalReadyModal = false;
+		isFinalSequencePlaying = false;
+		showFinalSuccessModal = true;
+
+		// 최종 실행 즉시 그래픽 효과 ON
+		simulationState = mergeLayerState(simulationState, {
+			layers: {
+				finalSequence: true,
+				energyLines: true,
+				basePulse: true,
+				baseOnline: true,
+				systemOnline: false
+			}
+		});
+
+		players = players.map((player) => {
+			const nextProgress = [...player.missionProgress];
+			nextProgress[currentMissionIndex] = 'cleared';
+
+			return {
+				...player,
+				missionProgress: nextProgress
+			};
+		});
+
+		status = 'cleared';
+		hasExecuted = true;
+
+		consoleLogs = [
+			...consoleLogs,
+			{
+				type: 'send',
+				text: '최종 JSON을 공용 시뮬레이션으로 전송합니다.'
+			},
+			{
+				type: 'success',
+				text: '작전 성공! 4명의 JSON 값이 하나로 합쳐졌습니다.'
 			}
 		];
 	}
@@ -408,7 +791,7 @@
 				{#each players as player}
 					<button
 						type="button"
-						on:click={() => (currentPlayerId = player.id)}
+						on:click={() => selectPlayer(player.id)}
 						class={`rounded-full px-3 py-1 text-xs font-black transition ${
 							currentPlayerId === player.id
 								? 'bg-blue-600 text-white'
@@ -418,15 +801,25 @@
 						{player.roleName}
 					</button>
 				{/each}
+
+				<div class="mx-1 h-5 w-px bg-slate-200"></div>
+
+				<button
+					type="button"
+					on:click={debugCompleteCurrentMissionForAll}
+					class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white transition hover:bg-emerald-700"
+				>
+					현재 미션 전원 성공
+				</button>
 			</div>
 			<div class="grid min-h-0 flex-1 grid-cols-[360px_480px_520px] gap-4">
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
 					<!-- <MissionRoleCard role={powerMission.role} /> -->
 					<MissionBriefingPanel
-						story={powerMission.story}
-						role={powerMission.role}
-						clues={powerMission.clues}
-						keyChips={powerMission.keyChips}
+						story={currentRoleMission.story}
+						role={currentRoleMission.role}
+						clues={currentRoleMission.clues}
+						keyChips={currentRoleMission.keyChips}
 						onInsertKey={insertKey}
 					/>
 					<!-- <MissionCluePanel clues={powerMission.clues} /> -->
@@ -481,4 +874,337 @@
 			</div>
 		</div>
 	</div>
+	{#if showMissionCompleteModal}
+		<div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+			<div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="mission-complete-title"
+				class="relative z-10 w-full max-w-[520px] overflow-hidden rounded-[28px] border border-white/20 bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]"
+			>
+				<div
+					class="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-yellow-300/35 blur-3xl"
+				></div>
+
+				<div
+					class="pointer-events-none absolute -left-14 bottom-0 h-36 w-36 rounded-full bg-blue-300/30 blur-3xl"
+				></div>
+
+				<div class="relative z-10">
+					<div
+						class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-yellow-300 text-[34px] shadow-[0_0_30px_rgba(250,204,21,0.45)]"
+					>
+						{pendingNextMissionIndex === null ? '🏆' : '⚡'}
+					</div>
+
+					<div
+						id="mission-complete-title"
+						class="mt-4 text-center text-[25px] font-black tracking-[-0.06em] text-slate-950"
+					>
+						{pendingNextMissionIndex === null
+							? '코스 클리어!'
+							: `미션 ${(completedMissionIndex ?? 0) + 1} 완료!`}
+					</div>
+
+					<div class="mt-2 text-center text-[14px] font-bold leading-6 text-slate-500">
+						{#if pendingNextMissionIndex === null}
+							모든 팀원이 마지막 미션을 완료했습니다.
+						{:else}
+							모든 팀원이 미션 {(completedMissionIndex ?? 0) + 1}을 완료했습니다.
+						{/if}
+					</div>
+
+					{#if pendingNextMissionIndex !== null}
+						<div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+							<div class="text-[11px] font-black tracking-[0.14em] text-blue-500">NEXT MISSION</div>
+
+							<div class="mt-1 text-[20px] font-black tracking-[-0.06em] text-slate-950">
+								미션 {pendingNextMissionIndex + 1}. {course.missions[pendingNextMissionIndex].title}
+							</div>
+
+							<div class="mt-2 text-[14px] font-bold leading-6 text-slate-600">
+								{course.missions[pendingNextMissionIndex].roleMissions[currentPlayer.roleId].story
+									.mission}
+							</div>
+						</div>
+					{:else}
+						<div class="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+							<div class="text-[11px] font-black tracking-[0.14em] text-emerald-600">
+								COURSE CLEAR
+							</div>
+
+							<div class="mt-1 text-[20px] font-black tracking-[-0.06em] text-slate-950">
+								달 기지가 온라인 상태로 전환되었습니다.
+							</div>
+
+							<div class="mt-2 text-[14px] font-bold leading-6 text-slate-600">
+								공용 시뮬레이션에 최종 복구 결과가 반영되었습니다.
+							</div>
+						</div>
+					{/if}
+
+					<button
+						type="button"
+						on:click={startPendingMission}
+						class="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black tracking-[-0.04em] text-white shadow-[0_14px_30px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
+					>
+						{pendingNextMissionIndex === null
+							? '결과 확인하기'
+							: `미션 ${pendingNextMissionIndex + 1} 시작하기`}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+	{#if showFinalReadyModal}
+		<div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+			<div class="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"></div>
+
+			<div
+				role="dialog"
+				aria-modal="true"
+				class="relative z-10 w-full max-w-[520px] rounded-[28px] bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]"
+			>
+				<div class="text-center text-[34px]">🧩</div>
+
+				<div class="mt-3 text-center text-[25px] font-black tracking-[-0.06em] text-slate-950">
+					최종 JSON 완성!
+				</div>
+
+				<div class="mt-2 text-center text-[14px] font-bold leading-6 text-slate-500">
+					모든 요원의 값이 모였습니다.<br />
+					최종 시스템을 실행할 준비가 되었습니다.
+				</div>
+
+				<pre
+					class="mt-4 max-h-[180px] overflow-auto rounded-2xl bg-slate-950 p-4 text-[12px] font-bold leading-5 text-emerald-200">{jsonText}</pre>
+
+				<button
+					type="button"
+					on:click={runFinalSequence}
+					class="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black text-white"
+				>
+					최종 실행하기
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	{#if showFinalSuccessModal}
+		<div class="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[72px]">
+			<!-- 투명 클릭 방지 레이어: 뒤 그래픽은 보이지만 클릭은 막음 -->
+			<button
+				type="button"
+				aria-label="작전 완료 보고서"
+				class="absolute inset-0 cursor-default bg-transparent"
+				tabindex="-1"
+			></button>
+
+			<div
+				role="dialog"
+				aria-modal="true"
+				class="relative z-10 w-full max-w-[860px] overflow-hidden rounded-[34px] border border-white/70 bg-white/95 p-6 shadow-[0_28px_90px_rgba(15,23,42,0.30)]"
+			>
+				<div
+					class="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-emerald-300/45 blur-3xl"
+				></div>
+
+				<div
+					class="pointer-events-none absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-cyan-300/30 blur-3xl"
+				></div>
+
+				<div class="relative z-10">
+					<div class="flex items-start justify-between gap-5">
+						<div class="flex min-w-0 items-start gap-5">
+							<div
+								class="flex h-20 w-20 shrink-0 items-center justify-center rounded-[28px] bg-emerald-300 text-[42px] shadow-[0_0_36px_rgba(52,211,153,0.48)]"
+							>
+								🏆
+							</div>
+
+							<div class="min-w-0">
+								<div class="flex flex-wrap items-center gap-2">
+									<div class="text-[31px] font-black tracking-[-0.075em] text-slate-950">
+										작전 성공!
+									</div>
+
+									<div
+										class="rounded-full bg-emerald-100 px-3 py-1 text-[12px] font-black text-emerald-700"
+									>
+										작전 완료 보고서
+									</div>
+								</div>
+
+								<div class="mt-2 text-[15px] font-bold leading-7 text-slate-600">
+									모둠원이 각자 맡은 JSON 값을 완성했습니다.
+									<br />
+									4개의 값이 하나로 합쳐져 최종 JSON이 완성되었고, 달 기지가 온라인 상태로 전환되었습니다.
+								</div>
+							</div>
+						</div>
+
+						<button
+							type="button"
+							on:click={exitMissionRoom}
+							class="shrink-0 rounded-2xl bg-slate-950 px-5 py-3 text-[14px] font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
+						>
+							나가기
+						</button>
+					</div>
+
+					<div class="mt-5 grid grid-cols-[1.05fr_1fr] gap-3">
+						<!-- 왼쪽: 최종 JSON + 자료형 정리 -->
+						<div class="space-y-3">
+							<div class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+								<div class="flex items-center justify-between gap-3">
+									<div>
+										<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">
+											FINAL JSON
+										</div>
+										<div class="mt-1 text-[18px] font-black tracking-[-0.055em] text-slate-950">
+											최종 JSON 완성
+										</div>
+									</div>
+
+									<div
+										class="rounded-full bg-slate-950 px-3 py-1.5 text-[11px] font-black text-white"
+									>
+										4개 값 결합
+									</div>
+								</div>
+
+								<pre
+									class="mt-3 max-h-[150px] overflow-auto rounded-2xl bg-slate-950 p-4 text-[13px] font-bold leading-6 text-emerald-200">{jsonText}</pre>
+							</div>
+
+							<div class="rounded-3xl border border-slate-200 bg-white p-4">
+								<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">
+									JSON 학습 결과
+								</div>
+
+								<div class="mt-3 grid grid-cols-3 gap-2">
+									<div class="rounded-2xl bg-slate-50 px-3 py-3">
+										<div class="text-[11px] font-black text-slate-400">숫자 number</div>
+										<div class="mt-1 text-[17px] font-black text-slate-950">100</div>
+										<div class="mt-1 text-[11px] font-bold text-slate-500">따옴표 없이 입력</div>
+									</div>
+
+									<div class="rounded-2xl bg-slate-50 px-3 py-3">
+										<div class="text-[11px] font-black text-slate-400">문자열 string</div>
+										<div class="mt-1 text-[17px] font-black text-blue-600">"AD32"</div>
+										<div class="mt-1 text-[11px] font-bold text-slate-500">따옴표로 감싸기</div>
+									</div>
+
+									<div class="rounded-2xl bg-slate-50 px-3 py-3">
+										<div class="text-[11px] font-black text-slate-400">불리언 boolean</div>
+										<div class="mt-1 text-[17px] font-black text-emerald-600">true</div>
+										<div class="mt-1 text-[11px] font-bold text-slate-500">true / false</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- 오른쪽: 협동 결과 + 검증 기록 -->
+						<div class="space-y-3">
+							<div class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+								<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">
+									모둠 협동 결과
+								</div>
+
+								<div class="mt-3 space-y-2">
+									<div
+										class="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 shadow-sm"
+									>
+										<div class="text-[13px] font-black text-slate-800">전력 요원</div>
+										<div
+											class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700"
+										>
+											"전력": 100
+										</div>
+									</div>
+
+									<div
+										class="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 shadow-sm"
+									>
+										<div class="text-[13px] font-black text-slate-800">산소 요원</div>
+										<div
+											class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700"
+										>
+											"산소": true
+										</div>
+									</div>
+
+									<div
+										class="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 shadow-sm"
+									>
+										<div class="text-[13px] font-black text-slate-800">통신 요원</div>
+										<div
+											class="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"
+										>
+											"통신코드": "AD32"
+										</div>
+									</div>
+
+									<div
+										class="flex items-center justify-between rounded-2xl bg-white px-3 py-2.5 shadow-sm"
+									>
+										<div class="text-[13px] font-black text-slate-800">탐사로봇 요원</div>
+										<div
+											class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700"
+										>
+											"탐사로봇": true
+										</div>
+									</div>
+								</div>
+
+								<div
+									class="mt-3 rounded-2xl bg-white px-3 py-3 text-[13px] font-bold leading-6 text-slate-500 shadow-sm"
+								>
+									각 요원이 맡은 한 줄의 값을 제출했고, 제출된 값이 모여 하나의 JSON 데이터가
+									완성되었습니다.
+								</div>
+							</div>
+
+							<div class="rounded-3xl border border-slate-200 bg-white p-4">
+								<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">검증 기록</div>
+
+								<div class="mt-3 grid grid-cols-3 gap-2">
+									<div class="rounded-2xl bg-blue-50 px-3 py-3 text-center">
+										<div class="text-[11px] font-black text-blue-500">검증 에너지</div>
+										<div class="mt-1 text-[22px] font-black text-blue-700">
+											{maxVerificationEnergy - verificationEnergy}
+										</div>
+										<div class="mt-1 text-[10px] font-bold text-blue-500">회 사용</div>
+									</div>
+
+									<div class="rounded-2xl bg-emerald-50 px-3 py-3 text-center">
+										<div class="text-[11px] font-black text-emerald-500">완료한 값</div>
+										<div class="mt-1 text-[22px] font-black text-emerald-700">12</div>
+										<div class="mt-1 text-[10px] font-bold text-emerald-500">개</div>
+									</div>
+
+									<div class="rounded-2xl bg-amber-50 px-3 py-3 text-center">
+										<div class="text-[11px] font-black text-amber-500">검증하며 수정</div>
+										<div class="mt-1 text-[22px] font-black text-amber-700">
+											{Math.max(maxVerificationEnergy - verificationEnergy - 12, 0)}
+										</div>
+										<div class="mt-1 text-[10px] font-bold text-amber-500">회</div>
+									</div>
+								</div>
+
+								<div
+									class="mt-3 rounded-2xl bg-slate-50 px-3 py-3 text-[13px] font-bold leading-6 text-slate-500"
+								>
+									JSON은 한 번에 맞히는 것보다, 검증하고 수정하면서 정확한 데이터 구조를 만들어 가는
+									과정이 중요합니다.
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
