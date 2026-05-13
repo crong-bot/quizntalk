@@ -2,6 +2,7 @@
 	import { moonBaseCourse } from './missionData';
 	import { validateMissionJson } from './missionValidator';
 
+	import CommandTransmissionPanel from './CommandTransmissionPanel.svelte';
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
 	import JsonEditorPanel from './JsonEditorPanel.svelte';
 	import MissionBriefingPanel from './MissionBriefingPanel.svelte';
@@ -12,7 +13,7 @@
 	let course = moonBaseCourse;
 	let jsonText = course.missions[0].initialJson;
 	let status = 'editing';
-	let canExecute = false;
+	//let canExecute = false;
 	let hasExecuted = false;
 	let themeId = course.themeId;
 	let showMissionCompleteModal = false;
@@ -27,14 +28,25 @@
 	let simulationState = {
 		layers: {}
 	};
+	let transmissionState = {
+		visible: false,
+		phase: 'idle', // idle | sending | validating | mapping | applying | success | error
+		roleName: '',
+		message: '',
+		progress: 0
+	};
 	let consoleLogs = [
 		{
 			type: 'info',
-			text: '복구 명령 JSON을 작성한 뒤 검사하기를 누르세요.'
+			text: '복구 명령 JSON을 작성한 뒤 명령전송을 누르세요.'
 		}
 	];
 
 	let editorApi;
+
+	function wait(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
 
 	function handleEditorReady(api) {
 		editorApi = api;
@@ -69,7 +81,78 @@
 		}
 	}
 
-	function checkJson() {
+	// function checkJson() {
+	// 	if (status === 'cleared') {
+	// 		consoleLogs = [
+	// 			{
+	// 				type: 'success',
+	// 				text: '이미 코스를 클리어했습니다.'
+	// 			}
+	// 		];
+	// 		return;
+	// 	}
+
+	// 	const currentProgress = currentPlayer?.missionProgress[currentMissionIndex];
+
+	// 	if (currentProgress === 'cleared' || currentProgress === 'submitted') {
+	// 		consoleLogs = [
+	// 			{
+	// 				type: 'warning',
+	// 				text: '이미 완료한 미션입니다. 다른 요원의 완료를 기다려 주세요.'
+	// 			}
+	// 		];
+
+	// 		return;
+	// 	}
+
+	// 	if (verificationEnergy <= 0) {
+	// 		consoleLogs = [
+	// 			{
+	// 				type: 'error',
+	// 				text: '검증 에너지가 부족합니다. 더 이상 JSON을 확인할 수 없어요.'
+	// 			}
+	// 		];
+
+	// 		return;
+	// 	}
+
+	// 	verificationEnergy -= 1;
+
+	// 	const result = validateMissionJson({
+	// 		jsonText,
+	// 		course,
+	// 		missionIndex: currentMissionIndex,
+	// 		roleId: currentPlayer.roleId
+	// 	});
+
+	// 	//canExecute = result.ok;
+	// 	status = result.ok ? 'checked' : 'editing';
+
+	// 	consoleLogs = [
+	// 		{
+	// 			type: 'info',
+	// 			text:
+	// 				currentMission?.type === 'team-final'
+	// 					? '최종 동기화 값을 검사합니다.'
+	// 					: 'JSON 명령 검사를 시작합니다.'
+	// 		},
+	// 		...result.messages,
+	// 		{
+	// 			type: result.ok ? 'success' : result.type === 'syntax' ? 'error' : 'warning',
+	// 			text: result.ok
+	// 				? currentMission?.type === 'team-final'
+	// 					? '검사 통과. 제출하기를 누르면 팀 최종 JSON에 반영됩니다.'
+	// 					: '검사 통과. 실행하기를 누르면 공용 월드에 반영됩니다.'
+	// 				: result.type === 'syntax'
+	// 				  ? '문법 오류로 실행할 수 없습니다.'
+	// 				  : '조건이 맞지 않습니다. 단서를 다시 확인하세요.'
+	// 		}
+	// 	];
+	// }
+	async function executeMission() {
+		if (status === 'sending') {
+			return;
+		}
 		if (status === 'cleared') {
 			consoleLogs = [
 				{
@@ -89,7 +172,6 @@
 					text: '이미 완료한 미션입니다. 다른 요원의 완료를 기다려 주세요.'
 				}
 			];
-
 			return;
 		}
 
@@ -97,73 +179,49 @@
 			consoleLogs = [
 				{
 					type: 'error',
-					text: '검증 에너지가 부족합니다. 더 이상 JSON을 확인할 수 없어요.'
+					text: '검증 에너지가 부족합니다. 더 이상 명령을 전송할 수 없어요.'
 				}
 			];
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer.roleName,
+				message: '검증 에너지가 부족합니다.',
+				progress: 100
+			};
 
 			return;
 		}
 
 		verificationEnergy -= 1;
+		status = 'sending';
 
-		const result = validateMissionJson({
-			jsonText,
-			course,
-			missionIndex: currentMissionIndex,
-			roleId: currentPlayer.roleId
-		});
-
-		canExecute = result.ok;
-		status = result.ok ? 'checked' : 'editing';
+		transmissionState = {
+			visible: true,
+			phase: 'sending',
+			roleName: currentPlayer.roleName,
+			message: 'JSON 명령을 전송하는 중입니다.',
+			progress: 20
+		};
 
 		consoleLogs = [
 			{
-				type: 'info',
-				text:
-					currentMission?.type === 'team-final'
-						? '최종 동기화 값을 검사합니다.'
-						: 'JSON 명령 검사를 시작합니다.'
-			},
-			...result.messages,
-			{
-				type: result.ok ? 'success' : result.type === 'syntax' ? 'error' : 'warning',
-				text: result.ok
-					? currentMission?.type === 'team-final'
-						? '검사 통과. 제출하기를 누르면 팀 최종 JSON에 반영됩니다.'
-						: '검사 통과. 실행하기를 누르면 공용 월드에 반영됩니다.'
-					: result.type === 'syntax'
-					  ? '문법 오류로 실행할 수 없습니다.'
-					  : '조건이 맞지 않습니다. 단서를 다시 확인하세요.'
+				type: 'send',
+				text: 'JSON 명령을 전송합니다.'
 			}
 		];
-	}
-	function executeMission() {
-		if (!canExecute) return;
 
-		if (status === 'cleared') {
-			consoleLogs = [
-				...consoleLogs,
-				{
-					type: 'success',
-					text: '이미 코스를 클리어했습니다.'
-				}
-			];
-			return;
-		}
+		await wait(450);
 
-		const currentProgress = currentPlayer?.missionProgress[currentMissionIndex];
+		transmissionState = {
+			...transmissionState,
+			phase: 'validating',
+			message: 'JSON 문법과 미션 조건을 확인하는 중입니다.',
+			progress: 45
+		};
 
-		if (currentProgress === 'cleared' || currentProgress === 'submitted') {
-			consoleLogs = [
-				...consoleLogs,
-				{
-					type: 'warning',
-					text: '이미 완료한 미션입니다. 다른 요원의 완료를 기다려 주세요.'
-				}
-			];
-
-			return;
-		}
+		await wait(450);
 
 		const validateResult = validateMissionJson({
 			jsonText,
@@ -174,14 +232,26 @@
 
 		if (!validateResult.ok) {
 			status = 'editing';
-			canExecute = false;
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer.roleName,
+				message:
+					validateResult.type === 'syntax'
+						? '문법 오류로 명령 전송에 실패했습니다.'
+						: '조건이 맞지 않아 명령 전송에 실패했습니다.',
+				progress: 100
+			};
 
 			consoleLogs = [
-				...consoleLogs,
 				...validateResult.messages,
 				{
-					type: 'error',
-					text: '다시 검사한 결과 조건이 맞지 않아 실행할 수 없습니다.'
+					type: validateResult.type === 'syntax' ? 'error' : 'warning',
+					text:
+						validateResult.type === 'syntax'
+							? '문법 오류로 실행할 수 없습니다.'
+							: '조건이 맞지 않습니다. 단서를 다시 확인하세요.'
 				}
 			];
 
@@ -189,32 +259,94 @@
 		}
 
 		if (currentMission.type === 'team-final') {
+			transmissionState = {
+				...transmissionState,
+				phase: 'applying',
+				message: '최종 값을 팀 동기화 목록에 제출하는 중입니다.',
+				progress: 80
+			};
+
+			await wait(500);
+
 			handleFinalMissionSubmit(validateResult.finalPiece);
+
+			transmissionState = {
+				visible: true,
+				phase: 'success',
+				roleName: currentPlayer.roleName,
+				message: '최종 값이 제출되었습니다.',
+				progress: 100
+			};
+
 			return;
 		}
 
+		transmissionState = {
+			...transmissionState,
+			phase: 'mapping',
+			message: 'JSON을 시뮬레이션 명령으로 변환하는 중입니다.',
+			progress: 65
+		};
+
+		await wait(450);
+
 		const mapResult = mapJsonToSimulationState(themeId, jsonText);
 
-		if (mapResult.ok) {
-			simulationState = mergeSimulationState(simulationState, mapResult.state);
-		} else {
-			simulationState = mergeLayerState(simulationState, getMissionSuccessLayer());
+		if (!mapResult.ok) {
+			status = 'editing';
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer.roleName,
+				message: '시뮬레이션 명령 변환에 실패했습니다.',
+				progress: 100
+			};
+
+			consoleLogs = [
+				{
+					type: 'error',
+					text: mapResult.message ?? '시뮬레이션 상태로 변환하지 못했습니다.'
+				}
+			];
+
+			return;
 		}
+
+		transmissionState = {
+			...transmissionState,
+			phase: 'applying',
+			message: '공용 시스템에 명령을 적용하는 중입니다.',
+			progress: 85
+		};
+
+		await wait(500);
+
+		simulationState = mergeSimulationState(simulationState, mapResult.state);
 
 		hasExecuted = true;
 		status = 'executed';
 
+		transmissionState = {
+			visible: true,
+			phase: 'success',
+			roleName: currentPlayer.roleName,
+			message: '명령이 공용 시스템에 적용되었습니다.',
+			progress: 100
+		};
+
 		consoleLogs = [
-			...consoleLogs,
 			{
-				type: 'send',
-				text: '명령을 공용 시뮬레이션으로 전송합니다.'
+				type: 'success',
+				text: `${currentPlayer.roleName} 요원의 명령이 적용되었습니다.`
 			},
 			{
 				type: 'success',
-				text: `${currentPlayer.roleName} 요원의 미션 ${currentMissionIndex + 1}이 완료되었습니다.`
+				text: `미션 ${currentMissionIndex + 1}이 완료되었습니다.`
 			}
 		];
+
+		await wait(600);
 
 		markCurrentPlayerMissionCleared();
 		unlockNextMissionIfReady();
@@ -235,8 +367,16 @@
 
 		jsonText = course.missions[0].initialJson;
 		status = 'editing';
-		canExecute = false;
+		//canExecute = false;
 		hasExecuted = false;
+
+		transmissionState = {
+			visible: false,
+			phase: 'idle',
+			roleName: '',
+			message: '',
+			progress: 0
+		};
 
 		players = players.map((player) => ({
 			...player,
@@ -250,7 +390,7 @@
 		consoleLogs = [
 			{
 				type: 'info',
-				text: '복구 명령 JSON을 작성한 뒤 검사하기를 누르세요.'
+				text: '복구 명령 JSON을 작성한 뒤 명령전송을 누르세요.'
 			}
 		];
 	}
@@ -303,8 +443,15 @@
 
 		jsonText = currentMission.initialJson;
 		status = 'editing';
-		canExecute = false;
 		hasExecuted = false;
+
+		transmissionState = {
+			visible: false,
+			phase: 'idle',
+			roleName: '',
+			message: '',
+			progress: 0
+		};
 	}
 
 	function selectPlayer(playerId) {
@@ -356,7 +503,7 @@
 			showMissionCompleteModal = true;
 
 			status = 'cleared';
-			canExecute = false;
+			//canExecute = false;
 			hasExecuted = true;
 
 			consoleLogs = [
@@ -502,7 +649,7 @@
 
 		markCurrentPlayerMissionSubmitted();
 
-		canExecute = false;
+		//canExecute = false;
 		status = 'submitted';
 
 		consoleLogs = [
@@ -606,7 +753,7 @@
 			showFinalSuccessModal = false;
 			isFinalSequencePlaying = false;
 
-			canExecute = false;
+			//canExecute = false;
 			status = 'finalReady';
 
 			consoleLogs = [
@@ -837,16 +984,14 @@
 				<main class="flex min-h-0 flex-col gap-4">
 					<JsonEditorPanel
 						bind:jsonText
-						{canExecute}
 						onReady={handleEditorReady}
 						onFormat={formatJson}
-						onCheck={checkJson}
 						onExecute={executeMission}
 						onReset={resetMission}
 					/>
 
 					<div class="h-[170px] shrink-0">
-						<JsonEditorConsole logs={consoleLogs} {canExecute} {status} />
+						<JsonEditorConsole logs={consoleLogs} {status} />
 						<!-- <CheckResultPanel messages={checkResult.messages} />
 						<MissionStepPanel {status} /> -->
 					</div>
@@ -861,6 +1006,9 @@
 							{verificationEnergy}
 							{maxVerificationEnergy}
 						/>
+					</div>
+					<div class="shrink-0">
+						<CommandTransmissionPanel state={transmissionState} />
 					</div>
 
 					<div class="min-h-0 flex-1">
@@ -1047,7 +1195,7 @@
 
 						<button
 							type="button"
-							on:click={exitMissionRoom}
+							on:click={console.log('')}
 							class="shrink-0 rounded-2xl bg-slate-950 px-5 py-3 text-[14px] font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
 						>
 							나가기

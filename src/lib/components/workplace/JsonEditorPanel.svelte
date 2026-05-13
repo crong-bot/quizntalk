@@ -44,7 +44,7 @@
 		/>
 	</div>
 
-	{#if canExecute}
+	<!-- {#if canExecute}
 		<div
 			class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
 		>
@@ -56,7 +56,7 @@
 		>
 			아직 완성되지 않았어요. 단서를 보고 마지막 값을 입력하세요.
 		</div>
-	{/if}
+	{/if} -->
 
 	<div class="mt-3 flex items-center gap-3">
 		<button
@@ -67,25 +67,20 @@
 			다시하기
 		</button>
 
-		<button
+		<!-- <button
 			type="button"
 			on:click={onCheck}
 			class="h-12 flex-1 rounded-2xl bg-blue-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700"
 		>
 			검사하기
-		</button>
+		</button> -->
 
 		<button
 			type="button"
-			disabled={!canExecute}
 			on:click={onExecute}
-			class={`h-12 rounded-2xl px-5 text-sm font-extrabold transition ${
-				canExecute
-					? 'bg-violet-600 text-white hover:bg-violet-700'
-					: 'cursor-not-allowed bg-slate-200 text-slate-400'
-			}`}
+			class={`h-12 rounded-2xl px-5 text-sm font-extrabold transition ${'bg-violet-600 text-white hover:bg-violet-700'}`}
 		>
-			{canExecute ? '실행하기' : '🔒 실행하기'}
+			{'실행하기'}
 		</button>
 	</div>
 </div>

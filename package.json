@@ -37,6 +37,7 @@
 		"@uiw/codemirror-theme-dracula": "^4.25.9",
 		"codemirror": "^6.0.2",
 		"firebase": "^12.9.0",
+		"gsap": "^3.15.0",
 		"pixi.js": "^8.18.1",
 		"qrcode": "^1.5.4",
 		"svelte-french-toast": "^1.2.0"
