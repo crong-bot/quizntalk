@@ -91,7 +91,7 @@
 		</div>
 	</div>
 
-	<div class="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
+	<!-- <div class="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
 		<div>
 			<div class="text-[11px] font-black tracking-[0.14em] text-slate-400">CURRENT MISSION</div>
 			<div class="mt-0.5 text-sm font-black text-slate-900">
@@ -105,7 +105,7 @@
 				style={`width: ${(clearedCount / Math.max(totalCount, 1)) * 100}%`}
 			></div>
 		</div>
-	</div>
+	</div> -->
 
 	<div class="mt-3 grid grid-cols-2 gap-2">
 		{#each players as player}

@@ -1,5 +1,5 @@
 <script>
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick as svelteTick } from 'svelte';
 
 	export let theme;
 	export let simulationState = {
@@ -12,11 +12,12 @@
 	let sprites = {};
 	let time = 0;
 	let mounted = false;
+	let resizeObserver;
 
 	onMount(async () => {
 		mounted = true;
 
-		// ✅ SSR 방지: 브라우저에서만 Pixi import
+		// SSR 방지: 브라우저에서만 Pixi import
 		PIXI = await import('pixi.js');
 
 		app = new PIXI.Application();
@@ -31,6 +32,11 @@
 		});
 
 		if (!mounted || !containerEl) return;
+
+		// canvas가 부모 영역에 딱 붙도록 처리
+		app.canvas.style.display = 'block';
+		app.canvas.style.width = '100%';
+		app.canvas.style.height = '100%';
 
 		containerEl.appendChild(app.canvas);
 
@@ -53,7 +59,16 @@
 			app.stage.addChild(sprite);
 		}
 
+		await svelteTick();
 		resizeCanvas();
+
+		// 부모 크기가 바뀔 때마다 Pixi 화면 다시 맞춤
+		resizeObserver = new ResizeObserver(() => {
+			resizeCanvas();
+		});
+
+		resizeObserver.observe(containerEl);
+
 		window.addEventListener('resize', resizeCanvas);
 		app.ticker.add(tick);
 	});
@@ -65,7 +80,13 @@
 			window.removeEventListener('resize', resizeCanvas);
 		}
 
+		if (resizeObserver) {
+			resizeObserver.disconnect();
+			resizeObserver = null;
+		}
+
 		if (app) {
+			app.ticker?.remove?.(tick);
 			app.destroy(true);
 			app = null;
 		}
@@ -125,7 +146,7 @@
 	}
 
 	function resizeCanvas() {
-		if (!app || !containerEl) return;
+		if (!app || !containerEl || !theme) return;
 
 		const rect = containerEl.getBoundingClientRect();
 
@@ -133,11 +154,16 @@
 
 		app.renderer.resize(rect.width, rect.height);
 
+		// 중요:
+		// Math.max = 부모 박스를 빈틈 없이 꽉 채움
+		// 넘치는 부분은 overflow-hidden으로 잘림
 		const scale = Math.max(rect.width / theme.width, rect.height / theme.height);
 
 		app.stage.scale.set(scale);
-		app.stage.x = (rect.width - theme.width * scale) / 2;
-		app.stage.y = (rect.height - theme.height * scale) / 2;
+
+		// 가운데 정렬
+		app.stage.x = Math.round((rect.width - theme.width * scale) / 2);
+		app.stage.y = Math.round((rect.height - theme.height * scale) / 2);
 	}
 
 	function clamp(value, min, max) {
@@ -145,4 +171,4 @@
 	}
 </script>
 
-<div class="h-full w-full" bind:this={containerEl}></div>
+<div class="absolute inset-0 h-full w-full overflow-hidden" bind:this={containerEl}></div>

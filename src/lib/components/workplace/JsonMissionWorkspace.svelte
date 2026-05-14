@@ -1,6 +1,6 @@
 <script>
-	import { moonBaseCourse } from './missionData';
 	import { validateMissionJson } from './missionValidator';
+	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
 
 	import CommandTransmissionPanel from './CommandTransmissionPanel.svelte';
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
@@ -438,10 +438,12 @@
 	$: currentPlayer = players.find((player) => player.id === currentPlayerId);
 	$: currentMission = course.missions[currentMissionIndex];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
-	function setJsonForCurrentMission() {
-		if (!currentMission) return;
 
-		jsonText = currentMission.initialJson;
+	function setJsonForCurrentMission(missionIndex) {
+		const mission = course.missions[missionIndex];
+		if (!mission) return;
+
+		jsonText = mission.initialJson ?? '';
 		status = 'editing';
 		hasExecuted = false;
 
@@ -549,10 +551,9 @@
 				missionProgress: nextProgress
 			};
 		});
-
 		currentMissionIndex = nextMissionIndex;
 
-		setJsonForCurrentMission();
+		setJsonForCurrentMission(nextMissionIndex);
 
 		showMissionCompleteModal = false;
 		completedMissionIndex = null;
@@ -569,38 +570,11 @@
 			}
 		];
 	}
-	function getMissionSuccessLayer() {
-		if (currentMission?.id === 'connect') {
-			return {
-				layers: {
-					screenOn: true
-				}
-			};
-		}
-
-		if (currentMission?.id === 'power-link') {
-			return {
-				layers: {
-					powerGlow: true
-				}
-			};
-		}
-
-		if (currentMission?.id === 'final-sync') {
-			return {
-				layers: {
-					systemOnline: true,
-					energyLines: true,
-					basePulse: true
-				}
-			};
-		}
-
+	function getMissionSuccessLayer(mission = currentMission) {
 		return {
-			layers: {}
+			layers: mission?.successLayers ?? {}
 		};
 	}
-
 	function mergeLayerState(prevState, nextState) {
 		return {
 			...prevState,
@@ -1023,14 +997,17 @@
 		</div>
 	</div>
 	{#if showMissionCompleteModal}
-		<div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-			<div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+		<div
+			class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-4 pt-[88px]"
+		>
+			<!-- 공용화면이 보이도록 아주 약한 오버레이만 사용 -->
+			<div class="absolute inset-0 bg-slate-950/10"></div>
 
 			<div
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="mission-complete-title"
-				class="relative z-10 w-full max-w-[520px] overflow-hidden rounded-[28px] border border-white/20 bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]"
+				class="mission-drop pointer-events-auto relative z-10 w-full max-w-[560px] overflow-hidden rounded-[28px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur-md"
 			>
 				<div
 					class="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-yellow-300/35 blur-3xl"
@@ -1041,31 +1018,36 @@
 				></div>
 
 				<div class="relative z-10">
-					<div
-						class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-yellow-300 text-[34px] shadow-[0_0_30px_rgba(250,204,21,0.45)]"
-					>
-						{pendingNextMissionIndex === null ? '🏆' : '⚡'}
-					</div>
+					<div class="flex items-start gap-4">
+						<div
+							class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-yellow-300 text-[30px] shadow-[0_0_30px_rgba(250,204,21,0.45)]"
+						>
+							{pendingNextMissionIndex === null ? '🏆' : '⚡'}
+						</div>
 
-					<div
-						id="mission-complete-title"
-						class="mt-4 text-center text-[25px] font-black tracking-[-0.06em] text-slate-950"
-					>
-						{pendingNextMissionIndex === null
-							? '코스 클리어!'
-							: `미션 ${(completedMissionIndex ?? 0) + 1} 완료!`}
-					</div>
+						<div class="min-w-0 flex-1">
+							<div
+								id="mission-complete-title"
+								class="text-[24px] font-black tracking-[-0.06em] text-slate-950"
+							>
+								{pendingNextMissionIndex === null
+									? '코스 클리어!'
+									: `미션 ${(completedMissionIndex ?? 0) + 1} 완료!`}
+							</div>
 
-					<div class="mt-2 text-center text-[14px] font-bold leading-6 text-slate-500">
-						{#if pendingNextMissionIndex === null}
-							모든 팀원이 마지막 미션을 완료했습니다.
-						{:else}
-							모든 팀원이 미션 {(completedMissionIndex ?? 0) + 1}을 완료했습니다.
-						{/if}
+							<div class="mt-1 text-[14px] font-bold leading-6 text-slate-500">
+								{#if pendingNextMissionIndex === null}
+									모든 팀원이 마지막 미션을 완료했습니다.
+								{:else}
+									모든 팀원이 미션 {(completedMissionIndex ?? 0) + 1}을 완료했습니다. 공용 화면의
+									변화를 확인해 보세요.
+								{/if}
+							</div>
+						</div>
 					</div>
 
 					{#if pendingNextMissionIndex !== null}
-						<div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+						<div class="mt-4 rounded-2xl border border-blue-100 bg-blue-50/90 p-4">
 							<div class="text-[11px] font-black tracking-[0.14em] text-blue-500">NEXT MISSION</div>
 
 							<div class="mt-1 text-[20px] font-black tracking-[-0.06em] text-slate-950">
@@ -1078,7 +1060,7 @@
 							</div>
 						</div>
 					{:else}
-						<div class="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+						<div class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/90 p-4">
 							<div class="text-[11px] font-black tracking-[0.14em] text-emerald-600">
 								COURSE CLEAR
 							</div>
@@ -1096,7 +1078,7 @@
 					<button
 						type="button"
 						on:click={startPendingMission}
-						class="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black tracking-[-0.04em] text-white shadow-[0_14px_30px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
+						class="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black tracking-[-0.04em] text-white shadow-[0_14px_30px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
 					>
 						{pendingNextMissionIndex === null
 							? '결과 확인하기'
@@ -1356,3 +1338,21 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	:global(.mission-drop) {
+		animation: missionDrop 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+
+	@keyframes missionDrop {
+		from {
+			opacity: 0;
+			transform: translateY(-42px) scale(0.96);
+		}
+
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+</style>

@@ -1,7 +1,7 @@
 export const spaceBaseTheme = {
 	id: 'spaceBase',
-	width: 871,
-	height: 688,
+	width: 1411,
+	height: 1115,
 
 	assets: [
 		{
@@ -10,26 +10,84 @@ export const spaceBaseTheme = {
 			type: 'base',
 			x: 0,
 			y: 0,
-			width: 700,
-			height: 528
+			width: 1411,
+			height: 1115
+		},
+		{
+			id: 'oxygen',
+			src: '/images/themes/space-base/oxyzen.png',
+			type: 'base',
+			x: 430,
+			y: 120,
+			width: 600,
+			height: 600
+		},
+		{
+			id: 'oxygenCenterLight',
+			src: '/images/themes/space-base/oxyzen_light.png',
+			type: 'light',
+			x: 430,
+			y: 120,
+			width: 600,
+			height: 600
+			//blendMode: 'add'
 		},
 		{
 			id: 'commandCenter',
 			src: '/images/themes/space-base/commandcenter.png',
 			type: 'base',
-			x: 200,
-			y: 130,
-			width: 300,
-			height: 300
+			x: 10,
+			y: 230,
+			width: 768,
+			height: 768
 		},
 		{
 			id: 'commandCenterLight',
 			src: '/images/themes/space-base/commandcenter_light.png',
 			type: 'light',
-			x: 200,
-			y: 150,
-			width: 400,
-			height: 400
+			x: 10,
+			y: 230,
+			width: 768,
+			height: 768
+			//blendMode: 'add'
+		},
+
+		{
+			id: 'communication',
+			src: '/images/themes/space-base/communication.png',
+			type: 'base',
+			x: 850,
+			y: 350,
+			width: 600,
+			height: 600
+		},
+		{
+			id: 'communicationLight',
+			src: '/images/themes/space-base/communication_light.png',
+			type: 'light',
+			x: 850,
+			y: 350,
+			width: 600,
+			height: 600
+			//blendMode: 'add'
+		},
+		{
+			id: 'rover',
+			src: '/images/themes/space-base/rover.png',
+			type: 'base',
+			x: 460,
+			y: 570,
+			width: 550,
+			height: 550
+		},
+		{
+			id: 'roverLight',
+			src: '/images/themes/space-base/rover_light.png',
+			type: 'light',
+			x: 460,
+			y: 570,
+			width: 550,
+			height: 550
 			//blendMode: 'add'
 		}
 	]

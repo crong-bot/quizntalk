@@ -1,3 +1,5 @@
+import { spaceBaseMissionSuccessLayers, spaceBaseRoleSuccessLayers } from './spaceBaseLayers';
+
 function toNumber(value) {
 	const number = Number(value);
 	return Number.isFinite(number) ? number : 0;
@@ -70,10 +72,7 @@ function mapConnectMission(data) {
 		ok: true,
 		role: answer.role,
 		message: `${answer.label} 접속에 성공했습니다.`,
-		layers: {
-			screenOn: true,
-			[answer.layerKey]: true
-		}
+		layers: spaceBaseMissionSuccessLayers.connect
 	});
 }
 
@@ -98,7 +97,7 @@ function mapPowerLinkMission(data) {
 		통신안테나: {
 			role: 'communication',
 			voltage: 48,
-			layerKey: 'antennaLight',
+			layerKey: 'communicationLight',
 			label: '통신안테나'
 		},
 		탐사로봇: {
@@ -138,15 +137,7 @@ function mapPowerLinkMission(data) {
 		ok: true,
 		role: answer.role,
 		message: `${answer.label} 전원 연결에 성공했습니다.`,
-		layers: {
-			powerGlow: true,
-			[answer.layerKey]: {
-				visible: true,
-				alpha: 1,
-				pulse: true,
-				pulseAmount: 0.12
-			}
-		}
+		layers: spaceBaseRoleSuccessLayers.powerLink[answer.role] ?? {}
 	});
 }
 
@@ -171,36 +162,7 @@ function mapFinalSyncMission(data) {
 		ok: true,
 		role: 'team',
 		message: '최종 JSON이 완성되었습니다. 달 기지가 온라인 상태로 전환됩니다.',
-		layers: {
-			baseOnline: true,
-			energyLines: true,
-			basePulse: true,
-			finalSequence: true,
-			commandCenterLight: {
-				visible: true,
-				alpha: 1,
-				pulse: true,
-				pulseAmount: 0.14
-			},
-			oxygenCenterLight: {
-				visible: true,
-				alpha: 1,
-				pulse: true,
-				pulseAmount: 0.14
-			},
-			antennaLight: {
-				visible: true,
-				alpha: 1,
-				pulse: true,
-				pulseAmount: 0.14
-			},
-			roverLight: {
-				visible: true,
-				alpha: 1,
-				pulse: true,
-				pulseAmount: 0.14
-			}
-		}
+		layers: spaceBaseMissionSuccessLayers.finalSync
 	});
 }
 
