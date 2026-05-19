@@ -1,3 +1,4 @@
+// C:\quizntalk\src\lib\components\workplace\theme\spaceBase\spaceBaseCourse.js
 import { spaceBaseMissionSuccessLayers, spaceBaseRoleSuccessLayers } from './spaceBaseLayers';
 
 export const moonBaseCourse = {

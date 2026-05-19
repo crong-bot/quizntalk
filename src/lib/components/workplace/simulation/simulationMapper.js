@@ -1,7 +1,10 @@
+// C:\quizntalk\src\lib\components\workplace\simulation\simulationMapper.js
+import { mapAnimalRescueRoomToSimulationState } from '../theme/animalRescue/animalRescueMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
 
 const mapperByThemeId = {
-	spaceBase: mapSpaceBaseJsonToSimulationState
+	spaceBase: mapSpaceBaseJsonToSimulationState,
+	animalRescue: mapAnimalRescueRoomToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {

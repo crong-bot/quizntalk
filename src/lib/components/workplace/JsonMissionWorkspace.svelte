@@ -1,6 +1,7 @@
+<!-- C:\quizntalk\src\lib\components\workplace\JsonMissionWorkspace.svelte -->
 <script>
-	import { validateMissionJson } from './missionValidator';
 	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
+	import { validateMissionJson } from './validator/missionValidator';
 
 	import CommandTransmissionPanel from './CommandTransmissionPanel.svelte';
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
@@ -10,12 +11,47 @@
 	import TeamExecutionBoard from './TeamExecutionBoard.svelte';
 	import { mapJsonToSimulationState, mergeSimulationState } from './simulation/simulationMapper';
 
-	let course = moonBaseCourse;
+	import {
+		applyMissionSuccess,
+		recordParticipantAttempt,
+		updateRoomState
+	} from '$lib/firebase/missionRoom/missionRoomRepository.js';
+
+	import {
+		isReadMissionCourse,
+		submitReadMissionForReview
+	} from '$lib/firebase/missionRoom/missionRoomService.js';
+
+	export let roomCode = '';
+	export let lessonId = '';
+	export let roomId = '';
+	export let lesson = null;
+	export let room = null;
+	export let participants = [];
+	export let participantId = '';
+	export let useMockPlayers = false;
+
+	export let course = moonBaseCourse;
+
+	$: participantName =
+		typeof localStorage !== 'undefined'
+			? localStorage.getItem(`participant_name_${roomCode}`) ?? ''
+			: '';
+
+	$: localParticipantId =
+		typeof localStorage !== 'undefined'
+			? localStorage.getItem(`participant_id_${roomCode}`) ?? ''
+			: '';
+
+	$: activeParticipantId = participantId || localParticipantId;
+
+	$: isReadCourse = isReadMissionCourse(course);
+
 	let jsonText = course.missions[0].initialJson;
 	let status = 'editing';
 	//let canExecute = false;
 	let hasExecuted = false;
-	let themeId = course.themeId;
+	$: themeId = course?.themeId ?? 'spaceBase';
 	let showMissionCompleteModal = false;
 	let completedMissionIndex = null;
 	let pendingNextMissionIndex = null;
@@ -28,6 +64,16 @@
 	let simulationState = {
 		layers: {}
 	};
+	let lastRoomSimulationStateKey = '';
+
+	$: if (shouldUseFirebase && room?.simulationState) {
+		const nextRoomSimulationStateKey = JSON.stringify(room.simulationState);
+
+		if (nextRoomSimulationStateKey !== lastRoomSimulationStateKey) {
+			lastRoomSimulationStateKey = nextRoomSimulationStateKey;
+			simulationState = mergeLayerState(simulationState, room.simulationState);
+		}
+	}
 	let transmissionState = {
 		visible: false,
 		phase: 'idle', // idle | sending | validating | mapping | applying | success | error
@@ -80,75 +126,95 @@
 			];
 		}
 	}
+	function canSyncToFirestore() {
+		return Boolean(shouldUseFirebase && lessonId && roomId && activeParticipantId);
+	}
+	async function recordCurrentAttempt(validateResult) {
+		if (!canSyncToFirestore()) {
+			return;
+		}
 
-	// function checkJson() {
-	// 	if (status === 'cleared') {
-	// 		consoleLogs = [
-	// 			{
-	// 				type: 'success',
-	// 				text: '이미 코스를 클리어했습니다.'
-	// 			}
-	// 		];
-	// 		return;
-	// 	}
+		const concepts =
+			validateResult.messages
+				?.filter((message) => message.type === 'error')
+				.map((message) => message.concept)
+				.filter(Boolean) ?? [];
 
-	// 	const currentProgress = currentPlayer?.missionProgress[currentMissionIndex];
+		try {
+			await recordParticipantAttempt({
+				lessonId,
+				roomId,
+				participantId: activeParticipantId,
+				missionIndex: currentMissionIndex,
+				ok: validateResult.ok,
+				concepts
+			});
+		} catch (error) {
+			console.error('학생 활동 기록 저장 실패:', error);
+		}
+	}
+	function getNextProgressForCurrentPlayer(nextState) {
+		const currentProgress = currentPlayer?.missionProgress ?? ['playing', 'locked', 'locked'];
+		const nextProgress = [...currentProgress];
 
-	// 	if (currentProgress === 'cleared' || currentProgress === 'submitted') {
-	// 		consoleLogs = [
-	// 			{
-	// 				type: 'warning',
-	// 				text: '이미 완료한 미션입니다. 다른 요원의 완료를 기다려 주세요.'
-	// 			}
-	// 		];
+		nextProgress[currentMissionIndex] = nextState;
 
-	// 		return;
-	// 	}
+		return nextProgress;
+	}
 
-	// 	if (verificationEnergy <= 0) {
-	// 		consoleLogs = [
-	// 			{
-	// 				type: 'error',
-	// 				text: '검증 에너지가 부족합니다. 더 이상 JSON을 확인할 수 없어요.'
-	// 			}
-	// 		];
+	function getNextMissionIndexAfterMissionClear() {
+		const allClearedAfterCurrentSuccess = players.every((player) => {
+			if (player.id === currentPlayerId) {
+				return true;
+			}
 
-	// 		return;
-	// 	}
+			return player.missionProgress[currentMissionIndex] === 'cleared';
+		});
 
-	// 	verificationEnergy -= 1;
+		if (!allClearedAfterCurrentSuccess) {
+			return currentMissionIndex;
+		}
 
-	// 	const result = validateMissionJson({
-	// 		jsonText,
-	// 		course,
-	// 		missionIndex: currentMissionIndex,
-	// 		roleId: currentPlayer.roleId
-	// 	});
+		if (currentMissionIndex >= course.missions.length - 1) {
+			return currentMissionIndex;
+		}
 
-	// 	//canExecute = result.ok;
-	// 	status = result.ok ? 'checked' : 'editing';
+		return currentMissionIndex + 1;
+	}
 
-	// 	consoleLogs = [
-	// 		{
-	// 			type: 'info',
-	// 			text:
-	// 				currentMission?.type === 'team-final'
-	// 					? '최종 동기화 값을 검사합니다.'
-	// 					: 'JSON 명령 검사를 시작합니다.'
-	// 		},
-	// 		...result.messages,
-	// 		{
-	// 			type: result.ok ? 'success' : result.type === 'syntax' ? 'error' : 'warning',
-	// 			text: result.ok
-	// 				? currentMission?.type === 'team-final'
-	// 					? '검사 통과. 제출하기를 누르면 팀 최종 JSON에 반영됩니다.'
-	// 					: '검사 통과. 실행하기를 누르면 공용 월드에 반영됩니다.'
-	// 				: result.type === 'syntax'
-	// 				  ? '문법 오류로 실행할 수 없습니다.'
-	// 				  : '조건이 맞지 않습니다. 단서를 다시 확인하세요.'
-	// 		}
-	// 	];
-	// }
+	function getNextRoomStatusAfterMissionClear() {
+		if (currentMissionIndex >= course.missions.length - 1) {
+			return 'completed';
+		}
+
+		return 'playing';
+	}
+
+	async function syncMissionSuccessToFirestore({
+		nextMissionProgress,
+		nextSimulationState,
+		nextMissionIndex,
+		nextRoomStatus
+	}) {
+		if (!canSyncToFirestore()) {
+			return;
+		}
+
+		try {
+			await applyMissionSuccess({
+				lessonId,
+				roomId,
+				participantId: activeParticipantId,
+				missionProgress: nextMissionProgress,
+				simulationState: nextSimulationState,
+				currentMissionIndex: nextMissionIndex,
+				status: nextRoomStatus
+			});
+		} catch (error) {
+			console.error('미션 성공 동기화 실패:', error);
+		}
+	}
+
 	async function executeMission() {
 		if (status === 'sending') {
 			return;
@@ -230,6 +296,8 @@
 			roleId: currentPlayer.roleId
 		});
 
+		await recordCurrentAttempt(validateResult);
+
 		if (!validateResult.ok) {
 			status = 'editing';
 
@@ -257,6 +325,66 @@
 
 			return;
 		}
+		if (isReadCourse) {
+			try {
+				await submitReadMissionForReview({
+					lessonId,
+					roomId,
+					mission: currentMission,
+					missionIndex: currentMissionIndex,
+					participantId: activeParticipantId,
+					participantName: currentPlayer?.name,
+					roleId: currentPlayer?.roleId,
+					roleName: currentPlayer?.roleName,
+					jsonText,
+					missionProgress: currentPlayer?.missionProgress ?? []
+				});
+
+				status = 'submitted';
+				hasExecuted = true;
+
+				consoleLogs = [
+					{
+						type: 'success',
+						text:
+							currentMission?.type === 'team-json-report'
+								? '포획계획보고서가 제출되었습니다.'
+								: '분석 결과가 제출되었습니다.'
+					},
+					{
+						type: 'info',
+						text: '교사 확인이 완료되면 다음 단계로 이동합니다.'
+					}
+				];
+
+				transmissionState = {
+					visible: true,
+					phase: 'success',
+					roleName: currentPlayer?.roleName ?? '',
+					message: '제출 완료 · 교사 확인 대기',
+					progress: 100
+				};
+			} catch (error) {
+				console.error(error);
+
+				consoleLogs = [
+					{
+						type: 'error',
+						text: error?.message ?? '제출 내용을 저장하지 못했습니다.'
+					}
+				];
+
+				transmissionState = {
+					visible: true,
+					phase: 'error',
+					roleName: currentPlayer?.roleName ?? '',
+					message: '제출 실패',
+					progress: 100
+				};
+			}
+
+			return;
+		}
 
 		if (currentMission.type === 'team-final') {
 			transmissionState = {
@@ -268,7 +396,7 @@
 
 			await wait(500);
 
-			handleFinalMissionSubmit(validateResult.finalPiece);
+			await handleFinalMissionSubmit(validateResult.finalPiece);
 
 			transmissionState = {
 				visible: true,
@@ -322,7 +450,19 @@
 
 		await wait(500);
 
-		simulationState = mergeSimulationState(simulationState, mapResult.state);
+		const nextSimulationState = mergeSimulationState(simulationState, mapResult.state);
+		const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
+		const nextMissionIndex = getNextMissionIndexAfterMissionClear();
+		const nextRoomStatus = getNextRoomStatusAfterMissionClear();
+
+		await syncMissionSuccessToFirestore({
+			nextMissionProgress,
+			nextSimulationState,
+			nextMissionIndex,
+			nextRoomStatus
+		});
+
+		simulationState = nextSimulationState;
 
 		hasExecuted = true;
 		status = 'executed';
@@ -395,47 +535,71 @@
 		];
 	}
 
-	let currentPlayerId = 'player_1';
+	let localCurrentPlayerId = 'player_1';
+
 	let currentMissionIndex = 0;
 	let verificationEnergy = 5;
 	let maxVerificationEnergy = 5;
 
-	let players = [
-		{
-			id: 'player_1',
-			name: '민서',
-			avatarSrc: '/images/avatars/1.png',
-			roleId: 'power',
-			roleName: '전력',
-			missionProgress: ['playing', 'locked', 'locked']
-		},
-		{
-			id: 'player_2',
-			name: '준호',
-			avatarSrc: '/images/avatars/2.png',
-			roleId: 'oxygen',
-			roleName: '산소',
-			missionProgress: ['playing', 'locked', 'locked']
-		},
-		{
-			id: 'player_3',
-			name: '서연',
-			avatarSrc: '/images/avatars/3.png',
-			roleId: 'communication',
-			roleName: '통신',
-			missionProgress: ['playing', 'locked', 'locked']
-		},
-		{
-			id: 'player_4',
-			name: '도윤',
-			avatarSrc: '/images/avatars/4.png',
-			roleId: 'rover',
-			roleName: '탐사로봇',
-			missionProgress: ['playing', 'locked', 'locked']
-		}
+	let players = [];
+	$: mockPlayers =
+		course?.mockPlayers ??
+		course?.roles?.map((role, index) => ({
+			id: `player_${index + 1}`,
+			name: role.name ?? `학생${index + 1}`,
+			avatarSrc: role.avatarSrc ?? `/images/avatars/${index + 1}.png`,
+			roleId: role.id,
+			roleName: role.roleName ?? role.name ?? role.id,
+			isAutoCleared: false,
+			missionProgress:
+				course?.missions?.map((mission, missionIndex) =>
+					missionIndex === 0 ? 'playing' : 'locked'
+				) ?? []
+		})) ??
+		[];
+
+	function createAutoClearedPlayer(roleId) {
+		const role = course.roles.find((item) => item.id === roleId);
+
+		return {
+			id: `auto_${roleId}`,
+			name: '시스템',
+			avatarSrc: role?.avatarSrc ?? '',
+			roleId,
+			roleName: role?.roleName ?? role?.name ?? roleId,
+			isAutoCleared: true,
+			missionProgress: course.missions.map((mission) => {
+				return mission.type === 'team-final' ? 'submitted' : 'cleared';
+			})
+		};
+	}
+	$: hasFirebaseParticipants = Array.isArray(participants) && participants.length > 0;
+	$: shouldUseFirebase = hasFirebaseParticipants && !useMockPlayers;
+	$: currentPlayerId = shouldUseFirebase ? activeParticipantId : localCurrentPlayerId;
+	$: basePlayers = shouldUseFirebase
+		? participants.map((participant) => ({
+				id: participant.id,
+				name: participant.name,
+				avatarSrc: participant.avatarSrc,
+				roleId: participant.roleId,
+				roleName: participant.roleName,
+				isAutoCleared: false,
+				missionProgress:
+					participant.missionProgress ??
+					course.missions.map((mission, missionIndex) =>
+						missionIndex === 0 ? 'playing' : 'locked'
+					)
+		  }))
+		: mockPlayers;
+
+	$: autoClearedRoles = shouldUseFirebase ? room?.autoClearedRoles ?? [] : [];
+
+	$: players = [
+		...basePlayers,
+		...autoClearedRoles.map((roleId) => createAutoClearedPlayer(roleId))
 	];
 
-	$: currentPlayer = players.find((player) => player.id === currentPlayerId);
+	$: currentPlayer = players.find((player) => player.id === currentPlayerId) ?? players[0];
 	$: currentMission = course.missions[currentMissionIndex];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
@@ -457,10 +621,14 @@
 	}
 
 	function selectPlayer(playerId) {
-		currentPlayerId = playerId;
+		if (hasFirebaseParticipants && !useMockPlayers) {
+			return;
+		}
+
+		localCurrentPlayerId = playerId;
 
 		requestAnimationFrame(() => {
-			setJsonForCurrentMission();
+			setJsonForCurrentMission(currentMissionIndex);
 		});
 	}
 	function isCurrentMissionClearedByAllPlayers() {
@@ -586,6 +754,17 @@
 	}
 	let finalSubmissions = {};
 
+	let lastRoomFinalSubmissionsKey = '';
+
+	$: if (shouldUseFirebase && room?.finalSubmissions) {
+		const nextRoomFinalSubmissionsKey = JSON.stringify(room.finalSubmissions);
+
+		if (nextRoomFinalSubmissionsKey !== lastRoomFinalSubmissionsKey) {
+			lastRoomFinalSubmissionsKey = nextRoomFinalSubmissionsKey;
+			finalSubmissions = room.finalSubmissions;
+		}
+	}
+
 	function markCurrentPlayerMissionSubmitted() {
 		players = players.map((player) => {
 			if (player.id !== currentPlayerId) return player;
@@ -606,20 +785,70 @@
 		});
 	}
 
-	function buildFinalJsonFromSubmissions() {
+	function getAutoFinalSubmissions() {
+		const finalMission = course.missions.find((mission) => mission.type === 'team-final');
+
+		return autoClearedRoles.reduce((acc, roleId) => {
+			const finalPiece = finalMission?.roleMissions?.[roleId]?.finalPiece;
+
+			if (finalPiece) {
+				acc[roleId] = {
+					...finalPiece,
+					auto: true
+				};
+			}
+
+			return acc;
+		}, {});
+	}
+
+	function getMergedFinalSubmissions() {
 		return {
-			전력: finalSubmissions.power?.value ?? 0,
-			산소: finalSubmissions.oxygen?.value ?? false,
-			통신코드: finalSubmissions.communication?.value ?? '',
-			탐사로봇: finalSubmissions.rover?.value ?? false
+			...getAutoFinalSubmissions(),
+			...finalSubmissions
 		};
 	}
 
-	function handleFinalMissionSubmit(finalPiece) {
+	function buildFinalJsonFromSubmissions() {
+		const merged = getMergedFinalSubmissions();
+
+		return {
+			전력: merged.power?.value ?? 0,
+			산소: merged.oxygen?.value ?? false,
+			통신코드: merged.communication?.value ?? '',
+			탐사로봇: merged.rover?.value ?? false
+		};
+	}
+	async function handleFinalMissionSubmit(finalPiece) {
+		const nextMissionProgress = getNextProgressForCurrentPlayer('submitted');
+
 		finalSubmissions = {
 			...finalSubmissions,
 			[currentPlayer.roleId]: finalPiece
 		};
+
+		if (canSyncToFirestore()) {
+			try {
+				await applyMissionSuccess({
+					lessonId,
+					roomId,
+					participantId: activeParticipantId,
+					missionProgress: nextMissionProgress,
+					currentMissionIndex,
+					status: 'final'
+				});
+
+				await updateRoomState({
+					lessonId,
+					roomId,
+					patch: {
+						[`finalSubmissions.${currentPlayer.roleId}`]: finalPiece
+					}
+				});
+			} catch (error) {
+				console.error('최종 미션 제출 동기화 실패:', error);
+			}
+		}
 
 		markCurrentPlayerMissionSubmitted();
 
@@ -647,8 +876,40 @@
 		}
 
 		const finalJson = buildFinalJsonFromSubmissions();
+		const finalJsonText = JSON.stringify(finalJson, null, 2);
 
-		jsonText = JSON.stringify(finalJson, null, 2);
+		// 최종 JSON 전체 검증
+		const finalValidateResult = validateMissionJson({
+			jsonText: finalJsonText,
+			course,
+			missionIndex: currentMissionIndex,
+			roleId: 'team'
+		});
+
+		if (!finalValidateResult.ok) {
+			status = 'editing';
+
+			consoleLogs = [
+				...consoleLogs,
+				{
+					type: 'error',
+					text: '4명의 값은 모두 제출되었지만, 최종 JSON 조합 결과가 조건에 맞지 않습니다.'
+				},
+				...finalValidateResult.messages
+			];
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: '팀 전체',
+				message: '최종 JSON 조합 검증에 실패했습니다.',
+				progress: 100
+			};
+
+			return;
+		}
+
+		jsonText = finalJsonText;
 
 		completedMissionIndex = currentMissionIndex;
 		pendingNextMissionIndex = null;
@@ -756,13 +1017,13 @@
 		unlockNextMissionIfReady();
 	}
 
-	function runFinalSequence() {
+	async function runFinalSequence() {
 		showFinalReadyModal = false;
 		isFinalSequencePlaying = false;
 		showFinalSuccessModal = true;
 
 		// 최종 실행 즉시 그래픽 효과 ON
-		simulationState = mergeLayerState(simulationState, {
+		const nextSimulationState = mergeLayerState(simulationState, {
 			layers: {
 				finalSequence: true,
 				energyLines: true,
@@ -771,6 +1032,24 @@
 				systemOnline: false
 			}
 		});
+
+		simulationState = nextSimulationState;
+
+		if (canSyncToFirestore()) {
+			try {
+				await applyMissionSuccess({
+					lessonId,
+					roomId,
+					participantId: activeParticipantId,
+					missionProgress: getNextProgressForCurrentPlayer('cleared'),
+					simulationState: nextSimulationState,
+					currentMissionIndex,
+					status: 'completed'
+				});
+			} catch (error) {
+				console.error('최종 실행 동기화 실패:', error);
+			}
+		}
 
 		players = players.map((player) => {
 			const nextProgress = [...player.missionProgress];
@@ -937,10 +1216,12 @@
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
 					<!-- <MissionRoleCard role={powerMission.role} /> -->
 					<MissionBriefingPanel
-						story={currentRoleMission.story}
-						role={currentRoleMission.role}
-						clues={currentRoleMission.clues}
-						keyChips={currentRoleMission.keyChips}
+						variant={isReadCourse ? 'read' : 'write'}
+						story={currentRoleMission?.story}
+						role={currentRoleMission?.role}
+						clues={currentRoleMission?.clues ?? []}
+						keyChips={currentRoleMission?.keyChips ?? []}
+						panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
 						onInsertKey={insertKey}
 					/>
 					<!-- <MissionCluePanel clues={powerMission.clues} /> -->
@@ -958,6 +1239,10 @@
 				<main class="flex min-h-0 flex-col gap-4">
 					<JsonEditorPanel
 						bind:jsonText
+						canExecute={status === 'checked'}
+						title={isReadCourse ? '</> JSON 제출서' : '</> JSON 입력기'}
+						executeButtonText={isReadCourse ? '제출하기' : '실행하기'}
+						resetButtonText={isReadCourse ? '다시 작성' : '다시하기'}
 						onReady={handleEditorReady}
 						onFormat={formatJson}
 						onExecute={executeMission}
@@ -1089,39 +1374,55 @@
 		</div>
 	{/if}
 	{#if showFinalReadyModal}
-		<div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-			<div class="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"></div>
+		<div
+			class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center px-4 pt-[88px]"
+		>
+			<div class="absolute inset-0 bg-slate-950/10"></div>
 
 			<div
 				role="dialog"
 				aria-modal="true"
-				class="relative z-10 w-full max-w-[520px] rounded-[28px] bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]"
+				class="mission-drop pointer-events-auto relative z-10 w-full max-w-[560px] overflow-hidden rounded-[28px] border border-white/70 bg-white/95 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur-md"
 			>
-				<div class="text-center text-[34px]">🧩</div>
+				<div class="flex items-start gap-4">
+					<div
+						class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-violet-100 text-[30px] shadow-[0_0_30px_rgba(139,92,246,0.28)]"
+					>
+						🧩
+					</div>
 
-				<div class="mt-3 text-center text-[25px] font-black tracking-[-0.06em] text-slate-950">
-					최종 JSON 완성!
-				</div>
+					<div class="min-w-0 flex-1">
+						<div class="flex items-center gap-2">
+							<div class="text-[24px] font-black tracking-[-0.06em] text-slate-950">
+								최종 JSON 완성!
+							</div>
 
-				<div class="mt-2 text-center text-[14px] font-bold leading-6 text-slate-500">
-					모든 요원의 값이 모였습니다.<br />
-					최종 시스템을 실행할 준비가 되었습니다.
+							<div
+								class="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-black tracking-[0.12em] text-violet-600"
+							>
+								READY
+							</div>
+						</div>
+
+						<div class="mt-1 text-[14px] font-bold leading-6 text-slate-500">
+							모든 요원의 값이 모였습니다. 공용 화면의 변화를 확인한 뒤 최종 실행을 눌러 주세요.
+						</div>
+					</div>
 				</div>
 
 				<pre
-					class="mt-4 max-h-[180px] overflow-auto rounded-2xl bg-slate-950 p-4 text-[12px] font-bold leading-5 text-emerald-200">{jsonText}</pre>
+					class="mt-4 max-h-[130px] overflow-auto rounded-2xl bg-slate-950 p-4 text-[12px] font-bold leading-5 text-emerald-200">{jsonText}</pre>
 
 				<button
 					type="button"
 					on:click={runFinalSequence}
-					class="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black text-white"
+					class="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-3 text-[15px] font-black text-white shadow-[0_14px_30px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 active:translate-y-0"
 				>
 					최종 실행하기
 				</button>
 			</div>
 		</div>
 	{/if}
-
 	{#if showFinalSuccessModal}
 		<div class="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[72px]">
 			<!-- 투명 클릭 방지 레이어: 뒤 그래픽은 보이지만 클릭은 막음 -->
@@ -1135,7 +1436,7 @@
 			<div
 				role="dialog"
 				aria-modal="true"
-				class="relative z-10 w-full max-w-[860px] overflow-hidden rounded-[34px] border border-white/70 bg-white/95 p-6 shadow-[0_28px_90px_rgba(15,23,42,0.30)]"
+				class="relative z-10 w-full max-w-[860px] -translate-x-[277px] overflow-hidden rounded-[34px] border border-white/70 bg-white/95 p-6 shadow-[0_28px_90px_rgba(15,23,42,0.30)]"
 			>
 				<div
 					class="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-emerald-300/45 blur-3xl"

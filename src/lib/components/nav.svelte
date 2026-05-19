@@ -55,7 +55,7 @@
 		<div class="flex justify-between pt-3 pb-4 border-b-2 border-slate-100 items-center">
 			<!-- ✅ 로고 (그대로) -->
 			<a href="/" class="flex flex-row items-center">
-				<img class="object-cover w-30 h-20" src="/logo.png" alt="logo" />
+				<img class="object-cover w-30 h-16" src="/logo.png" alt="logo" />
 			</a>
 
 			<!-- ✅ 가운데 메뉴 (그대로) -->

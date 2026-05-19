@@ -1,788 +1,789 @@
+<!-- C:\quizntalk\src\routes\library\+page.svelte -->
 <script>
 	import { goto } from '$app/navigation';
-	import Nav from '$lib/components/nav.svelte';
-	import { onMount } from 'svelte';
-
-	import LessonShare from '$lib/components/lessonShare.svelte';
-	import { authUser } from '$lib/stores/authUser';
-
 	import {
-		addLessonToCourse,
-		createCourse,
-		deleteCourse,
-		deleteLessonFromCourse,
-		listLessonsByCourse,
-		listMyCourses,
-		reorderLessonsInCourse
-	} from '$lib/firebase/courses';
+		createClassroomSession,
+		deleteClassroomSession
+	} from '$lib/firebase/missionRoom/missionRoomService.js';
+	import { createTeacherLessonsStore } from '$lib/firebase/missionRoom/missionRoomStore';
+	import { authUser } from '$lib/stores/authUser';
+	import { onDestroy } from 'svelte';
 
-	import { updateLessonTitle } from '$lib/firebase/lessons';
-	// ✅ 추가
+	export let data;
 
-	let loading = true;
-	let error = '';
+	const themes = [
+		{
+			id: 'spaceBase',
+			categoryId: 'write',
+			categoryTitle: '제이슨 작성',
+			title: '달 기지 복구',
+			subtitle: 'JSON 명령을 작성해 멈춰버린 달 기지를 복구합니다.',
+			icon: '🪐',
+			level: '초5~6',
+			players: 4,
+			tags: ['객체', '문자열', '숫자', '불리언'],
+			enabled: true
+		},
+		{
+			id: 'rescueDrone',
+			categoryId: 'write',
+			categoryTitle: '제이슨 작성',
+			title: '구조 드론 작전',
+			subtitle: '드론 설정 JSON을 완성해 구조 지점을 찾아냅니다.',
+			icon: '🚁',
+			level: '준비 중',
+			players: 4,
+			tags: ['좌표', '센서', '객체'],
+			enabled: true
+		},
+		{
+			id: 'smartClassroom',
+			categoryId: 'write',
+			categoryTitle: '제이슨 작성',
+			title: '스마트 교실 제어',
+			subtitle: '교실 장치의 상태를 JSON으로 제어합니다.',
+			icon: '🏫',
+			level: '준비 중',
+			players: 4,
+			tags: ['상태값', 'true/false', '숫자'],
+			enabled: true
+		},
+		{
+			id: 'deepSeaBase',
+			categoryId: 'write',
+			categoryTitle: '제이슨 작성',
+			title: '심해 기지 탐사',
+			subtitle: '탐사 장비 설정 JSON을 완성해 심해 기지를 가동합니다.',
+			icon: '🌊',
+			level: '준비 중',
+			players: 4,
+			tags: ['중첩 객체', '장비 상태', '조건'],
+			enabled: true
+		},
+		{
+			id: 'dataClue',
+			categoryId: 'read',
+			categoryTitle: '제이슨 해석',
+			title: '데이터 단서 분석',
+			subtitle: 'JSON 속 단서를 찾아 팀 문제를 해결합니다.',
+			icon: '🧩',
+			level: '준비 중',
+			players: 4,
+			tags: ['키 찾기', '값 해석', '조건 판단'],
+			enabled: true
+		},
+		{
+			id: 'animalCenter',
+			categoryId: 'read',
+			categoryTitle: '제이슨 해석',
+			title: '동물 보호 센터',
+			subtitle: '동물 상태 JSON을 읽고 보호가 필요한 동물을 찾습니다.',
+			icon: '🦊',
+			level: '준비 중',
+			players: 4,
+			tags: ['데이터 읽기', '분류', '상태 판단'],
+			enabled: true
+		},
+		{
+			id: 'spaceLog',
+			categoryId: 'read',
+			categoryTitle: '제이슨 해석',
+			title: '우주 관측 기록',
+			subtitle: '관측 기록 JSON을 해석해 탐사 목적지를 찾아냅니다.',
+			icon: '🔭',
+			level: '준비 중',
+			players: 4,
+			tags: ['배열', '객체', '조건 찾기'],
+			enabled: true
+		},
+		{
+			id: 'securityLog',
+			categoryId: 'read',
+			categoryTitle: '제이슨 해석',
+			title: '보안 로그 분석',
+			subtitle: '접속 기록 JSON을 읽고 이상한 기록을 찾아냅니다.',
+			icon: '🛡️',
+			level: '준비 중',
+			players: 4,
+			tags: ['로그 읽기', '패턴 찾기', '이상 탐지'],
+			enabled: true
+		}
+	];
 
-	let courses = [];
-	let lessonsByCourse = {}; // courseId -> lessons[]
+	let selectedThemeId = 'spaceBase';
+	let roomCount = 4;
+	let roomCapacities = [4, 4, 4, 4];
+	let isCreating = false;
 
-	// ✅ dialogs
-	let showCreateCourse = false;
-	let courseTitleInput = '새 강의';
+	$: selectedTheme = themes.find((theme) => theme.id === selectedThemeId);
+	$: writeThemes = themes.filter((theme) => theme.categoryId === 'write');
+	$: readThemes = themes.filter((theme) => theme.categoryId === 'read');
 
-	let showAddLesson = false;
-	let targetCourse = null;
-	let lessonTitleInput = '1차시';
+	const teacherLessonsStore = createTeacherLessonsStore();
 
-	let showRenameLesson = false;
-	let renameLessonId = '';
-	let renameLessonTitle = '';
+	$: ownerUid = $authUser?.uid ?? data?.ownerUid ?? data?.user?.uid ?? '';
+	$: lessons = $teacherLessonsStore.lessons;
+	$: activeLessons = lessons.filter((lesson) => lesson.status !== 'completed');
+	$: completedLessons = lessons.filter((lesson) => lesson.status === 'completed');
 
-	let showAlert = false;
-	let alertMessage = '';
+	$: {
+		if (roomCapacities.length < roomCount) {
+			roomCapacities = [...roomCapacities, ...Array(roomCount - roomCapacities.length).fill(4)];
+		}
 
-	let showDeleteCourse = false;
-	let deleteCourseTarget = { courseId: '', title: '' };
-
-	let openLessonMenu = ''; // lessonId
-
-	function openDeleteCourseDialog(courseId, title) {
-		showDeleteCourse = true;
-		deleteCourseTarget = { courseId, title: title ?? '' };
-	}
-
-	async function submitDeleteCourse() {
-		const u = $authUser;
-		if (!u) return;
-
-		try {
-			loading = true;
-			showDeleteCourse = false;
-
-			await deleteCourse({ courseId: deleteCourseTarget.courseId });
-
-			await refresh(u.uid);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '코스 삭제 실패';
-		} finally {
-			loading = false;
+		if (roomCapacities.length > roomCount) {
+			roomCapacities = roomCapacities.slice(0, roomCount);
 		}
 	}
 
-	function openAlert(msg) {
-		alertMessage = msg;
-		showAlert = true;
+	let startedOwnerUid = '';
+
+	$: if (ownerUid && ownerUid !== startedOwnerUid) {
+		startedOwnerUid = ownerUid;
+		teacherLessonsStore.start(ownerUid);
 	}
 
-	function getLessonId(l) {
-		// ✅ 편집/열기 안 되는 문제의 90%는 여기서 해결됨
-		return l?.lessonId ?? l?.id ?? '';
-	}
-
-	async function refresh(uid) {
-		loading = true;
-		error = '';
-		try {
-			courses = await listMyCourses(uid);
-
-			const entries = await Promise.all(
-				courses.map(async (c) => {
-					const ls = await listLessonsByCourse(c.id);
-					return [c.id, ls];
-				})
-			);
-			lessonsByCourse = Object.fromEntries(entries);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '불러오기 실패';
-		} finally {
-			loading = false;
-		}
-	}
-
-	onMount(() => {
-		const unsub = authUser.subscribe((u) => {
-			if (u === undefined) return;
-			if (!u) {
-				goto('/login');
-				return;
-			}
-			refresh(u.uid);
-		});
-		return () => unsub();
+	onDestroy(() => {
+		teacherLessonsStore.stop();
 	});
 
-	// ✅ Course create dialog
-	function openCreateCourseDialog() {
-		courseTitleInput = '새 강의';
-		showCreateCourse = true;
+	function openLesson(lessonId) {
+		goto(`/library/${lessonId}`);
 	}
 
-	async function submitCreateCourse() {
-		const u = $authUser;
-		if (!u) return;
+	function setRoomCapacity(index, capacity) {
+		roomCapacities = roomCapacities.map((value, currentIndex) =>
+			currentIndex === index ? capacity : value
+		);
+	}
 
-		const title = (courseTitleInput ?? '').trim();
-		if (!title) return openAlert('강의 이름을 입력해줘.');
+	// onMount(() => {
+	// 	if (ownerUid) {
+	// 		teacherLessonsStore.start(ownerUid);
+	// 	}
+	// });
+
+	async function createSession() {
+		if (isCreating) return;
+
+		isCreating = true;
 
 		try {
-			loading = true;
-			showCreateCourse = false;
-
-			await createCourse({
-				ownerUid: u.uid,
-				title
+			const result = await createClassroomSession({
+				ownerUid,
+				selectedTheme,
+				roomCount,
+				roomCapacities
 			});
 
-			await refresh(u.uid);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '생성 실패';
+			goto(`/library/${result.lessonId}`);
+		} catch (error) {
+			console.error(error);
+			alert(error?.message ?? '수업을 만들지 못했습니다.');
 		} finally {
-			loading = false;
+			isCreating = false;
 		}
 	}
+	let deletingLessonId = '';
 
-	// ✅ Add lesson dialog
-	function openAddLessonDialog(course) {
-		const currentCount = lessonsByCourse[course.id]?.length ?? course.lessonCount ?? 0;
-		if (currentCount >= 12) {
-			openAlert('차시는 최대 12개까지 만들 수 있어요.');
-			return;
-		}
-		targetCourse = course;
-		lessonTitleInput = (course?.lessonCount ?? 0) === 0 ? '1차시' : '새 차시';
-		showAddLesson = true;
-	}
+	async function deleteLesson(lesson) {
+		if (!lesson?.id) return;
 
-	async function submitAddLesson() {
-		const u = $authUser;
-		if (!u) return;
+		const ok = confirm(
+			`"${
+				lesson.title ?? '수업'
+			}"을 삭제할까요?\n\n이 수업의 방, 참여 학생 기록, 게임 코드가 함께 삭제됩니다.`
+		);
 
-		if (!targetCourse?.id) return openAlert('대상 강의가 없습니다.');
+		if (!ok) return;
 
-		const title = (lessonTitleInput ?? '').trim();
-		if (!title) return openAlert('차시 이름을 입력해줘.');
+		deletingLessonId = lesson.id;
 
 		try {
-			loading = true;
-			showAddLesson = false;
-
-			const { lessonId } = await addLessonToCourse({
-				courseId: targetCourse.id,
-				ownerUid: u.uid,
-				title
+			await deleteClassroomSession({
+				lessonId: lesson.id
 			});
-
-			goto(
-				`/builder?courseId=${encodeURIComponent(targetCourse.id)}&lessonId=${encodeURIComponent(
-					lessonId
-				)}`
-			);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '차시 추가 실패';
+		} catch (error) {
+			console.error(error);
+			alert(error?.message ?? '수업을 삭제하지 못했습니다.');
 		} finally {
-			loading = false;
+			deletingLessonId = '';
 		}
 	}
-
-	// ✅ lesson actions
-	function openLesson(courseId, stepIndex) {
-		if (!courseId) return openAlert('courseId를 찾지 못했어.');
-		goto(`study/c/${encodeURIComponent(courseId)}/${stepIndex}`);
+	function selectTheme(theme) {
+		if (!theme.enabled) return;
+		selectedThemeId = theme.id;
 	}
 
-	function editLesson(courseId, l) {
-		const id = getLessonId(l);
-		if (!id) return openAlert('lessonId를 찾지 못했어.');
-		goto(`/builder?courseId=${encodeURIComponent(courseId)}&lessonId=${encodeURIComponent(id)}`);
-	}
-	function openRenameLessonDialog(l) {
-		const id = getLessonId(l);
-		if (!id) return openAlert('lessonId를 찾지 못했어.');
-
-		renameLessonId = id;
-		renameLessonTitle = (l?.title ?? '').toString();
-		showRenameLesson = true;
-	}
-
-	async function submitRenameLesson() {
-		const u = $authUser;
-		if (!u) return;
-
-		const t = (renameLessonTitle ?? '').trim();
-		if (!t) return openAlert('차시 이름을 입력해줘.');
-
-		try {
-			loading = true;
-			showRenameLesson = false;
-
-			await updateLessonTitle({ lessonId: renameLessonId, title: t });
-
-			// ✅ 화면 즉시 반영: 전체 refresh가 가장 안전
-			await refresh(u.uid);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '이름 변경 실패';
-		} finally {
-			loading = false;
+	function getCategoryTone(categoryId) {
+		if (categoryId === 'write') {
+			return {
+				sectionIconBg: 'bg-blue-50',
+				sectionTitle: 'text-blue-700',
+				selectedBorder: 'border-blue-300',
+				selectedBg: 'bg-blue-50',
+				selectedShadow: 'shadow-[0_18px_40px_rgba(37,99,235,0.12)]',
+				badge: 'bg-blue-600 text-white',
+				sideBadge: 'bg-blue-50 text-blue-700'
+			};
 		}
-	}
 
-	function lessonBadge(i) {
-		return `${i + 1}차시`;
-	}
-	// ✅ drag state
-	let dragging = { courseId: '', lessonId: '' };
-
-	// courseId별 저장중 표시(선택)
-	let savingOrder = {}; // courseId -> boolean
-
-	function setSaving(courseId, v) {
-		savingOrder = { ...savingOrder, [courseId]: v };
-	}
-
-	function onDragStart(courseId, lessonId, e) {
-		dragging = { courseId, lessonId };
-		e.dataTransfer.effectAllowed = 'move';
-		// 일부 브라우저에서 드래그가 안 먹는 경우 방지용
-		e.dataTransfer.setData('text/plain', lessonId);
-	}
-
-	function onDragOver(e) {
-		e.preventDefault();
-		e.dataTransfer.dropEffect = 'move';
-	}
-
-	async function onDrop(courseId, targetLessonId, e) {
-		e.preventDefault();
-
-		const srcCourseId = dragging.courseId;
-		if (!srcCourseId || srcCourseId !== courseId) return;
-
-		const sourceLessonId = dragging.lessonId || e.dataTransfer.getData('text/plain');
-
-		if (!sourceLessonId || sourceLessonId === targetLessonId) return;
-
-		const list = lessonsByCourse[courseId];
-		if (!Array.isArray(list)) return;
-
-		const from = list.findIndex((x) => (x.id ?? x.lessonId) === sourceLessonId);
-		const to = list.findIndex((x) => (x.id ?? x.lessonId) === targetLessonId);
-		if (from < 0 || to < 0) return;
-
-		// ✅ optimistic reorder (UI 먼저)
-		const next = [...list];
-		const [moved] = next.splice(from, 1);
-		next.splice(to, 0, moved);
-
-		lessonsByCourse = { ...lessonsByCourse, [courseId]: next };
-
-		// ✅ persist (Firestore order 업데이트)
-		try {
-			setSaving(courseId, true);
-
-			// orderedLessonIds는 "문서 id" 배열이어야 함
-			const orderedLessonIds = next.map((x) => x.id ?? x.lessonId).filter(Boolean);
-
-			await reorderLessonsInCourse({ courseId, orderedLessonIds });
-		} catch (err) {
-			console.error(err);
-			openAlert('순서 저장에 실패했어. 새로고침 후 다시 시도해줘.');
-			// 실패 시 서버 상태로 복구
-			const u = $authUser;
-			if (u) await refresh(u.uid);
-		} finally {
-			setSaving(courseId, false);
-			dragging = { courseId: '', lessonId: '' };
-		}
-	}
-
-	function onDragEnd() {
-		dragging = { courseId: '', lessonId: '' };
-	}
-	///--------------------------------------------
-	let showDeleteLesson = false;
-	let deleteTarget = { courseId: '', lessonDocId: '', title: '' };
-
-	function openDeleteLessonDialog(courseId, lessonDocId, title) {
-		showDeleteLesson = true;
-		deleteTarget = { courseId, lessonDocId, title: title ?? '' };
-	}
-
-	async function submitDeleteLesson() {
-		const u = $authUser;
-		if (!u) return;
-
-		try {
-			loading = true;
-			showDeleteLesson = false;
-
-			await deleteLessonFromCourse({
-				courseId: deleteTarget.courseId,
-				lessonDocId: deleteTarget.lessonDocId
-			});
-
-			await refresh(u.uid);
-		} catch (e) {
-			console.error(e);
-			error = e?.message ?? '삭제 실패';
-		} finally {
-			loading = false;
-		}
-	}
-	function toggleLessonMenu(id) {
-		openLessonMenu = openLessonMenu === id ? '' : id;
-	}
-
-	// 바깥 클릭 시 닫기
-	function closeMenus() {
-		openLessonMenu = '';
-	}
-	function handleClick() {
-		console.log('clicked');
+		return {
+			sectionIconBg: 'bg-violet-50',
+			sectionTitle: 'text-violet-700',
+			selectedBorder: 'border-violet-300',
+			selectedBg: 'bg-violet-50',
+			selectedShadow: 'shadow-[0_18px_40px_rgba(124,58,237,0.12)]',
+			badge: 'bg-violet-600 text-white',
+			sideBadge: 'bg-violet-50 text-violet-700'
+		};
 	}
 </script>
 
-<Nav />
-
-{#if openLessonMenu}
-	<button
-		type="button"
-		class="fixed inset-0 z-10 bg-transparent cursor-default"
-		aria-label="메뉴 닫기"
-		on:click={closeMenus}
-	/>
-{/if}
-<div class="w-1280 m-auto px-10 py-10">
-	<div class="flex items-end justify-between">
-		<div>
-			<div class="text-slate-400 text-sm font-semibold">My Library</div>
-			<div class="font-dodum font-extrabold text-3xl text-slate-900 mt-2">내 강의실</div>
-			<div class="text-slate-500 mt-2">
-				코스 안에 차시를 추가하고, 각 차시를 열거나 편집/이름변경할 수 있어요.
-			</div>
-		</div>
-
-		<button
-			class="px-5 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700"
-			on:click={openCreateCourseDialog}
+<div class="min-h-screen bg-[#f4f7fb] px-4 py-6 font-nanum text-slate-800">
+	<div class="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
+		<header
+			class="flex items-center justify-between rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm"
 		>
-			+ 새 강의 만들기
-		</button>
-	</div>
+			<div>
+				<div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
+					CREATE GAME
+				</div>
 
-	{#if loading}
-		<div class="mt-10 text-slate-500">불러오는 중...</div>
-	{:else if error}
-		<div class="mt-10 text-rose-600">에러: {error}</div>
-	{:else if courses.length === 0}
-		<div class="mt-10 text-slate-500">아직 만든 강의가 없어요. “새 강의 만들기”로 시작해봐.</div>
-	{:else}
-		<div class="mt-8 grid grid-cols-3 gap-6">
-			{#each courses as c (c.id)}
-				<div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-					<div class="flex items-start justify-between gap-3">
-						<div class="min-w-0">
-							<div class="text-slate-400 text-xs font-semibold">COURSE</div>
-							<div class="text-slate-900 font-extrabold text-xl mt-1 truncate">
-								{c.title || c.id}
+				<h1 class="mt-2 font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
+					수업 만들기
+				</h1>
+
+				<p class="mt-2 text-[14px] font-bold leading-6 text-slate-500">
+					미션 테마를 선택하고, 모둠 수에 맞게 방 코드를 생성하세요.
+				</p>
+			</div>
+
+			<button
+				type="button"
+				on:click={() => goto('/')}
+				class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-50"
+			>
+				홈으로
+			</button>
+		</header>
+
+		<div class="grid grid-cols-[1fr_360px] gap-5">
+			<main class="flex flex-col gap-5">
+				<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+					<div class="flex items-end justify-between gap-3">
+						<div>
+							<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-slate-400">
+								STEP 01
 							</div>
-							<div class="text-slate-500 text-sm mt-2">
-								{c.info || `${c.lessonCount ?? lessonsByCourse[c.id]?.length ?? 0}개`}
+
+							<h2
+								class="mt-1 font-gmarket text-[23px] font-bold tracking-[-0.055em] text-slate-950"
+							>
+								미션 테마 선택
+							</h2>
+
+							<p class="mt-1.5 text-[14px] font-bold leading-6 text-slate-500">
+								제이슨 작성 미션과 제이슨 해석 미션 중 사용할 테마를 선택하세요.
+							</p>
+						</div>
+
+						<div
+							class="rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-extrabold text-slate-500"
+						>
+							총 {themes.length}개 테마
+						</div>
+					</div>
+
+					<!-- JSON 작성 -->
+					<div class="mt-6">
+						<div class="flex items-center gap-3">
+							<div
+								class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-[20px]"
+							>
+								✍️
+							</div>
+
+							<div>
+								<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
+									제이슨 작성 미션
+								</div>
+								<div class="text-[12px] font-bold text-slate-500">
+									단서를 보고 JSON을 직접 완성하는 활동
+								</div>
+							</div>
+						</div>
+
+						<div class="mt-3 grid grid-cols-4 gap-3">
+							{#each writeThemes as theme}
+								{@const tone = getCategoryTone(theme.categoryId)}
+
+								<button
+									type="button"
+									disabled={!theme.enabled}
+									on:click={() => selectTheme(theme)}
+									class={`group relative min-h-[216px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+										selectedThemeId === theme.id
+											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
+											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
+									} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
+								>
+									<div
+										class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"
+									></div>
+
+									<div class="relative z-10 flex h-full flex-col">
+										<div class="flex items-start justify-between">
+											<div class="text-[34px]">{theme.icon}</div>
+
+											{#if theme.enabled}
+												<div
+													class={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+														selectedThemeId === theme.id ? tone.badge : 'bg-white text-slate-500'
+													}`}
+												>
+													선택 가능
+												</div>
+											{:else}
+												<div
+													class="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-extrabold text-slate-500"
+												>
+													준비 중
+												</div>
+											{/if}
+										</div>
+
+										<div
+											class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950"
+										>
+											{theme.title}
+										</div>
+
+										<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
+											{theme.subtitle}
+										</div>
+
+										<div class="mt-4 flex flex-wrap gap-1.5">
+											{#each theme.tags as tag}
+												<span
+													class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200"
+												>
+													{tag}
+												</span>
+											{/each}
+										</div>
+
+										<div class="mt-auto flex items-center justify-between pt-4">
+											<div class="text-[11px] font-extrabold text-slate-400">
+												{theme.level}
+											</div>
+
+											<div class="text-[11px] font-extrabold text-slate-400">
+												{theme.players}인 협동
+											</div>
+										</div>
+									</div>
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<!-- JSON 해석 -->
+					<div class="mt-8 border-t border-slate-100 pt-6">
+						<div class="flex items-center gap-3">
+							<div
+								class="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-50 text-[20px]"
+							>
+								🔎
+							</div>
+
+							<div>
+								<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
+									제이슨 해석 미션
+								</div>
+								<div class="text-[12px] font-bold text-slate-500">
+									주어진 JSON을 읽고 의미를 찾아내는 활동
+								</div>
+							</div>
+						</div>
+
+						<div class="mt-3 grid grid-cols-4 gap-3">
+							{#each readThemes as theme}
+								{@const tone = getCategoryTone(theme.categoryId)}
+
+								<button
+									type="button"
+									disabled={!theme.enabled}
+									on:click={() => selectTheme(theme)}
+									class={`group relative min-h-[216px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+										selectedThemeId === theme.id
+											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
+											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
+									} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
+								>
+									<div
+										class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"
+									></div>
+
+									<div class="relative z-10 flex h-full flex-col">
+										<div class="flex items-start justify-between">
+											<div class="text-[34px]">{theme.icon}</div>
+
+											{#if theme.enabled}
+												<div
+													class={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+														selectedThemeId === theme.id ? tone.badge : 'bg-white text-slate-500'
+													}`}
+												>
+													선택 가능
+												</div>
+											{:else}
+												<div
+													class="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-extrabold text-slate-500"
+												>
+													준비 중
+												</div>
+											{/if}
+										</div>
+
+										<div
+											class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950"
+										>
+											{theme.title}
+										</div>
+
+										<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
+											{theme.subtitle}
+										</div>
+
+										<div class="mt-4 flex flex-wrap gap-1.5">
+											{#each theme.tags as tag}
+												<span
+													class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200"
+												>
+													{tag}
+												</span>
+											{/each}
+										</div>
+
+										<div class="mt-auto flex items-center justify-between pt-4">
+											<div class="text-[11px] font-extrabold text-slate-400">
+												{theme.level}
+											</div>
+
+											<div class="text-[11px] font-extrabold text-slate-400">
+												{theme.players}인 협동
+											</div>
+										</div>
+									</div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</section>
+
+				<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+					<div>
+						<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-slate-400">
+							STEP 02
+						</div>
+
+						<h2 class="mt-1 font-gmarket text-[23px] font-bold tracking-[-0.055em] text-slate-950">
+							방 개수 선택
+						</h2>
+
+						<p class="mt-1.5 text-[14px] font-bold leading-6 text-slate-500">
+							모둠 수와 방 인원을 선택하세요. 3명 방은 부족한 역할이 자동으로 완료 처리됩니다.
+						</p>
+					</div>
+
+					<div class="mt-5 grid grid-cols-10 gap-2">
+						{#each Array(10) as _, index}
+							<button
+								type="button"
+								on:click={() => (roomCount = index + 1)}
+								class={`h-11 rounded-xl text-[14px] font-extrabold transition ${
+									roomCount === index + 1
+										? 'bg-blue-600 text-white shadow-sm'
+										: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+								}`}
+							>
+								{index + 1}
+							</button>
+						{/each}
+					</div>
+
+					<div class="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-[14px] font-bold text-slate-500">
+						선택한 방 개수:
+						<span class="font-extrabold text-slate-950">{roomCount}개</span>
+						· 생성 후 1번방부터 {roomCount}번방까지 게임 코드가 표시됩니다.
+					</div>
+					<div class="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<div>
+								<div class="text-[15px] font-extrabold text-slate-800">방별 인원 선택</div>
+								<div class="mt-1 text-[12px] font-bold text-slate-500">
+									각 방마다 3명 또는 4명을 선택하세요. 3명 방은 남는 역할이 자동 완료 처리됩니다.
+								</div>
+							</div>
+
+							<div
+								class="rounded-full bg-white px-3 py-1.5 text-[12px] font-extrabold text-slate-600 ring-1 ring-slate-200"
+							>
+								총 {roomCapacities.reduce((sum, value) => sum + value, 0)}명
+							</div>
+						</div>
+
+						<div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+							{#each Array(roomCount) as _, index}
+								<div class="rounded-2xl border border-slate-200 bg-white p-3">
+									<div class="flex items-center justify-between">
+										<div class="text-[14px] font-black text-slate-800">
+											{index + 1}번 방
+										</div>
+
+										<div
+											class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600"
+										>
+											{roomCapacities[index]}명
+										</div>
+									</div>
+
+									<div class="mt-3 grid grid-cols-2 gap-2">
+										<button
+											type="button"
+											on:click={() => setRoomCapacity(index, 3)}
+											class={`h-10 rounded-xl text-[13px] font-black transition ${
+												roomCapacities[index] === 3
+													? 'bg-blue-600 text-white shadow-sm'
+													: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+											}`}
+										>
+											3명
+										</button>
+
+										<button
+											type="button"
+											on:click={() => setRoomCapacity(index, 4)}
+											class={`h-10 rounded-xl text-[13px] font-black transition ${
+												roomCapacities[index] === 4
+													? 'bg-blue-600 text-white shadow-sm'
+													: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+											}`}
+										>
+											4명
+										</button>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</section>
+			</main>
+
+			<aside class="flex flex-col gap-5">
+				<section
+					class="sticky top-6 overflow-hidden rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm"
+				>
+					<div
+						class="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-blue-200/40 blur-3xl"
+					></div>
+
+					<div class="relative z-10">
+						<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-blue-500">
+							PREVIEW
+						</div>
+
+						<h2 class="mt-2 font-gmarket text-[25px] font-bold tracking-[-0.06em] text-slate-950">
+							{selectedTheme?.title}
+						</h2>
+
+						<p class="mt-2 text-[14px] font-bold leading-6 text-slate-500">
+							{selectedTheme?.subtitle}
+						</p>
+
+						<div class="mt-5 rounded-3xl bg-slate-950 p-4 text-white">
+							<div class="flex items-start justify-between gap-3">
+								<div>
+									<div class="font-gmarket text-[10px] font-bold tracking-[0.16em] text-slate-400">
+										SELECTED MISSION
+									</div>
+
+									<div class="mt-1 font-gmarket text-[20px] font-bold tracking-[-0.05em]">
+										{selectedTheme?.icon}
+										{selectedTheme?.title}
+									</div>
+								</div>
+
+								<div
+									class="rounded-full bg-white/10 px-3 py-1 text-[11px] font-extrabold text-white"
+								>
+									{roomCount}개 방
+								</div>
+							</div>
+
+							<div class="mt-4 grid grid-cols-2 gap-2">
+								<div class="rounded-2xl bg-white/10 p-3">
+									<div class="text-[11px] font-extrabold text-slate-400">미션 유형</div>
+									<div class="mt-1 text-[14px] font-extrabold">{selectedTheme?.categoryTitle}</div>
+								</div>
+
+								<div class="rounded-2xl bg-white/10 p-3">
+									<div class="text-[11px] font-extrabold text-slate-400">참여 방식</div>
+									<div class="mt-1 text-[14px] font-extrabold">게임 코드</div>
+								</div>
+
+								<div class="rounded-2xl bg-white/10 p-3">
+									<div class="text-[11px] font-extrabold text-slate-400">방 정원</div>
+									<div class="mt-1 text-[14px] font-extrabold">방별 선택</div>
+								</div>
+
+								<div class="rounded-2xl bg-white/10 p-3">
+									<div class="text-[11px] font-extrabold text-slate-400">학생 로그인</div>
+									<div class="mt-1 text-[14px] font-extrabold">필요 없음</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+							<div class="flex items-center justify-between">
+								<div class="text-[14px] font-extrabold text-slate-700">생성될 방</div>
+								<div class="text-[14px] font-extrabold text-blue-600">{roomCount}개</div>
+							</div>
+
+							<div class="mt-3 grid grid-cols-5 gap-2">
+								{#each Array(roomCount) as _, index}
+									<div
+										class="flex h-10 flex-col items-center justify-center rounded-xl bg-white text-[11px] font-extrabold text-slate-600 ring-1 ring-slate-200"
+									>
+										<div>{index + 1}번방</div>
+										<div class="text-blue-600">{roomCapacities[index]}명</div>
+									</div>
+								{/each}
 							</div>
 						</div>
 
 						<button
-							class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-rose-200 text-rose-600 font-bold hover:bg-rose-50"
-							on:click={() => openDeleteCourseDialog(c.id, c.title || '강의')}
+							type="button"
+							disabled={!selectedTheme?.enabled || isCreating}
+							on:click={createSession}
+							class="mt-5 h-13 w-full rounded-2xl bg-blue-600 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
 						>
-							삭제
+							{isCreating ? '방 코드 생성 중...' : `${roomCount}개 방 코드 만들기`}
 						</button>
+
+						<div
+							class="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-[13px] font-bold leading-6 text-blue-700"
+						>
+							학생은 자기 모둠 번호에 맞는 방 코드를 입력해 참여합니다.
+						</div>
 					</div>
+				</section>
+			</aside>
+		</div>
+		<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+			<div class="flex items-center justify-between">
+				<div>
+					<div class="text-[18px] font-black text-slate-950">진행 중인 수업</div>
+					<div class="mt-1 text-sm font-bold text-slate-500">
+						방 관리와 학생 입장 현황을 확인합니다.
+					</div>
+				</div>
 
-					{#if Array.isArray(lessonsByCourse[c.id]) && lessonsByCourse[c.id].length > 0}
-						<div class="mt-5 flex items-center justify-between gap-3">
-							<div class="text-slate-400 text-xs font-semibold">차시 목록</div>
+				<div class="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-600">
+					{activeLessons.length}개
+				</div>
+			</div>
 
-							<button
-								type="button"
-								class="shrink-0 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"
-								on:click={() => openAddLessonDialog(c)}
-							>
-								+ 차시
-							</button>
-						</div>
-						<ul class="mt-2 space-y-2">
-							{#each lessonsByCourse[c.id] as l, i (getLessonId(l))}
-								<li
-									class="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3 hover:bg-slate-50"
-									draggable="true"
-									on:dragstart={(e) => onDragStart(c.id, getLessonId(l), e)}
-									on:dragover={onDragOver}
-									on:drop={(e) => onDrop(c.id, getLessonId(l), e)}
-									on:dragend={onDragEnd}
-								>
-									<!-- ✅ drag handle (항상 보이는 SVG) -->
-									<div
-										class="w-7 flex items-start justify-center pt-1 text-slate-300 cursor-grab select-none"
-									>
-										<svg
-											width="14"
-											height="18"
-											viewBox="0 0 14 18"
-											fill="currentColor"
-											aria-hidden="true"
-										>
-											<circle cx="4" cy="3" r="1.2" />
-											<circle cx="10" cy="3" r="1.2" />
-											<circle cx="4" cy="9" r="1.2" />
-											<circle cx="10" cy="9" r="1.2" />
-											<circle cx="4" cy="15" r="1.2" />
-											<circle cx="10" cy="15" r="1.2" />
-										</svg>
-									</div>
-
-									<!-- ✅ left: title/meta -->
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2">
-											<span
-												class="text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold"
-											>
-												{lessonBadge(i)}
-											</span>
-											<div class="min-w-0">
-												<div class="text-slate-900 font-extrabold truncate">
-													{l.title || l.id}
-												</div>
-												{#if l.info}
-													<div class="text-xs text-slate-500 mt-1 truncate">
-														{l.info}
-													</div>
-												{/if}
-											</div>
-
-											{#if savingOrder[c.id]}
-												<span class="text-xs text-slate-400 ml-2">저장중…</span>
-											{/if}
-										</div>
-									</div>
-
-									<div class="shrink-0 relative">
-										<button
-											class="px-3 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
-											on:click|stopPropagation={() => toggleLessonMenu(getLessonId(l))}
-											on:mousedown|stopPropagation
-											aria-label="차시 메뉴"
-										>
-											⋯
-										</button>
-
-										{#if openLessonMenu === getLessonId(l)}
-											<div
-												class="absolute right-0 mt-2 w-44 rounded-2xl border border-slate-200 bg-white shadow-lg p-2 z-20"
-												on:click|stopPropagation
-												on:mousedown|stopPropagation
-											>
-												<button
-													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
-													on:click={() => {
-														openLesson(c.id, i);
-														openLessonMenu = '';
-													}}
-												>
-													열기
-												</button>
-
-												<button
-													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
-													on:click={() => {
-														editLesson(c.id, l);
-														openLessonMenu = '';
-													}}
-												>
-													편집
-												</button>
-
-												<button
-													class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm font-bold"
-													on:click={() => {
-														openRenameLessonDialog(l);
-														openLessonMenu = '';
-													}}
-												>
-													이름 변경
-												</button>
-
-												<div class="h-px bg-slate-100 my-1"></div>
-
-												<button
-													class="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 text-sm font-bold text-rose-600"
-													on:click={() => {
-														openDeleteLessonDialog(c.id, l.id ?? l.lessonId, l.title || '차시');
-														openLessonMenu = '';
-													}}
-												>
-													삭제
-												</button>
-											</div>
-										{/if}
-									</div>
-								</li>
-							{/each}
-						</ul>
-					{:else}
-						<div class="mt-5 flex items-center justify-between gap-3">
-							<div class="text-slate-400 text-xs font-semibold">차시 목록</div>
-
-							<button
-								type="button"
-								class="shrink-0 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100"
-								on:click={() => openAddLessonDialog(c)}
-							>
-								+ 차시
-							</button>
-						</div>
-						<div class="mt-5 rounded-2xl bg-slate-50 border border-slate-100 p-4">
-							<div class="text-slate-700 font-bold">차시가 아직 없어요</div>
-							<div class="text-slate-500 text-sm mt-1">
-								오른쪽 위 “+ 차시”로 첫 차시를 추가해주세요.
+			<div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+				{#each activeLessons as lesson}
+					<div
+						class="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-200 hover:bg-white"
+					>
+						<button
+							type="button"
+							on:click={() => openLesson(lesson.id)}
+							class="block w-full text-left"
+						>
+							<div class="text-[17px] font-black text-slate-950">{lesson.title}</div>
+							<div class="mt-1 text-sm font-bold text-slate-500">
+								{lesson.themeTitle} · 방 {lesson.roomCount}개 · {lesson.status}
 							</div>
-						</div>
-					{/if}
+						</button>
 
-					<div class="mt-4">
-						<LessonShare
-							lesson={{
-								id: c.id,
-								ownerUid: c.ownerUid,
-								title: c.title,
-								inviteCode: c.inviteCode
-							}}
-							authUid={$authUser?.uid ?? ''}
-						/>
+						<div class="mt-4 flex justify-end">
+							<button
+								type="button"
+								disabled={deletingLessonId === lesson.id}
+								on:click|stopPropagation={() => deleteLesson(lesson)}
+								class="rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{deletingLessonId === lesson.id ? '삭제 중...' : '삭제'}
+							</button>
+						</div>
+					</div>
+				{/each}
+
+				{#if activeLessons.length === 0}
+					<div class="rounded-3xl bg-slate-50 p-5 text-sm font-bold text-slate-500">
+						진행 중인 수업이 없습니다.
+					</div>
+				{/if}
+			</div>
+		</section>
+
+		<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+			<div class="flex items-center justify-between">
+				<div>
+					<div class="text-[18px] font-black text-slate-950">완료된 수업</div>
+					<div class="mt-1 text-sm font-bold text-slate-500">
+						학생별 기록과 개념별 어려움을 확인합니다.
 					</div>
 				</div>
-			{/each}
-		</div>
-	{/if}
+
+				<div class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">
+					{completedLessons.length}개
+				</div>
+			</div>
+
+			<div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+				{#each completedLessons as lesson}
+					<div
+						class="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-200 hover:bg-white"
+					>
+						<button
+							type="button"
+							on:click={() => openLesson(lesson.id)}
+							class="block w-full text-left"
+						>
+							<div class="text-[17px] font-black text-slate-950">{lesson.title}</div>
+							<div class="mt-1 text-sm font-bold text-slate-500">
+								참여 {lesson.summary?.totalParticipants ?? 0}명 · 완료 방
+								{lesson.summary?.completedRoomCount ?? 0}/{lesson.summary?.roomCount ??
+									lesson.roomCount ??
+									0}
+							</div>
+						</button>
+
+						<div class="mt-4 flex justify-end">
+							<button
+								type="button"
+								disabled={deletingLessonId === lesson.id}
+								on:click|stopPropagation={() => deleteLesson(lesson)}
+								class="rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{deletingLessonId === lesson.id ? '삭제 중...' : '삭제'}
+							</button>
+						</div>
+					</div>
+				{/each}
+
+				{#if completedLessons.length === 0}
+					<div class="rounded-3xl bg-slate-50 p-5 text-sm font-bold text-slate-500">
+						완료된 수업이 없습니다.
+					</div>
+				{/if}
+			</div>
+		</section>
+	</div>
 </div>
-
-<!-- ✅ Create Course Dialog -->
-{#if showCreateCourse}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showCreateCourse = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[520px] shadow-xl">
-			<div class="flex items-start justify-between">
-				<div>
-					<div class="text-sm text-slate-500">새 강의 만들기</div>
-					<div class="text-lg font-bold mt-1">강의 이름을 입력해줘</div>
-				</div>
-				<button
-					class="px-2 py-1 rounded-lg text-sm border border-slate-200 hover:bg-slate-50"
-					on:click={() => (showCreateCourse = false)}
-				>
-					닫기
-				</button>
-			</div>
-
-			<div class="mt-5">
-				<div class="text-sm font-semibold text-slate-700 mb-2">강의 이름</div>
-				<input
-					class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-					bind:value={courseTitleInput}
-					placeholder="예) 인공지능의 인식"
-				/>
-			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
-					on:click={() => (showCreateCourse = false)}
-				>
-					취소
-				</button>
-				<button
-					class="px-4 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700"
-					on:click={submitCreateCourse}
-				>
-					만들기
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- ✅ Add Lesson Dialog -->
-{#if showAddLesson}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showAddLesson = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[520px] shadow-xl">
-			<div class="flex items-start justify-between">
-				<div>
-					<div class="text-sm text-slate-500">차시 추가</div>
-					<div class="text-lg font-bold mt-1">{targetCourse?.title ?? '강의'}</div>
-				</div>
-				<button
-					class="px-2 py-1 rounded-lg text-sm border border-slate-200 hover:bg-slate-50"
-					on:click={() => (showAddLesson = false)}
-				>
-					닫기
-				</button>
-			</div>
-
-			<div class="mt-5">
-				<div class="text-sm font-semibold text-slate-700 mb-2">차시 이름</div>
-				<input
-					class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-					bind:value={lessonTitleInput}
-					placeholder="예) 1차시"
-				/>
-			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
-					on:click={() => (showAddLesson = false)}
-				>
-					취소
-				</button>
-				<button
-					class="px-4 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700"
-					on:click={submitAddLesson}
-				>
-					추가하고 편집하기
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- ✅ Rename Lesson Dialog -->
-{#if showRenameLesson}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showRenameLesson = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[520px] shadow-xl">
-			<div class="flex items-start justify-between">
-				<div>
-					<div class="text-sm text-slate-500">차시 이름 변경</div>
-					<div class="text-lg font-bold mt-1">새 이름을 입력해줘</div>
-				</div>
-				<button
-					class="px-2 py-1 rounded-lg text-sm border border-slate-200 hover:bg-slate-50"
-					on:click={() => (showRenameLesson = false)}
-				>
-					닫기
-				</button>
-			</div>
-
-			<div class="mt-5">
-				<div class="text-sm font-semibold text-slate-700 mb-2">차시 이름</div>
-				<input
-					class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-					bind:value={renameLessonTitle}
-					placeholder="예) 2차시 - RGB란?"
-				/>
-			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
-					on:click={() => (showRenameLesson = false)}
-				>
-					취소
-				</button>
-				<button
-					class="px-4 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700"
-					on:click={submitRenameLesson}
-				>
-					저장
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- ✅ Alert Dialog -->
-{#if showAlert}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showAlert = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[460px] shadow-xl">
-			<div class="text-sm text-slate-500">안내</div>
-			<div class="text-base font-bold mt-2 text-slate-900">{alertMessage}</div>
-
-			<div class="mt-6 flex justify-end">
-				<button
-					class="px-4 py-3 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800"
-					on:click={() => (showAlert = false)}
-				>
-					확인
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-{#if showDeleteLesson}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showDeleteLesson = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[480px] shadow-xl">
-			<div class="text-sm text-slate-500">차시 삭제</div>
-			<div class="text-lg font-bold mt-2 text-slate-900">
-				“{deleteTarget.title}”를 삭제할까요?
-			</div>
-			<div class="text-sm text-slate-500 mt-2">삭제하면 복구할 수 없어요.</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
-					on:click={() => (showDeleteLesson = false)}
-				>
-					취소
-				</button>
-				<button
-					class="px-4 py-3 rounded-2xl bg-rose-600 text-white font-bold hover:bg-rose-700"
-					on:click={submitDeleteLesson}
-				>
-					삭제하기
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-{#if showDeleteCourse}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/40" on:click={() => (showDeleteCourse = false)}></div>
-
-		<div class="relative bg-white rounded-3xl p-6 w-[520px] shadow-xl">
-			<div class="text-sm text-slate-500">강의 삭제</div>
-			<div class="text-lg font-bold mt-2 text-slate-900">
-				“{deleteCourseTarget.title}”를 삭제할까요?
-			</div>
-			<div class="text-sm text-slate-500 mt-2">
-				이 강의 안의 모든 차시도 같이 삭제됩니다. (복구 불가)
-			</div>
-
-			<div class="mt-6 flex justify-end gap-2">
-				<button
-					class="px-4 py-3 rounded-2xl border border-slate-200 font-bold hover:bg-slate-50"
-					on:click={() => (showDeleteCourse = false)}
-				>
-					취소
-				</button>
-				<button
-					class="px-4 py-3 rounded-2xl bg-rose-600 text-white font-bold hover:bg-rose-700"
-					on:click={submitDeleteCourse}
-				>
-					삭제하기
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
