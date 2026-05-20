@@ -336,7 +336,15 @@ export const moonBaseCourse = {
 						value: true
 					}
 				}
-			}
+			},
+			finalSequenceLayers: {
+				finalSequence: true,
+				energyLines: true,
+				basePulse: true,
+				baseOnline: true,
+				systemOnline: false
+			},
+			finalSuccessMessage: '작전 성공! 팀의 JSON 값이 하나로 합쳐졌습니다.'
 		}
 	]
 };

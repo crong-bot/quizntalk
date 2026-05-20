@@ -254,6 +254,24 @@ function willAllReviewsBeApproved({ room, mission, reviewKey, course }) {
 	});
 }
 
+function createMissionCompletedEvent({ mission, missionIndex, nextMissionIndex, status }) {
+	const isCompleted = status === 'completed';
+
+	return {
+		type: 'mission_completed',
+		missionId: mission?.id ?? '',
+		missionTitle: mission?.title ?? `미션 ${missionIndex + 1}`,
+		missionIndex,
+		nextMissionIndex,
+		status,
+		message: isCompleted
+			? '모든 미션이 완료되었습니다.'
+			: `${mission?.title ?? `미션 ${missionIndex + 1}`}이 완료되었습니다.`,
+		version: Date.now(),
+		createdAt: new Date().toISOString()
+	};
+}
+
 export async function submitReadMissionForReview({
 	lessonId,
 	roomId,
@@ -325,6 +343,14 @@ export async function approveReadMissionForRoom({
 }) {
 	const mission = course?.missions?.[missionIndex];
 
+	if (!lessonId) {
+		throw new Error('수업 정보가 없습니다.');
+	}
+
+	if (!room?.id) {
+		throw new Error('방 정보가 없습니다.');
+	}
+
 	if (!mission) {
 		throw new Error('승인할 미션 정보를 찾을 수 없습니다.');
 	}
@@ -368,6 +394,13 @@ export async function approveReadMissionForRoom({
 		}
 
 		roomPatch.reviewStatus = 'approved';
+
+		roomPatch.lastMissionEvent = createMissionCompletedEvent({
+			mission,
+			missionIndex,
+			nextMissionIndex: roomPatch.currentMissionIndex,
+			status: roomPatch.status
+		});
 	}
 
 	await approveReadMissionSubmission({
@@ -395,6 +428,14 @@ export async function rejectReadMissionForRoom({
 	reason = ''
 }) {
 	const mission = course?.missions?.[missionIndex];
+
+	if (!lessonId) {
+		throw new Error('수업 정보가 없습니다.');
+	}
+
+	if (!room?.id) {
+		throw new Error('방 정보가 없습니다.');
+	}
 
 	if (!mission) {
 		throw new Error('반려할 미션 정보를 찾을 수 없습니다.');

@@ -736,7 +736,8 @@ export async function applyMissionSuccess({
 	missionProgress,
 	simulationState,
 	currentMissionIndex,
-	status
+	status,
+	lastMissionEvent = null
 }) {
 	if (!lessonId || !roomId || !participantId) {
 		throw new Error('미션 성공 처리 정보가 부족합니다.');
@@ -775,6 +776,9 @@ export async function applyMissionSuccess({
 	if (status) {
 		roomPatch.status = status;
 	}
+	if (lastMissionEvent) {
+	roomPatch.lastMissionEvent = lastMissionEvent;
+}
 
 	batch.update(roomRef, roomPatch);
 
