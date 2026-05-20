@@ -3,6 +3,8 @@
 export const animalRescueCourse = {
 	id: 'animalRescue',
 	title: '동물구조대: 늑구 추적 작전',
+	subtitle: '제보들을 모아서 늑구 구조 계획서를 만들어보세요!',
+	icon: '🪐',
 	themeId: 'animalRescue',
 	categoryId: 'read',
 	categoryTitle: '제이슨 해석',

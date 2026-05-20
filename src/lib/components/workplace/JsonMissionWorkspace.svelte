@@ -1,39 +1,38 @@
 <!-- C:\quizntalk\src\lib\components\workplace\JsonMissionWorkspace.svelte -->
 <script>
-	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
-	import { mergeSimulationState } from './simulation/simulationMapper';
 	import { executeMissionAction } from './actions/executeMissionAction.js';
+	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
 
+	import {
+		applyMissionSuccess,
+		recordParticipantAttempt,
+		updateRoomState
+	} from '$lib/firebase/missionRoom/missionRoomRepository.js';
 	import CommandTransmissionPanel from './CommandTransmissionPanel.svelte';
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
 	import JsonEditorPanel from './JsonEditorPanel.svelte';
 	import MissionBriefingPanel from './MissionBriefingPanel.svelte';
 	import SharedSimulationPanel from './SharedSimulationPanel.svelte';
 	import TeamExecutionBoard from './TeamExecutionBoard.svelte';
-	import {
-		applyMissionSuccess,
-		recordParticipantAttempt,
-		updateRoomState
-	} from '$lib/firebase/missionRoom/missionRoomRepository.js';
 
 	import { isReadMissionCourse } from '$lib/firebase/missionRoom/missionRoomService.js';
-	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
-	import FinalReadyModal from './modals/FinalReadyModal.svelte';
-	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
-	import {
-		buildWorkspacePlayers,
-		createInitialMissionProgress,
-		getNextMissionProgressForPlayer,
-		markPlayerMissionState,
-		resetPlayersMissionProgress,
-		setAllPlayersMissionState
-	} from './state/workspaceState.js';
 	import {
 		buildFinalJsonFromSubmissions,
 		createDebugFinalSubmissions,
 		runFinalSequenceAction,
 		submitFinalMissionPieceAction
 	} from './actions/finalMissionAction.js';
+	import MissionWorkspaceHeader from './MissionWorkspaceHeader.svelte';
+	import FinalReadyModal from './modals/FinalReadyModal.svelte';
+	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
+	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
+	import {
+		buildWorkspacePlayers,
+		getNextMissionProgressForPlayer,
+		markPlayerMissionState,
+		resetPlayersMissionProgress,
+		setAllPlayersMissionState
+	} from './state/workspaceState.js';
 
 	export let roomCode = '';
 	export let lessonId = '';
@@ -148,7 +147,6 @@
 
 	let editorApi;
 
-	
 	function handleEditorReady(api) {
 		editorApi = api;
 	}
@@ -208,6 +206,39 @@
 			console.error('학생 활동 기록 저장 실패:', error);
 		}
 	}
+	async function consumeEnergyOnWrongAnswer() {
+		if (verificationEnergy <= 0) {
+			return {
+				ok: false,
+				nextEnergy: 0,
+				message: '에너지가 모두 소진되었습니다. 작전 실패입니다.'
+			};
+		}
+
+		const nextEnergy = Math.max(verificationEnergy - 1, 0);
+
+		if (shouldUseFirebase) {
+			await updateRoomState({
+				lessonId,
+				roomId,
+				patch: {
+					verificationEnergy: nextEnergy
+				}
+			});
+		} else {
+			localVerificationEnergy = nextEnergy;
+		}
+
+		return {
+			ok: nextEnergy > 0,
+			nextEnergy,
+			message:
+				nextEnergy > 0
+					? `오답입니다. 에너지가 1개 줄었습니다. 남은 에너지: ${nextEnergy}`
+					: '에너지가 모두 소진되었습니다. 작전 실패입니다.'
+		};
+	}
+
 	function getNextProgressForCurrentPlayer(nextState) {
 		return getNextMissionProgressForPlayer({
 			player: currentPlayer,
@@ -276,10 +307,12 @@
 								message:
 									nextRoomStatus === 'completed'
 										? '모든 미션이 완료되었습니다.'
-										: `${currentMission?.title ?? `미션 ${currentMissionIndex + 1}`}이 완료되었습니다.`,
+										: `${
+												currentMission?.title ?? `미션 ${currentMissionIndex + 1}`
+										  }이 완료되었습니다.`,
 								version: Date.now(),
 								createdAt: new Date().toISOString()
-							}
+						  }
 						: null
 			});
 		} catch (error) {
@@ -311,7 +344,7 @@
 					status = nextStatus;
 				},
 				setVerificationEnergy: (nextVerificationEnergy) => {
-					verificationEnergy = nextVerificationEnergy;
+					localVerificationEnergy = nextVerificationEnergy;
 				},
 				setTransmissionState: (nextTransmissionState) => {
 					transmissionState = nextTransmissionState;
@@ -327,6 +360,7 @@
 				},
 
 				recordCurrentAttempt,
+				consumeEnergyOnWrongAnswer,
 				getNextProgressForCurrentPlayer,
 				getNextMissionIndexAfterMissionClear,
 				getNextRoomStatusAfterMissionClear,
@@ -341,13 +375,12 @@
 	function resetMission() {
 		localCurrentPlayerId = 'player_1';
 		currentMissionIndex = 0;
-		verificationEnergy = maxVerificationEnergy;
+		localVerificationEnergy = maxVerificationEnergy;
 		finalSubmissions = {};
 
 		showMissionCompleteModal = false;
 		completedMissionIndex = null;
 		pendingNextMissionIndex = null;
-
 
 		showFinalReadyModal = false;
 		showFinalSuccessModal = false;
@@ -386,8 +419,13 @@
 	let localCurrentPlayerId = 'player_1';
 
 	let currentMissionIndex = 0;
-	let verificationEnergy = 5;
+
+	let localVerificationEnergy = 5;
 	let maxVerificationEnergy = 5;
+
+	$: verificationEnergy = shouldUseFirebase
+		? room?.verificationEnergy ?? maxVerificationEnergy
+		: localVerificationEnergy;
 
 	let players = [];
 
@@ -581,7 +619,7 @@
 			nextState: 'submitted'
 		});
 	}
-	
+
 	async function syncFinalPieceToFirestore({ nextMissionProgress, roleId, finalPiece }) {
 		if (!canSyncToFirestore()) {
 			return;
@@ -808,108 +846,19 @@
 <div class="flex h-full w-full items-start justify-center bg-[#eef3fb]">
 	<div class="h-[900px] w-[1440px] shrink-0 bg-[#f4f7fb] px-4 pb-4 pt-2">
 		<div class="flex h-full min-h-0 flex-col gap-4">
-			<header
-				class="flex h-[64px] shrink-0 items-center justify-between rounded-[12px] border border-slate-200 bg-white px-5 text-slate-900 shadow-sm"
-			>
-				<!-- 왼쪽: 로고 + 타이틀 -->
-				<div class="flex min-w-0 items-center gap-3">
-					<div
-						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600 ring-1 ring-blue-100"
-					>
-						🪐
-					</div>
+			<MissionWorkspaceHeader
+				title={course?.title ?? '미션'}
+				subtitle={course?.subtitle ?? '미션 명령을 준비하세요.'}
+				icon={course?.icon ?? '🧩'}
+				missionTitle={currentMission?.title ?? ''}
+				{currentMissionIndex}
+				{verificationEnergy}
+				{maxVerificationEnergy}
+				onMenuClick={() => {
+					console.log('메뉴 클릭');
+				}}
+			/>
 
-					<div class="min-w-0">
-						<div class="flex items-center gap-2">
-							<div class="truncate text-[15px] font-black tracking-[0.08em] text-slate-900">
-								MOON BASE CONTROL CENTER
-							</div>
-
-							<div
-								class="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-black tracking-[0.12em] text-white shadow-sm"
-							>
-								SOS
-							</div>
-
-							<div
-								class="rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-extrabold text-rose-600"
-							>
-								긴급 호출
-							</div>
-						</div>
-
-						<div class="mt-0.5 truncate text-xs font-bold text-slate-500">
-							전력 담당 요원님, 복구 명령 JSON을 준비하세요.
-						</div>
-					</div>
-				</div>
-
-				<!-- 오른쪽: 포인트 / 레벨 / 알림 / 요원 -->
-				<div class="flex shrink-0 items-center gap-3">
-					<div
-						class="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:flex"
-					>
-						<div class="text-base">🌟</div>
-						<div class="text-xs font-black text-slate-700">
-							미션 포인트 <span class="text-slate-950">1,250</span>
-						</div>
-					</div>
-
-					<div
-						class="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm lg:flex"
-					>
-						<div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs">
-							🛡️
-						</div>
-
-						<div class="text-xs font-black text-slate-700">레벨 3</div>
-
-						<div class="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
-							<div class="h-full w-[68%] rounded-full bg-blue-600"></div>
-						</div>
-					</div>
-
-					<button
-						type="button"
-						class="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-lg shadow-sm transition hover:bg-slate-50"
-					>
-						🔔
-					</button>
-
-					<div
-						class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
-					>
-						<div
-							class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-sm"
-						>
-							👨‍🚀
-						</div>
-
-						<div class="hidden text-xs font-black text-slate-700 sm:block">전력 요원</div>
-
-						<div class="text-slate-400">⌄</div>
-					</div>
-				</div>
-			</header>
-			<!-- <div
-				class="relative z-10 ml-5 flex w-[236px] shrink-0 flex-col justify-center rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/10"
-			>
-				<div class="flex items-center justify-between">
-					<div class="text-xs font-bold text-slate-300">팀 복구 진행률</div>
-					<div class="text-xl font-black text-cyan-300">{hasExecuted ? '25%' : '0%'}</div>
-				</div>
-
-				<div class="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
-					<div
-						class="h-full rounded-full bg-cyan-300 transition-all duration-500 shadow-[0_0_16px_rgba(103,232,249,0.65)]"
-						style={`width: ${hasExecuted ? 25 : 0}%`}
-					></div>
-				</div>
-
-				<div class="mt-2 text-[11px] font-bold text-slate-400">
-					{hasExecuted ? '전력센터 연결 완료' : '전력센터 연결 대기'}
-				</div>
-			</div> -->
 			<div
 				class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
 			>
@@ -1009,19 +958,15 @@
 		</div>
 	</div>
 	<MissionCompleteModal
-	show={showMissionCompleteModal}
-	{course}
-	{currentPlayer}
-	{completedMissionIndex}
-	{pendingNextMissionIndex}
-	onStartNextMission={startPendingMission}
+		show={showMissionCompleteModal}
+		{course}
+		{currentPlayer}
+		{completedMissionIndex}
+		{pendingNextMissionIndex}
+		onStartNextMission={startPendingMission}
 	/>
 
-	<FinalReadyModal
-		show={showFinalReadyModal}
-		{jsonText}
-		onRunFinalSequence={runFinalSequence}
-	/>
+	<FinalReadyModal show={showFinalReadyModal} {jsonText} onRunFinalSequence={runFinalSequence} />
 
 	<FinalSuccessModal
 		show={showFinalSuccessModal}

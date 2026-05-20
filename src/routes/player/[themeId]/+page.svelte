@@ -39,7 +39,7 @@
 	</div>
 {:else}
 	<div class="relative min-h-screen bg-[#eef3fb]">
-		<div class="absolute left-4 top-4 z-[60]">
+		<!-- <div class="absolute left-4 top-4 z-[60]">
 			<button
 				type="button"
 				on:click={goBackToThemeSelect}
@@ -47,7 +47,7 @@
 			>
 				← 테마 선택
 			</button>
-		</div>
+		</div> -->
 
 		<JsonMissionWorkspace useMockPlayers={true} course={selectedCourse} />
 	</div>

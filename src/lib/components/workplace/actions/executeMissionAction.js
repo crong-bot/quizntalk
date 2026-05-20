@@ -1,17 +1,14 @@
 // src/lib/components/workplace/actions/executeMissionAction.js
 
-import { validateMissionJson } from '../validator/missionValidator.js';
 import { mapJsonToSimulationState, mergeSimulationState } from '../simulation/simulationMapper.js';
+import { validateMissionJson } from '../validator/missionValidator.js';
 import { submitReadMissionAction } from './readMissionSubmitAction.js';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function executeMissionAction({
-	context,
-	actions
-}) {
+export async function executeMissionAction({ context, actions }) {
 	const {
 		status,
 		jsonText,
@@ -39,6 +36,7 @@ export async function executeMissionAction({
 		setSimulationState,
 
 		recordCurrentAttempt,
+		consumeEnergyOnWrongAnswer,
 		getNextProgressForCurrentPlayer,
 		getNextMissionIndexAfterMissionClear,
 		getNextRoomStatusAfterMissionClear,
@@ -78,7 +76,7 @@ export async function executeMissionAction({
 		setConsoleLogs([
 			{
 				type: 'error',
-				text: '검증 에너지가 부족합니다. 더 이상 명령을 전송할 수 없어요.'
+				text: '에너지가 모두 소진되었습니다. 선생님이 재시작할 때까지 기다려 주세요.'
 			}
 		]);
 
@@ -86,14 +84,13 @@ export async function executeMissionAction({
 			visible: true,
 			phase: 'error',
 			roleName: currentPlayer?.roleName ?? '',
-			message: '검증 에너지가 부족합니다.',
+			message: '에너지가 모두 소진되었습니다.',
 			progress: 100
 		});
 
 		return;
 	}
 
-	setVerificationEnergy(verificationEnergy - 1);
 	setStatus('sending');
 
 	setTransmissionState({
@@ -133,20 +130,23 @@ export async function executeMissionAction({
 	await recordCurrentAttempt(validateResult);
 
 	if (!validateResult.ok) {
+		const energyResult = await consumeEnergyOnWrongAnswer();
+
 		setStatus('editing');
 
 		setTransmissionState({
 			visible: true,
 			phase: 'error',
 			roleName: currentPlayer?.roleName ?? '',
-			message:
-				validateResult.type === 'syntax'
-					? '문법 오류로 전송에 실패했습니다.'
-					: '조건이 맞지 않아 전송에 실패했습니다.',
+			message: energyResult.message,
 			progress: 100
 		});
 
 		setConsoleLogs([
+			{
+				type: energyResult.nextEnergy <= 0 ? 'error' : 'warning',
+				text: energyResult.message
+			},
 			...(validateResult.messages ?? []),
 			{
 				type: validateResult.type === 'syntax' ? 'error' : 'warning',
@@ -159,7 +159,6 @@ export async function executeMissionAction({
 
 		return;
 	}
-
 	if (isReadCourse) {
 		await submitReadMissionAction({
 			useMockPlayers,

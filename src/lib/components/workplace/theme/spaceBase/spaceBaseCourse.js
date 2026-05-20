@@ -4,6 +4,8 @@ import { spaceBaseMissionSuccessLayers, spaceBaseRoleSuccessLayers } from './spa
 export const moonBaseCourse = {
 	id: 'moon-base',
 	title: '달 기지 복구',
+	subtitle: '달 기지의 꺼진 시스템을 JSON 명령으로 복구하세요.',
+	icon: '🪐',
 	themeId: 'spaceBase',
 
 	roles: [

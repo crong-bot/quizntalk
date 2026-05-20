@@ -70,7 +70,7 @@
 		</div>
 	</div>
 
-	<div class="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2.5">
+	<!-- <div class="mt-3 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2.5">
 		<div class="flex items-center justify-between gap-3">
 			<div>
 				<div class="text-[11px] font-black tracking-[0.12em] text-amber-700/70">검증 에너지</div>
@@ -89,7 +89,7 @@
 				{/each}
 			</div>
 		</div>
-	</div>
+	</div> -->
 
 	<!-- <div class="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2">
 		<div>
@@ -124,16 +124,18 @@
 
 					<div class="min-w-0 flex-1">
 						<div class="flex min-w-0 items-center gap-1.5">
-							<span class="truncate text-sm font-extrabold text-slate-900">
-								{player.name}
-							</span>
-
 							<span
-								class={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black leading-none ${getRoleClass(
+								class={`shrink-0 rounded-md px-1.5 py-1 text-[11px] font-black leading-none ${getRoleClass(
 									isCurrentPlayer
 								)}`}
 							>
-								[{player.roleName}]
+								{player.roleName}
+							</span>
+						</div>
+
+						<div class="flex min-w-0 items-center gap-1.5">
+							<span class="truncate text-sm font-extrabold text-slate-900">
+								{player.name}
 							</span>
 						</div>
 
