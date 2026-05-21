@@ -95,10 +95,10 @@ export const spaceBaseTheme = {
 			src: '/images/themes/space-base/finalHud.png',
 			type: 'effect',
 			layer: true,
-			x: 0,
-			y: 0,
-			width: 1411,
-			height: 1115
+			x: 31,
+			y: 40,
+			width: 1360,
+			height: 1030
 		}
 	]
 };

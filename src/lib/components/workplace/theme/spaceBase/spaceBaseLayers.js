@@ -77,13 +77,13 @@ export const spaceBaseMissionSuccessStates = {
 				visible: true,
 				alpha: 1
 			}
-		},
-		camera: {
-			shake: true,
-			shakeAmount: 4,
-			shakeSpeed: 1.4,
-			durationMs: 900
 		}
+		// camera: {
+		// 	shake: false,
+		// 	shakeAmount: 4,
+		// 	shakeSpeed: 1.4,
+		// 	durationMs: 900
+		// }
 	}
 };
 
