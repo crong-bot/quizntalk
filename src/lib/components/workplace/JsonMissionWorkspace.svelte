@@ -280,7 +280,8 @@
 		nextMissionProgress,
 		nextSimulationState,
 		nextMissionIndex,
-		nextRoomStatus
+		nextRoomStatus,
+		shouldSyncSimulationState = true
 	}) {
 		if (!canSyncToFirestore()) {
 			return;
@@ -292,7 +293,7 @@
 				roomId,
 				participantId: activeParticipantId,
 				missionProgress: nextMissionProgress,
-				simulationState: nextSimulationState,
+				simulationState: shouldSyncSimulationState ? nextSimulationState : null,
 				currentMissionIndex: nextMissionIndex,
 				status: nextRoomStatus,
 				lastMissionEvent:
@@ -309,17 +310,16 @@
 										? '모든 미션이 완료되었습니다.'
 										: `${
 												currentMission?.title ?? `미션 ${currentMissionIndex + 1}`
-										  }이 완료되었습니다.`,
+											}이 완료되었습니다.`,
 								version: Date.now(),
 								createdAt: new Date().toISOString()
-						  }
+							}
 						: null
 			});
 		} catch (error) {
 			console.error('미션 성공 동기화 실패:', error);
 		}
 	}
-
 	async function executeMission() {
 		await executeMissionAction({
 			context: {
@@ -415,6 +415,28 @@
 			}
 		];
 	}
+	function resetCurrentJsonToInitial() {
+	const mission = course.missions[currentMissionIndex];
+
+	jsonText = mission?.initialJson ?? '';
+	status = 'editing';
+	hasExecuted = false;
+
+	transmissionState = {
+		visible: false,
+		phase: 'idle',
+		roleName: '',
+		message: '',
+		progress: 0
+	};
+
+	consoleLogs = [
+		{
+			type: 'info',
+			text: `미션 ${currentMissionIndex + 1}의 JSON을 처음 상태로 되돌렸습니다.`
+		}
+	];
+}
 
 	let localCurrentPlayerId = 'player_1';
 
@@ -585,16 +607,27 @@
 		];
 	}
 	function getMissionSuccessLayer(mission = currentMission) {
-		return {
-			layers: mission?.successLayers ?? {}
-		};
-	}
-	function mergeLayerState(prevState, nextState) {
+			return (
+				mission?.successState ?? {
+					layers: {}
+				}
+			);
+		}
+	function mergeLayerState(prevState = {}, nextState = {}) {
 		return {
 			...prevState,
+			...nextState,
 			layers: {
 				...(prevState.layers ?? {}),
 				...(nextState.layers ?? {})
+			},
+			sprites: {
+				...(prevState.sprites ?? {}),
+				...(nextState.sprites ?? {})
+			},
+			camera: {
+				...(prevState.camera ?? {}),
+				...(nextState.camera ?? {})
 			}
 		};
 	}
@@ -887,6 +920,13 @@
 				>
 					현재 미션 전원 성공
 				</button>
+				<button
+					type="button"
+					on:click={resetMission}
+					class="rounded-full bg-slate-800 px-3 py-1 text-xs font-black text-white transition hover:bg-slate-900"
+				>
+					처음부터 다시하기
+				</button>
 			</div>
 			<div class="grid min-h-0 flex-1 grid-cols-[360px_480px_520px] gap-4">
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
@@ -918,11 +958,11 @@
 						canExecute={status === 'checked'}
 						title={isReadCourse ? '</> JSON 제출서' : '</> JSON 입력기'}
 						executeButtonText={isReadCourse ? '제출하기' : '실행하기'}
-						resetButtonText={isReadCourse ? '다시 작성' : '다시하기'}
+						resetButtonText='처음코드로'
 						onReady={handleEditorReady}
 						onFormat={formatJson}
 						onExecute={executeMission}
-						onReset={resetMission}
+						onReset={resetCurrentJsonToInitial}
 					/>
 
 					<div class="h-[170px] shrink-0">

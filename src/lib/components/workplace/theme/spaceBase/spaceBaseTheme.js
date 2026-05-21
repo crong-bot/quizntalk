@@ -89,6 +89,16 @@ export const spaceBaseTheme = {
 			width: 550,
 			height: 550
 			//blendMode: 'add'
+		},
+		{
+			id: 'finalHud',
+			src: '/images/themes/space-base/finalHud.png',
+			type: 'effect',
+			layer: true,
+			x: 0,
+			y: 0,
+			width: 1411,
+			height: 1115
 		}
 	]
 };

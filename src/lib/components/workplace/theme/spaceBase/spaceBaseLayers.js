@@ -7,83 +7,98 @@ export function lightOn(alpha = 1, pulseAmount = 0.99) {
 	};
 }
 
-export const spaceBaseRoleSuccessLayers = {
+export const spaceBaseRoleSuccessStates = {
 	connect: {
 		power: {
-			screenOn: true
+			layers: {
+				screenOn: true
+			}
 		},
 		oxygen: {
-			screenOn: true
+			layers: {
+				screenOn: true
+			}
 		},
 		communication: {
-			screenOn: true
+			layers: {
+				screenOn: true
+			}
 		},
 		rover: {
-			screenOn: true
+			layers: {
+				screenOn: true
+			}
 		}
 	},
 
 	powerLink: {
 		power: {
-			commandCenterLight: lightOn()
+			layers: {
+				commandCenterLight: lightOn()
+			}
 		},
 		oxygen: {
-			oxygenCenterLight: lightOn()
+			layers: {
+				oxygenCenterLight: lightOn()
+			}
 		},
 		communication: {
-			communicationLight: lightOn()
+			layers: {
+				communicationLight: lightOn()
+			}
 		},
 		rover: {
+			layers: {
+				roverLight: lightOn()
+			}
+		}
+	}
+};
+
+export const spaceBaseMissionSuccessStates = {
+	connect: {
+		layers: {
+			screenOn: true
+		}
+	},
+
+	powerLink: {
+		layers: {
+			commandCenterLight: lightOn(),
+			oxygenCenterLight: lightOn(),
+			communicationLight: lightOn(),
 			roverLight: lightOn()
 		}
 	},
 
 	finalSync: {
-		power: {
-			finalPowerPiece: true
+		layers: {
+			finalHud: {
+				visible: true,
+				alpha: 1
+			}
 		},
-		oxygen: {
-			finalOxygenPiece: true
-		},
-		communication: {
-			finalCommunicationPiece: true
-		},
-		rover: {
-			finalRoverPiece: true
+		camera: {
+			shake: true,
+			shakeAmount: 4,
+			shakeSpeed: 1.4,
+			durationMs: 900
 		}
 	}
 };
 
-export const spaceBaseMissionSuccessLayers = {
-	connect: {
-		screenOn: true
-	},
-
-	powerLink: {
-		commandCenterLight: lightOn(),
-		oxygenCenterLight: lightOn(),
-		communicationLight: lightOn(),
-		roverLight: lightOn()
-	},
-
-	finalSync: {
-		systemOnline: true,
-		energyLines: true,
-		basePulse: true,
-		finalSequence: true,
-		baseOnline: true,
-
-		commandCenterLight: lightOn(1, 0.08),
-		oxygenCenterLight: lightOn(1, 0.08),
-		communicationLight: lightOn(1, 0.08),
-		roverLight: lightOn(1, 0.08)
-	}
-};
-
-export function getSpaceBaseMissionSuccessLayers(layerKey) {
-	return spaceBaseMissionSuccessLayers[layerKey] ?? {};
+export function getSpaceBaseRoleSuccessState(layerKey, roleId) {
+	return (
+		spaceBaseRoleSuccessStates[layerKey]?.[roleId] ?? {
+			layers: {}
+		}
+	);
 }
 
-export function getSpaceBaseRoleSuccessLayers(layerKey, roleId) {
-	return spaceBaseRoleSuccessLayers[layerKey]?.[roleId] ?? {};
+export function getSpaceBaseMissionSuccessState(layerKey) {
+	return (
+		spaceBaseMissionSuccessStates[layerKey] ?? {
+			layers: {}
+		}
+	);
 }

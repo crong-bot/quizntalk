@@ -1,5 +1,8 @@
 // C:\quizntalk\src\lib\components\workplace\theme\spaceBase\spaceBaseCourse.js
-import { spaceBaseMissionSuccessLayers, spaceBaseRoleSuccessLayers } from './spaceBaseLayers';
+import {
+	spaceBaseMissionSuccessStates,
+	spaceBaseRoleSuccessStates
+} from './spaceBaseLayers';
 
 export const moonBaseCourse = {
 	id: 'moon-base',
@@ -42,9 +45,9 @@ export const moonBaseCourse = {
 			title: '기지 접속',
 			type: 'individual',
 			effectKey: 'screenOn',
-			roleSuccessLayers: spaceBaseRoleSuccessLayers.connect,
-			successLayers: spaceBaseMissionSuccessLayers.connect,
-
+			roleSuccessState: spaceBaseRoleSuccessStates.connect,
+			successState: spaceBaseMissionSuccessStates.connect,
+			simulationScope: 'local',
 			initialJson: `{
   "기지번호": "",
   "접속코드": 0
@@ -139,9 +142,9 @@ export const moonBaseCourse = {
 			title: '전원 연결',
 			type: 'individual',
 			effectKey: 'powerGlow',
-			roleSuccessLayers: spaceBaseRoleSuccessLayers.powerLink,
-			successLayers: spaceBaseMissionSuccessLayers.powerLink,
-
+			roleSuccessState: spaceBaseRoleSuccessStates.powerLink,
+			successState: spaceBaseMissionSuccessStates.powerLink,
+			simulationScope: 'room',
 			initialJson: `{
   "장치": "",
   "연결": false,
@@ -241,9 +244,9 @@ export const moonBaseCourse = {
 			title: '최종 시스템 동기화',
 			type: 'team-final',
 			effectKey: 'systemOnline',
-			roleSuccessLayers: spaceBaseRoleSuccessLayers.finalSync,
-			successLayers: spaceBaseMissionSuccessLayers.finalSync,
-
+			roleSuccessState: spaceBaseRoleSuccessStates.finalSync,
+			successState: spaceBaseMissionSuccessStates.finalSync,
+			simulationScope: 'room',
 			initialJson: `{
   "전력": 0,
   "산소": false,
@@ -339,13 +342,13 @@ export const moonBaseCourse = {
 					}
 				}
 			},
-			finalSequenceLayers: {
-				finalSequence: true,
-				energyLines: true,
-				basePulse: true,
-				baseOnline: true,
-				systemOnline: false
-			},
+			// finalSequenceLayers: {
+			// 	finalSequence: true,
+			// 	energyLines: true,
+			// 	basePulse: true,
+			// 	baseOnline: true,
+			// 	systemOnline: false
+			// },
 			finalSuccessMessage: '작전 성공! 팀의 JSON 값이 하나로 합쳐졌습니다.'
 		}
 	]

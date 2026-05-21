@@ -14,9 +14,9 @@
 
 	let participantId = '';
 
-	$: if (data?.code) {
-		participantId = getLocalParticipantId(data.code);
-	}
+	// $: if (data?.code) {
+	// 	participantId = getLocalParticipantId(data.code);
+	// }
 
 	onMount(() => {
 		participantId = getLocalParticipantId(data.code);

@@ -246,19 +246,23 @@ export async function executeMissionAction({ context, actions }) {
 
 	await wait(500);
 
-	const nextSimulationState = mergeSimulationState(simulationState, mapResult.state);
+	const simulationScope = currentMission?.simulationScope ?? 'room';
+
+	const nextLocalSimulationState = mergeSimulationState(simulationState, mapResult.state);
+
 	const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
 	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
 	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
 	await syncMissionSuccessToFirestore({
 		nextMissionProgress,
-		nextSimulationState,
+		nextSimulationState: simulationScope === 'room' ? mapResult.state : null,
 		nextMissionIndex,
-		nextRoomStatus
+		nextRoomStatus,
+		shouldSyncSimulationState: simulationScope === 'room'
 	});
 
-	setSimulationState(nextSimulationState);
+	setSimulationState(nextLocalSimulationState);
 	setHasExecuted(true);
 	setStatus('executed');
 

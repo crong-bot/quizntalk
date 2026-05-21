@@ -210,9 +210,11 @@ export async function submitFinalMissionPieceAction({ context, actions }) {
 }
 
 function createFinalSequenceState(currentMission) {
-	return {
-		layers: currentMission?.finalSequenceLayers ?? {}
-	};
+	return (
+		currentMission?.successState ?? {
+			layers: {}
+		}
+	);
 }
 
 export async function runFinalSequenceAction({ context, actions }) {
