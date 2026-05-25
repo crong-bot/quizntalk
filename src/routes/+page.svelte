@@ -44,7 +44,7 @@
 					</div>
 
 					<div class="mt-12 flex flex-wrap items-center gap-3">
-						<button type="button" on:click={() => goto('/study')}>
+						<button type="button" on:click={() => goto('/lesson')}>
 							<HoverButton hoverBtnContent={'학습하기'} />
 						</button>
 
@@ -64,7 +64,7 @@
 				<div class="w-full lg:w-[48%] flex items-center justify-center lg:justify-end">
 					<img
 						class="block w-full max-w-[520px] sm:max-w-[600px] lg:max-w-[560px] h-auto object-contain"
-						src="/landing1.webp"
+						src="/landing1.png"
 						alt="landing"
 						width="704"
 						height="555"

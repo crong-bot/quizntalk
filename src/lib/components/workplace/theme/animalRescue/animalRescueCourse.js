@@ -10,6 +10,28 @@ export const animalRescueCourse = {
 	categoryTitle: '제이슨 해석',
 	mode: 'read',
 
+	intro: {
+		badge: 'RESCUE BRIEFING',
+		title: '동물 구조대 긴급 출동',
+		subtitle: '흩어진 제보를 모아 동물의 위치와 안전한 구조 방법을 찾아보세요.',
+		image: '/images/themes/animal/intro.png',
+		imageAlt: '동물 구조대가 제보를 분석하는 장면',
+		summaryTitle: '현재 상황',
+		summary:
+			'동물이 낯선 곳에서 발견되었다는 제보가 들어왔습니다. 하지만 제보 내용은 역할별로 나뉘어 있어, 혼자서는 전체 상황을 알 수 없습니다.',
+		goalTitle: '우리의 임무',
+		missionGoal:
+			'각자 받은 JSON 단서를 읽고 중요한 정보를 분석하세요. 팀원들의 분석을 모아 동물이 어디에 있는지, 어떻게 안전하게 구조할지 계획을 세워야 합니다.',
+		steps: [
+			'내 역할에 주어진 JSON 단서를 확인합니다.',
+			'제보에서 중요한 정보를 찾아 분석합니다.',
+			'분석 결과를 제출하고 팀원의 정보를 기다립니다.',
+			'모든 분석이 모이면 안전한 구조 계획을 완성합니다.'
+		],
+		tip: '힌트: 제보 하나만 보고 판단하지 말고, 친구들의 단서까지 모아 근거를 만들어야 해요.',
+		buttonText: '구조 작전 시작하기'
+	},
+
 	roles: [
 		{
 			id: 'report',

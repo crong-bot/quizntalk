@@ -1,8 +1,5 @@
 // C:\quizntalk\src\lib\components\workplace\theme\spaceBase\spaceBaseCourse.js
-import {
-	spaceBaseMissionSuccessStates,
-	spaceBaseRoleSuccessStates
-} from './spaceBaseLayers';
+import { spaceBaseMissionSuccessStates, spaceBaseRoleSuccessStates } from './spaceBaseLayers';
 
 export const moonBaseCourse = {
 	id: 'moon-base',
@@ -10,6 +7,28 @@ export const moonBaseCourse = {
 	subtitle: '달 기지의 꺼진 시스템을 JSON 명령으로 복구하세요.',
 	icon: '🪐',
 	themeId: 'spaceBase',
+
+	intro: {
+		badge: 'EMERGENCY BRIEFING',
+		title: '달 기지 긴급 복구 작전',
+		subtitle: '멈춰 버린 달 기지를 팀의 JSON 명령으로 다시 켜세요.',
+		image: '/images/themes/space-base/intro.png',
+		imageAlt: '고장 난 달 기지와 네 가지 역할 장치',
+		summaryTitle: '현재 상황',
+		summary:
+			'달 기지의 전력, 산소, 통신, 탐사로봇 시스템이 멈췄습니다. 기지가 완전히 꺼지기 전에 각 장치를 다시 연결해야 합니다.',
+		goalTitle: '우리의 임무',
+		missionGoal:
+			'각자 맡은 역할의 단서를 확인하고 JSON 값을 완성하세요. 팀원들이 모두 성공하면 다음 단계가 열리고, 마지막에는 팀의 값을 모아 기지를 복구합니다.',
+		steps: [
+			'내 역할과 단서를 먼저 확인합니다.',
+			'JSON 입력기에 알맞은 값을 작성합니다.',
+			'실행하기를 눌러 장치를 복구합니다.',
+			'모든 팀원이 완료하면 다음 미션으로 이동합니다.'
+		],
+		tip: '힌트: 문자열은 "따옴표"로 감싸고, 숫자와 true/false는 따옴표 없이 입력해요.',
+		buttonText: '작전 시작하기'
+	},
 
 	roles: [
 		{

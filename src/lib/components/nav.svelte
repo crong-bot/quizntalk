@@ -19,11 +19,6 @@
 		open = false;
 	}
 
-	function go(path) {
-		closeMenu();
-		goto(path);
-	}
-
 	async function doLogout() {
 		closeMenu();
 		await logout();
@@ -43,6 +38,7 @@
 	onMount(() => {
 		document.addEventListener('click', onDocClick);
 		document.addEventListener('keydown', onKeydown);
+
 		return () => {
 			document.removeEventListener('click', onDocClick);
 			document.removeEventListener('keydown', onKeydown);
@@ -51,162 +47,118 @@
 </script>
 
 <header class="w-full">
-	<div class="w-1280 m-auto px-10">
-		<div class="flex justify-between pt-3 pb-4 border-b-2 border-slate-100 items-center">
-			<!-- ✅ 로고 (그대로) -->
-			<a href="/" class="flex flex-row items-center">
-				<img class="object-cover w-30 h-16" src="/logo.png" alt="logo" />
+	<div class="mx-auto w-full max-w-[1280px] px-5 sm:px-6 lg:px-10">
+		<div class="flex items-center justify-between border-b-2 border-slate-100 pt-3 pb-4">
+			<!-- 로고 -->
+			<a href="/" class="flex min-w-0 shrink-0 flex-row items-center">
+				<img class="h-16 w-30 object-cover" src="/logo.png" alt="logo" />
 			</a>
 
-			<!-- ✅ 가운데 메뉴 (그대로) -->
-			<!-- <nav
-			class="md:ml-auto md:mr-auto font-nanum font-extrabold text-base text-gray-600 flex flex-wrap space-x-20 items-end justify-center"
-		>
-			<a href="/" class="hover:text-gray-900 transition"> Home </a>
-			<a href="/study" class="hover:text-gray-900 transition"> Study </a>
-			<a href="/qa" class="hover:text-gray-900 transition"> Q&A </a>
-			<a href="/about" class="hover:text-gray-900 transition"> About </a>
-			<a href="/" class="inline-flex items-center border-0 py-1 px-3 mt-4 md:mt-0">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-				>
-					<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-					<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-				</svg>
-			</a>
-		</nav> -->
-
-			<!-- ✅ 오른쪽: 스샷 느낌 영역 -->
-			<div class=" flex items-center gap-3 relative" id="nav-user-root">
+			<!-- 오른쪽 영역 -->
+			<div class="flex min-w-0 items-center gap-4 lg:gap-8">
 				{#if !$authUser}
-					<!-- 로그인 전: Log in(링크) + Sign up(라운드 버튼) -->
 					<button
-						class="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
+						type="button"
+						class="font-gmarket text-[13px] font-bold tracking-[-0.03em] text-slate-500 transition hover:text-slate-950"
 						on:click={() => goto('/login')}
 					>
 						Log in
 					</button>
 
 					<button
-						class="px-4 py-2 rounded-xl text-sm font-semibold
-						bg-emerald-600 text-white shadow-sm
-						hover:bg-emerald-700 transition"
+						type="button"
+						class="font-gmarket rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-bold tracking-[-0.03em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-md"
 						on:click={() => goto('/signup')}
 					>
 						Sign up
 					</button>
 				{:else}
-					<!-- 로그인 후: Dashboard(버튼) + 아바타(캡슐/이니셜) -->
-					<button
-						class="px-4 py-2 rounded-xl text-sm font-semibold
-						bg-emerald-600 text-white shadow-sm
-						hover:bg-emerald-700 transition"
-						on:click={() => goto('/study')}
-					>
-						강의실
-					</button>
-
-					<!-- ✅ 새 아바타: 캡슐(pill) + 원형 이니셜 -->
-					<button
-						type="button"
-						class="flex items-center gap-2 pl-2 pr-3 py-2 rounded-full
-						border border-slate-200 bg-white shadow-sm
-						hover:shadow transition"
-						on:click={toggleMenu}
-						aria-haspopup="menu"
-						aria-expanded={open}
-					>
-						<div
-							class="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold"
+					<!-- 로그인 후 메뉴 -->
+					<nav class="flex min-w-0 items-center gap-4 lg:gap-8">
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/lesson')}
 						>
-							{#if $authUser?.photoURL}
-								<img
-									src={$authUser.photoURL}
-									alt="avatar"
-									class="w-full h-full object-cover rounded-full"
-								/>
-							{:else}
-								{initial}
-							{/if}
-						</div>
-
-						<div class="max-w-[120px] text-left leading-tight">
-							<div class="text-xs text-slate-400">Account</div>
-							<div class="text-sm font-semibold text-slate-800 truncate">{displayId}</div>
-						</div>
-
-						<svg
-							class="w-4 h-4 text-slate-400 ml-1"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-							aria-hidden="true"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
-								clip-rule="evenodd"
+							학습하기
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
 							/>
-						</svg>
-					</button>
+						</button>
 
-					{#if open}
-						<!-- 드롭다운 -->
-						<div
-							class="absolute right-0 top-[78px] w-60 bg-white rounded-2xl shadow-lg border border-slate-100 p-2 z-50"
-							role="menu"
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/library')}
 						>
-							<div class="px-3 py-2">
-								<div class="text-xs text-slate-400">Signed in</div>
-								<div class="text-sm font-semibold text-slate-900 truncate">{email}</div>
+							내 수업실
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
+							/>
+						</button>
+
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/player')}
+						>
+							로컬테스트
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
+							/>
+						</button>
+					</nav>
+
+					<!-- 아바타 클릭 시 이메일 + 로그아웃 -->
+					<div class="relative shrink-0" id="nav-user-root">
+						<button
+							type="button"
+							class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+							on:click={toggleMenu}
+							aria-haspopup="menu"
+							aria-expanded={open}
+							aria-label="계정 메뉴 열기"
+						>
+							<div
+								class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-950 font-gmarket text-[14px] font-bold text-white"
+							>
+								{#if $authUser?.photoURL}
+									<img
+										src={$authUser.photoURL}
+										alt="avatar"
+										class="h-full w-full rounded-full object-cover"
+									/>
+								{:else}
+									{initial}
+								{/if}
 							</div>
+						</button>
 
-							<div class="h-px bg-slate-100 my-1" />
-
-							<button
-								class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700"
-								role="menuitem"
-								on:click={() => go('/profile')}
+						{#if open}
+							<div
+								class="absolute right-0 top-[58px] z-50 w-72 rounded-[22px] border border-slate-100 bg-white p-3 shadow-[0_22px_60px_rgba(15,23,42,0.16)]"
+								role="menu"
 							>
-								프로필
-							</button>
-							<button
-								class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700"
-								role="menuitem"
-								on:click={() => go('/study')}
-							>
-								AI 학습
-							</button>
+								<div class="rounded-2xl bg-slate-50 px-4 py-3">
+									<div class="font-gmarket text-[10px] font-bold tracking-[0.18em] text-slate-400">
+										SIGNED IN
+									</div>
+									<div class="mt-1 truncate text-sm font-extrabold text-slate-900">
+										{email}
+									</div>
+								</div>
 
-							<button
-								class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700"
-								role="menuitem"
-								on:click={() => go('/library')}
-							>
-								내 수업실
-							</button>
-
-							<button
-								class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700"
-								role="menuitem"
-								on:click={() => go('/player')}
-							>
-								강의실
-							</button>
-
-							<div class="h-px bg-slate-100 my-1" />
-
-							<button
-								class="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 text-sm text-red-600"
-								role="menuitem"
-								on:click={doLogout}
-							>
-								로그아웃
-							</button>
-						</div>
-					{/if}
+								<button
+									type="button"
+									class="mt-2 w-full rounded-2xl px-4 py-3 text-left font-gmarket text-[13px] font-bold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+									role="menuitem"
+									on:click={doLogout}
+								>
+									로그아웃
+								</button>
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</div>

@@ -34,6 +34,9 @@
 		setAllPlayersMissionState
 	} from './state/workspaceState.js';
 
+	import RoomIntroModal from './modals/RoomIntroModal.svelte';
+	import RoomWaitingModal from './modals/RoomWaitingModal.svelte';
+
 	export let roomCode = '';
 	export let lessonId = '';
 	export let roomId = '';
@@ -67,6 +70,19 @@
 	let showMissionCompleteModal = false;
 	let completedMissionIndex = null;
 	let pendingNextMissionIndex = null;
+
+	let showRoomIntroModal = Boolean(course?.intro);
+
+	let lastIntroCourseId = '';
+
+	$: {
+		const introCourseId = course?.id ?? course?.themeId ?? '';
+
+		if (introCourseId && introCourseId !== lastIntroCourseId) {
+			lastIntroCourseId = introCourseId;
+			showRoomIntroModal = Boolean(course?.intro);
+		}
+	}
 
 	let lastSeenMissionEventKey = '';
 
@@ -310,10 +326,10 @@
 										? '모든 미션이 완료되었습니다.'
 										: `${
 												currentMission?.title ?? `미션 ${currentMissionIndex + 1}`
-											}이 완료되었습니다.`,
+										  }이 완료되었습니다.`,
 								version: Date.now(),
 								createdAt: new Date().toISOString()
-							}
+						  }
 						: null
 			});
 		} catch (error) {
@@ -321,6 +337,30 @@
 		}
 	}
 	async function executeMission() {
+		if (shouldUseFirebase && !isRoomReadyToPlay) {
+			showRoomWaitingModal = true;
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer?.roleName ?? '',
+				message: '팀원이 모두 모여야 시작할 수 있습니다.',
+				progress: 100
+			};
+
+			consoleLogs = [
+				{
+					type: 'warning',
+					text: `아직 모든 팀원이 모이지 않았습니다. ${joinedParticipantCount}/${requiredParticipantCount}명 입장했습니다.`
+				},
+				{
+					type: 'info',
+					text: '모든 팀원이 입장하면 미션을 시작할 수 있습니다.'
+				}
+			];
+
+			return;
+		}
 		await executeMissionAction({
 			context: {
 				status,
@@ -416,27 +456,27 @@
 		];
 	}
 	function resetCurrentJsonToInitial() {
-	const mission = course.missions[currentMissionIndex];
+		const mission = course.missions[currentMissionIndex];
 
-	jsonText = mission?.initialJson ?? '';
-	status = 'editing';
-	hasExecuted = false;
+		jsonText = mission?.initialJson ?? '';
+		status = 'editing';
+		hasExecuted = false;
 
-	transmissionState = {
-		visible: false,
-		phase: 'idle',
-		roleName: '',
-		message: '',
-		progress: 0
-	};
+		transmissionState = {
+			visible: false,
+			phase: 'idle',
+			roleName: '',
+			message: '',
+			progress: 0
+		};
 
-	consoleLogs = [
-		{
-			type: 'info',
-			text: `미션 ${currentMissionIndex + 1}의 JSON을 처음 상태로 되돌렸습니다.`
-		}
-	];
-}
+		consoleLogs = [
+			{
+				type: 'info',
+				text: `미션 ${currentMissionIndex + 1}의 JSON을 처음 상태로 되돌렸습니다.`
+			}
+		];
+	}
 
 	let localCurrentPlayerId = 'player_1';
 
@@ -454,6 +494,12 @@
 	$: hasFirebaseParticipants = Array.isArray(participants) && participants.length > 0;
 	$: shouldUseFirebase = hasFirebaseParticipants && !useMockPlayers;
 	$: currentPlayerId = shouldUseFirebase ? activeParticipantId : localCurrentPlayerId;
+
+	$: requiredParticipantCount = room?.maxParticipants ?? course?.roles?.length ?? 4;
+	$: joinedParticipantCount = shouldUseFirebase ? participants.length : players.length;
+	$: isRoomReadyToPlay = !shouldUseFirebase || joinedParticipantCount >= requiredParticipantCount;
+
+	let showRoomWaitingModal = false;
 
 	$: players = buildWorkspacePlayers({
 		course,
@@ -607,12 +653,12 @@
 		];
 	}
 	function getMissionSuccessLayer(mission = currentMission) {
-			return (
-				mission?.successState ?? {
-					layers: {}
-				}
-			);
-		}
+		return (
+			mission?.successState ?? {
+				layers: {}
+			}
+		);
+	}
 	function mergeLayerState(prevState = {}, nextState = {}) {
 		return {
 			...prevState,
@@ -891,43 +937,45 @@
 					console.log('메뉴 클릭');
 				}}
 			/>
+			<!-- 테스트바 부분 -->
+			{#if !shouldUseFirebase}
+				<div
+					class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+				>
+					<div class="text-xs font-black text-slate-500">테스트</div>
 
-			<div
-				class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
-			>
-				<div class="text-xs font-black text-slate-500">테스트</div>
+					{#each players as player}
+						<button
+							type="button"
+							on:click={() => selectPlayer(player.id)}
+							class={`rounded-full px-3 py-1 text-xs font-black transition ${
+								currentPlayerId === player.id
+									? 'bg-blue-600 text-white'
+									: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+							}`}
+						>
+							{player.roleName}
+						</button>
+					{/each}
 
-				{#each players as player}
+					<div class="mx-1 h-5 w-px bg-slate-200"></div>
+
 					<button
 						type="button"
-						on:click={() => selectPlayer(player.id)}
-						class={`rounded-full px-3 py-1 text-xs font-black transition ${
-							currentPlayerId === player.id
-								? 'bg-blue-600 text-white'
-								: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-						}`}
+						on:click={debugCompleteCurrentMissionForAll}
+						class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white transition hover:bg-emerald-700"
 					>
-						{player.roleName}
+						현재 미션 전원 성공
 					</button>
-				{/each}
-
-				<div class="mx-1 h-5 w-px bg-slate-200"></div>
-
-				<button
-					type="button"
-					on:click={debugCompleteCurrentMissionForAll}
-					class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white transition hover:bg-emerald-700"
-				>
-					현재 미션 전원 성공
-				</button>
-				<button
-					type="button"
-					on:click={resetMission}
-					class="rounded-full bg-slate-800 px-3 py-1 text-xs font-black text-white transition hover:bg-slate-900"
-				>
-					처음부터 다시하기
-				</button>
-			</div>
+					<button
+						type="button"
+						on:click={resetMission}
+						class="rounded-full bg-slate-800 px-3 py-1 text-xs font-black text-white transition hover:bg-slate-900"
+					>
+						처음부터 다시하기
+					</button>
+				</div>
+			{/if}
 			<div class="grid min-h-0 flex-1 grid-cols-[360px_480px_520px] gap-4">
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
 					<!-- <MissionRoleCard role={powerMission.role} /> -->
@@ -958,7 +1006,7 @@
 						canExecute={status === 'checked'}
 						title={isReadCourse ? '</> JSON 제출서' : '</> JSON 입력기'}
 						executeButtonText={isReadCourse ? '제출하기' : '실행하기'}
-						resetButtonText='처음코드로'
+						resetButtonText="처음코드로"
 						onReady={handleEditorReady}
 						onFormat={formatJson}
 						onExecute={executeMission}
@@ -980,6 +1028,7 @@
 							{currentMissionIndex}
 							{verificationEnergy}
 							{maxVerificationEnergy}
+							maxPlayers={course?.roles?.length ?? 4}
 						/>
 					</div>
 					<div class="shrink-0">
@@ -987,7 +1036,7 @@
 					</div>
 
 					<div class="min-h-0 flex-1">
-						<SharedSimulationPanel {simulationState} />
+						<SharedSimulationPanel {themeId} {simulationState} />
 					</div>
 
 					<!-- <div class="shrink-0">
@@ -997,6 +1046,13 @@
 			</div>
 		</div>
 	</div>
+	<RoomIntroModal
+		show={showRoomIntroModal}
+		intro={course?.intro}
+		onClose={() => {
+			showRoomIntroModal = false;
+		}}
+	/>
 	<MissionCompleteModal
 		show={showMissionCompleteModal}
 		{course}
@@ -1015,6 +1071,14 @@
 		{verificationEnergy}
 		onExit={() => {
 			showFinalSuccessModal = false;
+		}}
+	/>
+	<RoomWaitingModal
+		show={showRoomWaitingModal}
+		{joinedParticipantCount}
+		{requiredParticipantCount}
+		onClose={() => {
+			showRoomWaitingModal = false;
 		}}
 	/>
 </div>

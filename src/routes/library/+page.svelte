@@ -246,11 +246,24 @@
 			class="flex items-center justify-between rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm"
 		>
 			<div>
-				<div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
+				<a
+					href="/"
+					class="rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
+				>
+					← 홈으로
+				</a>
+				<!-- <button
+					type="button"
+					on:click={() => goto('/')}
+					class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-50"
+				>
+					홈으로
+				</button> -->
+				<!-- <div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
 					CREATE GAME
-				</div>
+				</div> -->
 
-				<h1 class="mt-2 font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
+				<h1 class="mt-4 font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
 					수업 만들기
 				</h1>
 
@@ -258,14 +271,6 @@
 					미션 테마를 선택하고, 모둠 수에 맞게 방 코드를 생성하세요.
 				</p>
 			</div>
-
-			<button
-				type="button"
-				on:click={() => goto('/')}
-				class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-50"
-			>
-				홈으로
-			</button>
 		</header>
 
 		<div class="grid grid-cols-[1fr_360px] gap-5">

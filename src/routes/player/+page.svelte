@@ -32,6 +32,12 @@
 			></div>
 
 			<div class="relative z-10 flex flex-col gap-2">
+				<a
+					href="/"
+					class="inline-flex w-fit self-start items-center justify-center rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
+				>
+					← 홈으로
+				</a>
 				<div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
 					MOCK PLAYER
 				</div>
