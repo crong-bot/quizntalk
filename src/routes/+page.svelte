@@ -27,19 +27,22 @@
 						class="flex flex-col font-dodum font-extrabold tracking-normal text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
 					>
 						<!-- <h1>제이 클래스로</h1> -->
-						<h1>데이터 미션을</h1>
-						<h1 class="pt-3">함께 해결해보세요.</h1>
+						<h2>데이터를 읽고 미션을</h2>
+						<h2 class="pt-3">함께 해결하세요.</h2>
 					</div>
 
 					<div class="mt-6 space-y-1">
 						<p class="font-dodum font-normal text-sm sm:text-base leading-6 sm:leading-7">
-							제이 클래스는 JSON과 데이터 구조를 쉽고 재미있게 배우는 학습 도구입니다.
+							제이클래스는 JSON과 데이터 구조를 쉽고 재미있게 배우는 데이터학습도구입니다.
 						</p>
+
 						<p class="font-dodum font-normal text-sm sm:text-base leading-6 sm:leading-7">
-							학생들은 각자의 단서를 바탕으로 데이터를 완성하고, 협동 미션을 수행합니다.
+							학생들은 먼저 JSON의 기본 개념을 익히고 각자의 단서를 바탕으로 데이터를 완성하며
+							친구들과 협동 미션을 해결합니다.
 						</p>
-						<p class="font-dodum font-normal text-sm sm:text-base leading-6 sm:leading-7">
-							학습은 혼자서, 미션은 친구들과 함께 게임 코드로 참여할 수 있습니다.
+
+						<p class="font-dodum pt-4 font-normal text-sm sm:text-base leading-6 sm:leading-7">
+							혼자 배우고, 함께 도전하는 AI 시대의 데이터 학습을 시작해보세요.
 						</p>
 					</div>
 
@@ -50,11 +53,11 @@
 
 						{#if $authUser}
 							<button type="button" on:click={() => goto('/library')}>
-								<HoverButton hoverBtnContent={'게임 생성하기'} />
+								<HoverButton hoverBtnContent={'미션 생성하기'} />
 							</button>
 						{:else}
 							<button type="button" on:click={() => goto('/invite')}>
-								<HoverButton hoverBtnContent={'게임 참여하기'} />
+								<HoverButton hoverBtnContent={'미션 참여하기'} />
 							</button>
 						{/if}
 					</div>

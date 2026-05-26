@@ -4,7 +4,8 @@
 		formatJsonText,
 		validateJsonLearningAnswer
 	} from '$lib/components/jsonstudy/jsonLearningValidator.js';
-
+	import JsonCodeMirrorEditor from '$lib/components/workplace/JsonCodeMirrorEditor.svelte';
+	import { tick } from 'svelte';
 	export let course;
 	export let lesson;
 	export let lessonIndex = 0;
@@ -22,6 +23,9 @@
 	let quizMessage = '';
 	let clearedVersion = 0;
 
+	let leftContentScrollEl;
+	let introRightScrollEl;
+
 	$: progressPercent = Math.round((stepNumber / totalCount) * 100);
 	$: storageKey = `json_learning_progress_${course.slug}`;
 
@@ -33,6 +37,50 @@
 		title: '',
 		description: ''
 	};
+	let showFinalSuccessModal = false;
+
+	$: isLastStep = stepNumber >= totalCount;
+
+	function getSavedProgress() {
+		if (typeof localStorage === 'undefined') {
+			return {
+				currentStep: stepNumber,
+				clearedLessonIds: [],
+				codeByLessonId: {},
+				initialCodeByLessonId: {}
+			};
+		}
+
+		try {
+			return JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+		} catch {
+			return {
+				currentStep: stepNumber,
+				clearedLessonIds: [],
+				codeByLessonId: {},
+				initialCodeByLessonId: {}
+			};
+		}
+	}
+
+	function isAllLessonsCleared() {
+		const progress = getSavedProgress();
+		const clearedLessonIds = progress.clearedLessonIds ?? [];
+
+		// 실제 정답 검사를 하는 단계만 완료 조건에 포함
+		const clearableLessons = course.lessons.filter((item) => item.type !== 'intro' && item.answer);
+
+		return (
+			clearableLessons.length > 0 &&
+			clearableLessons.every((item) => clearedLessonIds.includes(item.id))
+		);
+	}
+
+	function openFinalSuccessIfCompleted() {
+		if (isAllLessonsCleared()) {
+			showFinalSuccessModal = true;
+		}
+	}
 
 	function openImageModal({ src, title = '이미지 보기', description = '' }) {
 		imageModal = {
@@ -99,6 +147,21 @@
 		isQuizOpen = false;
 
 		loadSavedCode();
+		resetLessonScroll();
+	}
+
+	async function resetLessonScroll() {
+		await tick();
+
+		leftContentScrollEl?.scrollTo({
+			top: 0,
+			behavior: 'auto'
+		});
+
+		introRightScrollEl?.scrollTo({
+			top: 0,
+			behavior: 'auto'
+		});
 	}
 
 	function saveProgress() {
@@ -211,11 +274,14 @@
 
 		if (result.ok) {
 			markCleared();
+
+			if (isAllLessonsCleared()) {
+				showFinalSuccessModal = true;
+			}
 		} else {
 			saveProgress();
 		}
 	}
-
 	function formatCode() {
 		const result = formatJsonText(jsonText);
 
@@ -244,7 +310,23 @@
 	}
 
 	function goNext() {
-		if (stepNumber >= totalCount) return;
+		if (isLastStep) {
+			if (isAllLessonsCleared()) {
+				showFinalSuccessModal = true;
+				return;
+			}
+
+			if (currentLessonCleared) {
+				resultMessage =
+					'아직 완료하지 않은 이전 단계가 있어요. 목차에서 완료 표시를 확인해 주세요.';
+				resultType = 'error';
+				return;
+			}
+
+			resultMessage = '마지막 단계예요. 이 단계를 성공하면 모든 학습이 완료돼요.';
+			resultType = 'info';
+			return;
+		}
 
 		if (lesson.type === 'intro' && !currentLessonCleared) {
 			openQuiz();
@@ -266,7 +348,7 @@
 
 	function goHome() {
 		saveProgress();
-		goto('/lesson');
+		goto('/');
 	}
 
 	function getResultClass(type) {
@@ -476,7 +558,7 @@
 		<section
 			class="min-h-0 overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm"
 		>
-			<div class="flex h-full min-h-0 flex-col overflow-y-auto p-6">
+			<div bind:this={leftContentScrollEl} class="flex h-full min-h-0 flex-col overflow-y-auto p-6">
 				<div class={`${lesson.image ? 'mt-4' : ''} flex items-center justify-between gap-3`}>
 					<div class="flex min-w-0 items-center gap-2 rounded-2xl bg-blue-50 px-3 py-2">
 						<span
@@ -632,7 +714,7 @@
 		>
 			{#if lesson.type === 'intro'}
 				<div class="flex min-h-0 flex-1 flex-col">
-					<div class="min-h-0 flex-1 overflow-y-auto pr-1">
+					<div bind:this={introRightScrollEl} class="min-h-0 flex-1 overflow-y-auto pr-1">
 						<div>
 							<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-slate-400">
 								WHY JSON?
@@ -745,11 +827,16 @@
 					</div>
 				</div>
 
-				<textarea
-					bind:value={jsonText}
-					spellcheck="false"
-					class="mt-4 min-h-0 flex-1 resize-none rounded-[24px] border border-slate-800 bg-[#101827] p-5 font-mono text-[15px] font-bold leading-7 text-emerald-100 outline-none transition focus:ring-4 focus:ring-blue-100"
-				></textarea>
+				<div
+					class="mt-4 min-h-0 flex-1 overflow-hidden rounded-[24px] border border-slate-800 bg-[#101827] transition focus-within:ring-4 focus-within:ring-blue-100"
+				>
+					<JsonCodeMirrorEditor
+						bind:value={jsonText}
+						onChange={(nextValue) => {
+							jsonText = nextValue;
+						}}
+					/>
+				</div>
 
 				<div
 					class={`mt-4 whitespace-pre-wrap rounded-2xl border px-4 py-3 text-[14px] font-extrabold ${getResultClass(
@@ -784,12 +871,15 @@
 					<button
 						type="button"
 						on:click={goNext}
-						disabled={stepNumber === totalCount}
-						class={`h-12 rounded-2xl px-5 text-[14px] font-extrabold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
+						class={`h-12 rounded-2xl px-5 text-[14px] font-extrabold text-white transition ${
 							currentLessonCleared ? 'bg-slate-950 hover:bg-slate-800' : 'bg-slate-400'
 						}`}
 					>
-						{currentLessonCleared ? '다음' : '성공해야 다음'}
+						{#if isLastStep}
+							{currentLessonCleared ? '완료 축하 보기' : '마지막 단계'}
+						{:else}
+							{currentLessonCleared ? '다음' : '성공해야 다음'}
+						{/if}
 					</button>
 				</div>
 			{/if}
@@ -928,6 +1018,76 @@
 						class="rounded-2xl bg-slate-950 px-5 py-3 text-[14px] font-extrabold text-white transition hover:bg-slate-800"
 					>
 						닫기
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+	{#if showFinalSuccessModal}
+		<div
+			class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-6 backdrop-blur-sm"
+		>
+			<button
+				type="button"
+				class="absolute inset-0"
+				aria-label="축하 모달 닫기"
+				on:click={() => (showFinalSuccessModal = false)}
+			></button>
+
+			<div
+				class="relative z-10 w-full max-w-[540px] overflow-hidden rounded-[34px] border border-yellow-200 bg-white p-8 text-center shadow-2xl"
+			>
+				<div
+					class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-yellow-200/50 blur-3xl"
+				></div>
+
+				<div
+					class="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-200/50 blur-3xl"
+				></div>
+
+				<div
+					class="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100 text-5xl shadow-inner"
+				>
+					🏆
+				</div>
+
+				<div class="relative mb-2 text-[12px] font-black tracking-[0.22em] text-yellow-500">
+					JSON LEARNING COMPLETE
+				</div>
+
+				<h2 class="relative font-gmarket text-[30px] font-black tracking-[-0.06em] text-slate-950">
+					모든 단계 완료!
+				</h2>
+
+				<p class="relative mt-4 text-[15px] font-bold leading-7 text-slate-500">
+					축하해요! 모든 JSON 학습 단계를 끝까지 성공했어요.<br />
+					이제 AI가 읽을 수 있는 데이터를 직접 만들 준비가 되었어요.
+				</p>
+
+				<div
+					class="relative mt-6 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-left text-[14px] font-bold leading-7 text-slate-600"
+				>
+					<div>✅ JSON 구조 이해 완료</div>
+					<div>✅ 오류 메시지 확인 완료</div>
+					<div>✅ 데이터 입력 연습 완료</div>
+					<div>✅ 최종 학습 준비 완료</div>
+				</div>
+
+				<div class="relative mt-7 flex gap-3">
+					<button
+						type="button"
+						on:click={() => (showFinalSuccessModal = false)}
+						class="h-12 flex-1 rounded-2xl bg-slate-950 px-5 text-[14px] font-black text-white transition hover:bg-slate-800"
+					>
+						확인
+					</button>
+
+					<button
+						type="button"
+						on:click={goHome}
+						class="h-12 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-black text-slate-600 transition hover:bg-slate-50"
+					>
+						학습 홈
 					</button>
 				</div>
 			</div>
