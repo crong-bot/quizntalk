@@ -70,10 +70,10 @@
 <div class="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
 	<div class="flex items-start justify-between gap-3">
 		<div>
-			<div class="text-base font-extrabold text-slate-900">팀 실행 보드</div>
-			<div class="mt-1 text-xs font-bold text-slate-400">
+			<div class="text-base font-extrabold text-slate-900">팀 실행 보드 :모든 팀원이 완료하면 다음 미션이 열</div>
+			<!-- <div class="mt-1 text-xs font-bold text-slate-400">
 				모든 팀원이 완료하면 다음 미션이 열립니다
-			</div>
+			</div> -->
 		</div>
 
 		<div class="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-600">
@@ -105,6 +105,9 @@
 							>
 								{player.roleName}
 							</span>
+							<div class="mt-1 truncate text-xs font-semibold text-slate-500">
+							{getDetail(player)}
+						</div>
 						</div>
 
 						<div class="flex min-w-0 items-center gap-1.5">
@@ -113,9 +116,7 @@
 							</span>
 						</div>
 
-						<div class="mt-1 truncate text-xs font-semibold text-slate-500">
-							{getDetail(player)}
-						</div>
+						
 					</div>
 
 					<span
@@ -147,13 +148,14 @@
 							>
 								빈 자리
 							</span>
+							
+						<div class="mt-1 truncate text-xs font-semibold text-slate-400">
+							학생이 입장하면 표시됩니다
+						</div>
 						</div>
 
 						<div class="mt-1 truncate text-sm font-extrabold text-slate-400">참가 대기</div>
 
-						<div class="mt-1 truncate text-xs font-semibold text-slate-400">
-							학생이 입장하면 표시됩니다
-						</div>
 					</div>
 
 					<span

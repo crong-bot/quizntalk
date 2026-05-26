@@ -923,8 +923,8 @@
 </script>
 
 <div class="flex h-full w-full items-start justify-center bg-[#eef3fb]">
-	<div class="h-[900px] w-[1440px] shrink-0 bg-[#f4f7fb] px-4 pb-4 pt-2">
-		<div class="flex h-full min-h-0 flex-col gap-4">
+	<div class="h-[900px] w-[1440px] shrink-0 bg-[#f4f7fb] px-4 pb-4 pt-0">
+		<div class="flex h-full min-h-0 flex-col gap-2">
 			<MissionWorkspaceHeader
 				title={course?.title ?? '미션'}
 				subtitle={course?.subtitle ?? '미션 명령을 준비하세요.'}
@@ -976,7 +976,7 @@
 					</button>
 				</div>
 			{/if}
-			<div class="grid min-h-0 flex-1 grid-cols-[360px_480px_520px] gap-4">
+			<div class="grid min-h-0 flex-1 grid-cols-[360px_470px_548px] gap-4">
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
 					<!-- <MissionRoleCard role={powerMission.role} /> -->
 					<MissionBriefingPanel
@@ -1013,14 +1013,22 @@
 						onReset={resetCurrentJsonToInitial}
 					/>
 
-					<div class="h-[170px] shrink-0">
+					<div class="h-[300px] shrink-0">
 						<JsonEditorConsole logs={consoleLogs} {status} />
 						<!-- <CheckResultPanel messages={checkResult.messages} />
 						<MissionStepPanel {status} /> -->
 					</div>
 				</main>
 
-				<aside class="flex min-h-0 flex-col gap-4">
+				<aside class="flex min-h-0 flex-col gap-2">
+					
+					<div class="shrink-0">
+						<CommandTransmissionPanel state={transmissionState} />
+					</div>
+
+					<div class="h-[400px] shrink-0">
+						<SharedSimulationPanel {themeId} {simulationState} />
+					</div>
 					<div class="shrink-0">
 						<TeamExecutionBoard
 							{players}
@@ -1030,13 +1038,6 @@
 							{maxVerificationEnergy}
 							maxPlayers={course?.roles?.length ?? 4}
 						/>
-					</div>
-					<div class="shrink-0">
-						<CommandTransmissionPanel state={transmissionState} />
-					</div>
-
-					<div class="min-h-0 flex-1">
-						<SharedSimulationPanel {themeId} {simulationState} />
 					</div>
 
 					<!-- <div class="shrink-0">

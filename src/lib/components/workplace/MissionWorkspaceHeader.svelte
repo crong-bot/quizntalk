@@ -23,7 +23,7 @@
 </script>
 
 <header
-	class="relative z-50 flex h-[64px] shrink-0 items-center rounded-[12px] border border-slate-200 bg-white px-4 text-slate-900 shadow-sm"
+	class="relative z-50 flex h-[64px] shrink-0 items-center rounded-[12px]  bg-white px-4 text-slate-900 "
 >
 	<!-- 왼쪽: 메뉴 + 아이콘 + 제목묶음 + 현재미션 -->
 	<div class="flex min-w-0 flex-1 items-center gap-3">
