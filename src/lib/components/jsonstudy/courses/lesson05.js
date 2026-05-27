@@ -1,118 +1,104 @@
 export const lesson05 = {
 	id: 'lesson05',
-	title: 'true와 false: 상태 표현하기',
-	conceptLabel: 'true / false',
+	title: '숫자 값: 큰따옴표 없이 쓰기',
+	conceptLabel: '숫자 값',
 
 	contentBlocks: [
 		{
 			type: 'image',
-			src: '/images/lessson/lesson05_boolean.png',
-			alt: 'true와 false로 상태를 표현하는 그림'
+			src: '/images/lessson/lesson05_number.png',
+			alt: '숫자 값은 큰따옴표 없이 쓰는 그림'
 		},
 		{
 			type: 'paragraph',
 			parts: [
-				{ text: '제이슨에서는 어떤 상태가 ' },
-				{ text: '맞는지', tone: 'emerald' },
-				{ text: ', 또는 ' },
-				{ text: '아닌지', tone: 'rose' },
-				{ text: '를 나타낼 때 ' },
-				{ text: 'true', tone: 'emerald' },
-				{ text: '와 ' },
-				{ text: 'false', tone: 'rose' },
-				{ text: '를 써요.' }
+				{ text: '제이슨에서 ' },
+				{ text: '숫자로 된 값', tone: 'emerald' },
+				{ text: '은 큰따옴표 없이 써요.' }
 			]
 		},
 		{
 			type: 'paragraph',
 			parts: [
-				{ text: '예를 들어 ' },
-				{ text: '배달중', tone: 'rose' },
-				{ text: '이면 ' },
-				{ text: 'true', tone: 'emerald' },
-				{ text: ', 아직 도착하지 않았으면 ' },
-				{ text: '도착완료', tone: 'rose' },
-				{ text: '는 ' },
-				{ text: 'false', tone: 'rose' },
-				{ text: '가 돼요.' }
+				{ text: '예를 들면 ' },
+				{ text: '가격', tone: 'rose' },
+				{ text: ', ' },
+				{ text: '개수', tone: 'rose' },
+				{ text: ', ' },
+				{ text: '기온', tone: 'rose' },
+				{ text: ', ' },
+				{ text: '점수', tone: 'rose' },
+				{ text: '처럼 숫자로 나타낼 수 있는 정보가 있어요.' }
 			]
 		},
 		{
 			type: 'example',
-			title: '상태 값이 들어가는 모습',
-			before: '떡볶이가 배달 중이고, 아직 도착하지 않았어.',
+			title: '숫자 값이 들어가는 모습',
+			before: '오늘 기온은 24도야.',
 			after: `{
-  "메뉴": "떡볶이",
-  "배달중": true,
-  "도착완료": false
+  "기온": 24
 }`
 		},
 		{
 			type: 'paragraph',
 			parts: [
 				{ text: '여기에서 ' },
-				{ text: 'true', tone: 'emerald' },
-				{ text: '는 맞다, 켜짐, 진행 중 같은 상태를 나타낼 수 있어요.' }
+				{ text: '"기온"', tone: 'rose' },
+				{ text: '은 키이고, ' },
+				{ text: '24', tone: 'emerald' },
+				{ text: '는 숫자 값이에요.' }
 			]
 		},
 		{
 			type: 'paragraph',
-			parts: [
-				{ text: '반대로 ' },
-				{ text: 'false', tone: 'rose' },
-				{ text: '는 아니다, 꺼짐, 아직 안 됨 같은 상태를 나타낼 수 있어요.' }
-			]
+			parts: [{ text: '숫자 값은 계산하거나 비교할 수 있어서, 큰따옴표를 붙이지 않아요.' }]
 		},
 		{
 			type: 'paragraph',
 			parts: [
-				{ text: '중요한 점은 ' },
-				{ text: 'true', tone: 'emerald' },
-				{ text: '와 ' },
-				{ text: 'false', tone: 'rose' },
-				{ text: '에는 ' },
-				{ text: '큰따옴표를 쓰지 않는 것', tone: 'blue' },
-				{ text: '이에요.' }
-			]
-		},
-		{
-			type: 'paragraph',
-			parts: [
-				{ text: '즉, ' },
-				{ text: 'true', tone: 'emerald' },
-				{ text: '는 상태 값이고, ' },
-				{ text: '"true"', tone: 'amber' },
+				{ text: '예를 들어 ' },
+				{ text: '24', tone: 'emerald' },
+				{ text: '는 숫자 값이지만, ' },
+				{ text: '"24"', tone: 'amber' },
 				{ text: '는 글자 값이에요.' }
+			]
+		},
+		{
+			type: 'paragraph',
+			parts: [
+				{ text: '컴퓨터와 AI가 숫자를 비교하거나 계산하려면 ' },
+				{ text: '숫자는 숫자답게', tone: 'emerald' },
+				{ text: ' 써야 해요.' }
 			]
 		},
 		{
 			type: 'tip',
 			title: '기억할 점',
 			items: [
-				'true는 맞다, 켜짐, 진행 중 같은 상태를 나타낼 수 있어요.',
-				'false는 아니다, 꺼짐, 아직 안 됨 같은 상태를 나타낼 수 있어요.',
-				'true와 false에는 큰따옴표를 쓰지 않아요.',
-				'"true"처럼 쓰면 상태 값이 아니라 글자 값이 돼요.',
-				'상태를 정확히 쓰면 앱과 AI가 상황을 더 잘 이해할 수 있어요.'
+				'숫자 값은 큰따옴표 없이 써요.',
+				'가격, 개수, 기온, 점수는 숫자 값으로 쓸 수 있어요.',
+				'24는 숫자 값이에요.',
+				'"24"는 글자 값이에요.',
+				'숫자 값은 비교하거나 계산할 수 있어요.'
 			]
 		}
 	],
 
-	task: '"배달중"은 true, "도착완료"는 false로 바꾸고 실행하기를 눌러보세요.',
+	task: '"가격"을 29000, "재고"를 12로 완성하고 실행하기를 눌러보세요.',
 	initialCode: `{
-  "메뉴": "떡볶이",
-  "배달중": false,
-  "도착완료": true
+  "상품명": "무선이어폰",
+  "가격": 0,
+  "재고": 0
 }`,
 	answer: {
-		메뉴: '떡볶이',
-		배달중: true,
-		도착완료: false
+		상품명: '무선이어폰',
+		가격: 29000,
+		재고: 12
 	},
 	hints: [
-		'"메뉴"는 그대로 두세요.',
-		'"배달중"은 true로 바꿔야 해요.',
-		'"도착완료"는 false로 바꿔야 해요.',
-		'true와 false는 큰따옴표 없이 써요.'
+		'"가격"은 키예요.',
+		'29000은 숫자 값이라 큰따옴표 없이 써요.',
+		'"재고"도 키예요.',
+		'12도 숫자 값이라 큰따옴표 없이 써요.'
 	]
 };

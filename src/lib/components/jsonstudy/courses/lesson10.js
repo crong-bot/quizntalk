@@ -6,7 +6,7 @@ export const lesson10 = {
 	contentBlocks: [
 		{
 			type: 'image',
-			src: '/images/lessson/lesson09_error_fix.png',
+			src: '/images/lessson/lesson10_error_fix.png',
 			alt: 'JSON 오류 메시지를 확인하며 고치는 그림'
 		},
 		{
@@ -36,7 +36,8 @@ export const lesson10 = {
 		{
 			type: 'example',
 			title: '오류가 있는 게임 캐릭터 데이터',
-			before: '게임 캐릭터 정보를 JSON으로 저장하려고 해요. 실행하기를 눌러 오류 메시지를 확인해 보세요.',
+			before:
+				'게임 캐릭터 정보를 JSON으로 저장하려고 해요. 실행하기를 눌러 오류 메시지를 확인해 보세요.',
 			after: `{
   "캐릭터이름": 번개검사,
   "레벨": "5",

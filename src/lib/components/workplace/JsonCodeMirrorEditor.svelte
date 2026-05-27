@@ -1,3 +1,4 @@
+<!-- C:\quizntalk\src\lib\components\workplace\JsonCodeMirrorEditor.svelte -->
 <script>
 	import { onDestroy, onMount } from 'svelte';
 
