@@ -6,7 +6,7 @@ export const lesson01 = {
 	contentBlocks: [
 		{
 			type: 'image',
-			src: '/images/lessson/lesson01_intro.png',
+			src: '/images/lessson/lesson01_intro2.png',
 			alt: 'AI와 데이터, JSON의 관계를 보여주는 그림'
 		},
 		{
@@ -53,6 +53,7 @@ export const lesson01 = {
 			type: 'tip',
 			title: '기억할 점',
 			items: [
+				'콜론(:) 뒤에 띄어쓰기를 안 해도 에러는 나지 않아요! 컴퓨터는 다 알아듣거든요. 하지만 한 칸 띄워주면 사람이 읽기 훨씬 편해서, 실제 개발자들은 한 칸 띄우는 걸 약속처럼 지킨답니다.',
 				'AI는 마법이 아니라 데이터를 보고 배우는 컴퓨터 기술이에요.',
 				'AI가 좋은 대답을 하려면 좋은 데이터가 필요해요.',
 				'실제 AI 서비스와 프로그램은 데이터를 주고받을 때 JSON 같은 형식을 많이 사용해요.',
@@ -91,7 +92,7 @@ export const lesson01 = {
 	takeaway:
 		'AI 시대에는 말로 질문하는 힘도 중요하지만, AI와 컴퓨터가 사용할 수 있는 데이터의 모양을 이해하는 힘도 중요해요. JSON은 실제 프로그램과 AI 서비스에서 많이 쓰이는 데이터 형식이기 때문에, JSON을 배우면 AI 시대의 진짜 데이터 구조를 경험할 수 있어요.',
 
-	task: '이번 단계에서는 JSON을 직접 작성하지 않아요. 먼저 AI가 왜 데이터를 필요로 하는지, 그리고 JSON이 왜 실제 AI 서비스와 프로그램에서 자주 쓰이는 데이터 형식인지 생각해보세요.',
+	task: 'AI에게 데이터가 왜 중요한지, 그리고 수많은 AI 서비스가 왜 하필 JSON을 사용하는지 생각해봅시다.',
 
 	hints: [
 		'AI는 데이터를 보고 배우고 대답해요.',

@@ -58,6 +58,7 @@
 		if (tone === 'amber') return 'font-black text-amber-600';
 		if (tone === 'emerald') return 'font-black text-emerald-600';
 		if (tone === 'rose') return 'font-black text-rose-600';
+		if (tone === 'green') return 'font-black text-green-600';
 
 		return 'text-slate-600';
 	}

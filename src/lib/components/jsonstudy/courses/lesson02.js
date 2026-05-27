@@ -27,16 +27,16 @@ export const lesson02 = {
 			type: 'paragraph',
 			parts: [
 				{ text: '제이슨은 정보를 ' },
-				{ text: '{ }', tone: 'blue' },
+				{ text: '{ }', tone: 'purple' },
 				{ text: ' 안에 담아요.' }
 			]
 		},
 		{
 			type: 'paragraph',
 			parts: [
-				{ text: ' {  ', tone: 'rose' },
+				{ text: ' {  ', tone: 'purple' },
 				{ text: ' 는 정보 상자의 시작이고, ' },
-				{ text: ' }  ', tone: 'rose' },
+				{ text: ' }  ', tone: 'purple' },
 				{ text: ' 는 정보 상자의 끝이에요.' }
 			]
 		},
@@ -70,7 +70,7 @@ export const lesson02 = {
 		// },
 		{
 			type: 'paragraph',
-			parts: [{ text: '키와 값 사이는 ' }, { text: ':', tone: 'blue' }, { text: ' 로 구분해요.' }]
+			parts: [{ text: '키와 값 사이는 ' }, { text: ':', tone: 'amber' }, { text: ' 로 구분해요.' }]
 		},
 		// 		{
 		// 			type: 'example',
@@ -87,7 +87,7 @@ export const lesson02 = {
 				{ text: '키는 항상 ' },
 				{ text: '큰따옴표', tone: 'blue' },
 				{ text: ' 안에 써요. 예: ' },
-				{ text: '"점심"', tone: 'rose' }
+				{ text: '"점심"', tone: 'green' }
 			]
 		},
 		{
@@ -96,7 +96,7 @@ export const lesson02 = {
 				{ text: '값이 글자일 때도 ' },
 				{ text: '큰따옴표', tone: 'blue' },
 				{ text: ' 안에 써요. 예: ' },
-				{ text: '"불고기"', tone: 'amber' }
+				{ text: '"불고기"', tone: 'blue' }
 			]
 		},
 		{
