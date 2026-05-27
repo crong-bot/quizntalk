@@ -4,7 +4,8 @@ import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseM
 
 const mapperByThemeId = {
 	spaceBase: mapSpaceBaseJsonToSimulationState,
-	animalRescue: mapAnimalRescueRoomToSimulationState
+	animalRescue: mapAnimalRescueRoomToSimulationState,
+	hackerTrace: mapAnimalRescueRoomToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {

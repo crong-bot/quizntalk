@@ -1,7 +1,8 @@
 import { animalRescueCourse } from './animalRescue/animalRescueCourse.js';
+import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
 import { moonBaseCourse } from './spaceBase/spaceBaseCourse';
 
-export const courses = [moonBaseCourse, animalRescueCourse];
+export const courses = [moonBaseCourse, animalRescueCourse, hackerTraceCourse];
 
 // const courseByThemeId = {
 // 	spaceBase: moonBaseCourse

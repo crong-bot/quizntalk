@@ -61,15 +61,15 @@
 			enabled: true
 		},
 		{
-			id: 'dataClue',
+			id: 'animalRescue',
 			categoryId: 'read',
 			categoryTitle: '제이슨 해석',
-			title: '데이터 단서 분석',
-			subtitle: 'JSON 속 단서를 찾아 팀 문제를 해결합니다.',
-			icon: '🧩',
-			level: '준비 중',
+			title: '동물구조대: 늑구 추적 작전',
+			subtitle: '제보 JSON과 흔적 데이터를 분석해 늑구 구조 계획서를 만들어보세요.',
+			icon: '🐾',
+			level: '초5~6',
 			players: 4,
-			tags: ['키 찾기', '값 해석', '조건 판단'],
+			tags: ['배열', '데이터 해석', '근거 판단'],
 			enabled: true
 		},
 		{

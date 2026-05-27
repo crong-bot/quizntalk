@@ -513,6 +513,18 @@
 	$: currentMission = course.missions[currentMissionIndex];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
+	$: currentReviewKey =
+		currentMission?.type === 'team-json-report' ? 'team' : currentPlayer?.roleId;
+
+	$: currentReview =
+		isReadCourse && currentMission?.id && currentReviewKey
+			? room?.pendingReviews?.[currentMission.id]?.[currentReviewKey] ?? null
+			: null;
+
+	$: isCurrentReviewRejected = currentReview?.status === 'rejected';
+
+	$: currentRejectReason = currentReview?.rejectReason ?? '';
+
 	$: {
 		const event = room?.lastMissionEvent;
 		const eventKey = getMissionEventKey(event);
@@ -1001,6 +1013,32 @@
 				</aside>
 
 				<main class="flex min-h-0 flex-col gap-4">
+					{#if isCurrentReviewRejected}
+						<div class="rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
+							<div class="flex items-start gap-3">
+								<div
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-lg"
+								>
+									↩
+								</div>
+
+								<div class="min-w-0">
+									<div class="text-[14px] font-black text-rose-700">
+										선생님이 다시 수정하라고 했어요
+									</div>
+
+									<div class="mt-1 text-[13px] font-bold leading-6 text-rose-600">
+										{currentRejectReason || '내용을 다시 확인해서 수정한 뒤 다시 제출하세요.'}
+									</div>
+
+									<div class="mt-2 text-[12px] font-bold text-rose-400">
+										JSON을 고친 뒤 다시 제출하면 선생님 확인 대기로 바뀝니다.
+									</div>
+								</div>
+							</div>
+						</div>
+					{/if}
+
 					<JsonEditorPanel
 						bind:jsonText
 						canExecute={status === 'checked'}
@@ -1021,7 +1059,6 @@
 				</main>
 
 				<aside class="flex min-h-0 flex-col gap-2">
-					
 					<div class="shrink-0">
 						<CommandTransmissionPanel state={transmissionState} />
 					</div>
