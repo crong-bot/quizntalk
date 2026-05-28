@@ -345,17 +345,17 @@ ${markedLineText}`
 
 function pickBestParseError(errors) {
 	const priority = [
-		ParseErrorCode.CloseBracketExpected,
-		ParseErrorCode.CloseBraceExpected,
+		ParseErrorCode.UnexpectedEndOfString,
+		ParseErrorCode.InvalidEscapeCharacter,
+		ParseErrorCode.InvalidCharacter,
+		ParseErrorCode.InvalidSymbol,
+		ParseErrorCode.InvalidNumberFormat,
 		ParseErrorCode.ColonExpected,
 		ParseErrorCode.CommaExpected,
 		ParseErrorCode.PropertyNameExpected,
 		ParseErrorCode.ValueExpected,
-		ParseErrorCode.UnexpectedEndOfString,
-		ParseErrorCode.InvalidNumberFormat,
-		ParseErrorCode.InvalidEscapeCharacter,
-		ParseErrorCode.InvalidCharacter,
-		ParseErrorCode.InvalidSymbol,
+		ParseErrorCode.CloseBracketExpected,
+		ParseErrorCode.CloseBraceExpected,
 		ParseErrorCode.EndOfFileExpected
 	];
 
@@ -366,6 +366,61 @@ function pickBestParseError(errors) {
 	}
 
 	return errors[0];
+}
+function findUnclosedDoubleQuoteIssue(text) {
+	let inString = false;
+	let escaped = false;
+	let stringStartOffset = -1;
+
+	for (let index = 0; index < text.length; index += 1) {
+		const char = text[index];
+
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+
+			if (char === '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (char === '"') {
+				inString = false;
+				stringStartOffset = -1;
+				continue;
+			}
+
+			// JSON 문자열은 실제 줄바꿈을 포함할 수 없음.
+			// 예: "버스번호": "101,
+			// 이 상태에서 다음 줄로 넘어가면 닫는 따옴표가 빠진 것으로 봐야 함.
+			if (char === '\n' || char === '\r') {
+				return {
+					ok: false,
+					offset: stringStartOffset
+				};
+			}
+
+			continue;
+		}
+
+		if (char === '"') {
+			inString = true;
+			stringStartOffset = index;
+		}
+	}
+
+	if (inString) {
+		return {
+			ok: false,
+			offset: stringStartOffset
+		};
+	}
+
+	return {
+		ok: true
+	};
 }
 
 function findSingleQuoteIssue(text) {
@@ -510,6 +565,16 @@ function findArrayWrittenWithObjectBraceIssue(text) {
 	let inString = false;
 	let escaped = false;
 
+	function getPreviousNonSpaceChar(targetIndex) {
+		for (let cursor = targetIndex - 1; cursor >= 0; cursor -= 1) {
+			if (!/\s/.test(text[cursor])) {
+				return text[cursor];
+			}
+		}
+
+		return '';
+	}
+
 	for (let index = 0; index < text.length; index += 1) {
 		const char = text[index];
 
@@ -537,6 +602,17 @@ function findArrayWrittenWithObjectBraceIssue(text) {
 		}
 
 		if (char !== '{') continue;
+
+		// 핵심 수정:
+		// 배열을 중괄호로 잘못 쓴 경우는 보통
+		// "급식": { "쌀밥", "미역국" }
+		// 처럼 콜론(:) 뒤의 값 자리에서 발생한다.
+		// 최상위 객체 { "좋아하는과목: 과학" }는 여기서 잡으면 안 된다.
+		const previousNonSpaceChar = getPreviousNonSpaceChar(index);
+
+		if (previousNonSpaceChar !== ':') {
+			continue;
+		}
 
 		let cursor = index + 1;
 
@@ -583,7 +659,6 @@ function findArrayWrittenWithObjectBraceIssue(text) {
 		ok: true
 	};
 }
-
 function findMissingCommaBetweenValuesIssue(text) {
 	let inString = false;
 	let escaped = false;
@@ -657,6 +732,24 @@ function makePreCheckError(jsonText) {
 JSON에서는 // 또는 /* */ 주석을 쓰지 않아요.
 
 ${markedLine.text}`
+		};
+	}
+		const unclosedDoubleQuoteIssue = findUnclosedDoubleQuoteIssue(jsonText);
+
+	if (!unclosedDoubleQuoteIssue.ok) {
+		const position = getLineColumn(jsonText, unclosedDoubleQuoteIssue.offset);
+		const lineText = getLineText(jsonText, position.line);
+
+		return {
+			ok: false,
+			concept: 'quote',
+			message: `${position.line}번째 줄에서 문자열을 닫는 큰따옴표(")가 빠졌어요.
+문자열은 큰따옴표(")로 시작했으면 큰따옴표(")로 닫아야 해요.
+
+예:
+"과학"
+
+${markLineEnd(lineText)}`
 		};
 	}
 

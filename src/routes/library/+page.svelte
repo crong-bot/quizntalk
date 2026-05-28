@@ -238,6 +238,13 @@
 			sideBadge: 'bg-violet-50 text-violet-700'
 		};
 	}
+	function decreaseRoomCount() {
+			roomCount = Math.max(1, roomCount - 1);
+		}
+
+		function increaseRoomCount() {
+			roomCount = Math.min(10, roomCount + 1);
+		}
 </script>
 
 <div class="min-h-screen bg-[#f4f7fb] px-4 py-6 font-nanum text-slate-800">
@@ -486,104 +493,6 @@
 						</div>
 					</div>
 				</section>
-
-				<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
-					<div>
-						<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-slate-400">
-							STEP 02
-						</div>
-
-						<h2 class="mt-1 font-gmarket text-[23px] font-bold tracking-[-0.055em] text-slate-950">
-							방 개수 선택
-						</h2>
-
-						<p class="mt-1.5 text-[14px] font-bold leading-6 text-slate-500">
-							모둠 수와 방 인원을 선택하세요. 3명 방은 부족한 역할이 자동으로 완료 처리됩니다.
-						</p>
-					</div>
-
-					<div class="mt-5 grid grid-cols-10 gap-2">
-						{#each Array(10) as _, index}
-							<button
-								type="button"
-								on:click={() => (roomCount = index + 1)}
-								class={`h-11 rounded-xl text-[14px] font-extrabold transition ${
-									roomCount === index + 1
-										? 'bg-blue-600 text-white shadow-sm'
-										: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-								}`}
-							>
-								{index + 1}
-							</button>
-						{/each}
-					</div>
-
-					<div class="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-[14px] font-bold text-slate-500">
-						선택한 방 개수:
-						<span class="font-extrabold text-slate-950">{roomCount}개</span>
-						· 생성 후 1번방부터 {roomCount}번방까지 게임 코드가 표시됩니다.
-					</div>
-					<div class="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-						<div class="flex items-center justify-between gap-3">
-							<div>
-								<div class="text-[15px] font-extrabold text-slate-800">방별 인원 선택</div>
-								<div class="mt-1 text-[12px] font-bold text-slate-500">
-									각 방마다 3명 또는 4명을 선택하세요. 3명 방은 남는 역할이 자동 완료 처리됩니다.
-								</div>
-							</div>
-
-							<div
-								class="rounded-full bg-white px-3 py-1.5 text-[12px] font-extrabold text-slate-600 ring-1 ring-slate-200"
-							>
-								총 {roomCapacities.reduce((sum, value) => sum + value, 0)}명
-							</div>
-						</div>
-
-						<div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-							{#each Array(roomCount) as _, index}
-								<div class="rounded-2xl border border-slate-200 bg-white p-3">
-									<div class="flex items-center justify-between">
-										<div class="text-[14px] font-black text-slate-800">
-											{index + 1}번 방
-										</div>
-
-										<div
-											class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600"
-										>
-											{roomCapacities[index]}명
-										</div>
-									</div>
-
-									<div class="mt-3 grid grid-cols-2 gap-2">
-										<button
-											type="button"
-											on:click={() => setRoomCapacity(index, 3)}
-											class={`h-10 rounded-xl text-[13px] font-black transition ${
-												roomCapacities[index] === 3
-													? 'bg-blue-600 text-white shadow-sm'
-													: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-											}`}
-										>
-											3명
-										</button>
-
-										<button
-											type="button"
-											on:click={() => setRoomCapacity(index, 4)}
-											class={`h-10 rounded-xl text-[13px] font-black transition ${
-												roomCapacities[index] === 4
-													? 'bg-blue-600 text-white shadow-sm'
-													: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-											}`}
-										>
-											4명
-										</button>
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				</section>
 			</main>
 
 			<aside class="flex flex-col gap-5">
@@ -651,20 +560,94 @@
 						</div>
 
 						<div class="mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-							<div class="flex items-center justify-between">
-								<div class="text-[14px] font-extrabold text-slate-700">생성될 방</div>
-								<div class="text-[14px] font-extrabold text-blue-600">{roomCount}개</div>
+							<div class="flex items-center justify-between gap-3">
+								<div>
+									<div class="text-[14px] font-extrabold text-slate-700">생성될 방</div>
+									<div class="mt-1 text-[12px] font-bold text-slate-500">
+										방 개수와 각 방의 인원을 정하세요.
+									</div>
+								</div>
+
+								<div class="flex items-center gap-2">
+									<button
+										type="button"
+										on:click={decreaseRoomCount}
+										disabled={roomCount <= 1}
+										class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[18px] font-black text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										−
+									</button>
+
+									<div
+										class="flex h-9 min-w-[58px] items-center justify-center rounded-xl bg-blue-600 px-3 text-[14px] font-black text-white shadow-sm"
+									>
+										{roomCount}개
+									</div>
+
+									<button
+										type="button"
+										on:click={increaseRoomCount}
+										disabled={roomCount >= 10}
+										class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[18px] font-black text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										+
+									</button>
+								</div>
 							</div>
 
-							<div class="mt-3 grid grid-cols-5 gap-2">
-								{#each Array(roomCount) as _, index}
-									<div
-										class="flex h-10 flex-col items-center justify-center rounded-xl bg-white text-[11px] font-extrabold text-slate-600 ring-1 ring-slate-200"
-									>
-										<div>{index + 1}번방</div>
-										<div class="text-blue-600">{roomCapacities[index]}명</div>
-									</div>
-								{/each}
+							<div class="mt-3 rounded-2xl bg-white px-3 py-2 text-[12px] font-bold text-slate-500 ring-1 ring-slate-200">
+								총 예상 인원:
+								<span class="font-black text-slate-950">
+									{roomCapacities.reduce((sum, value) => sum + value, 0)}명
+								</span>
+							</div>
+
+															<div class="mt-3 grid max-h-[300px] grid-cols-2 gap-2 overflow-auto pr-1">
+									{#each Array(roomCount) as _, index}
+										<div class="rounded-2xl bg-white p-2.5 ring-1 ring-slate-200">
+											<div class="flex items-center justify-between gap-2">
+												<div class="text-[12px] font-black text-slate-800">
+													{index + 1}번방
+												</div>
+
+												<div
+													class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600"
+												>
+													{roomCapacities[index]}명
+												</div>
+											</div>
+
+											<div class="mt-2 grid grid-cols-2 gap-1.5">
+												<button
+													type="button"
+													on:click={() => setRoomCapacity(index, 3)}
+													class={`h-8 rounded-lg text-[11px] font-black transition ${
+														roomCapacities[index] === 3
+															? 'bg-blue-600 text-white shadow-sm'
+															: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+													}`}
+												>
+													3명
+												</button>
+
+												<button
+													type="button"
+													on:click={() => setRoomCapacity(index, 4)}
+													class={`h-8 rounded-lg text-[11px] font-black transition ${
+														roomCapacities[index] === 4
+															? 'bg-blue-600 text-white shadow-sm'
+															: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+													}`}
+												>
+													4명
+												</button>
+											</div>
+										</div>
+									{/each}
+								</div>
+
+							<div class="mt-3 rounded-2xl bg-blue-50 px-3 py-2 text-[12px] font-bold leading-5 text-blue-700">
+								기본은 4명 방입니다. 3명 방은 남는 역할이 자동 완료 처리됩니다.
 							</div>
 						</div>
 

@@ -339,7 +339,8 @@ export async function approveReadMissionForRoom({
 	room,
 	course,
 	missionIndex,
-	reviewKey
+	reviewKey,
+	approveMessage = ''
 }) {
 	const mission = course?.missions?.[missionIndex];
 
@@ -381,13 +382,20 @@ export async function approveReadMissionForRoom({
 		course
 	});
 
-	const roomPatch = {};
+	const reviewedAt = new Date().toISOString();
+
+	const roomPatch = {
+		[`pendingReviews.${mission.id}.${reviewKey}.status`]: 'approved',
+		[`pendingReviews.${mission.id}.${reviewKey}.approveMessage`]:
+			approveMessage || '좋아요. 분석 결과가 승인되었습니다.',
+		[`pendingReviews.${mission.id}.${reviewKey}.reviewedAt`]: reviewedAt
+	};
 
 	if (allApproved) {
 		if (mission.type === 'team-json-report' || isLastMission) {
 			roomPatch.status = 'completed';
 			roomPatch.currentMissionIndex = missionIndex;
-			roomPatch.completedAt = new Date().toISOString();
+			roomPatch.completedAt = reviewedAt;
 		} else {
 			roomPatch.status = 'playing';
 			roomPatch.currentMissionIndex = missionIndex + 1;

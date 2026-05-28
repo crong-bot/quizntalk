@@ -41,13 +41,13 @@ export async function submitReadMissionAction({
 		setConsoleLogs([
 			{
 				type: 'success',
-				text: '제출되었습니다.'
+				text: '제출되었습니다. 선생님의 승인을 기다려주세요.'
 			},
 			{
 				type: 'info',
 				text: isMockMode
 					? '목업 모드입니다. 실제 저장 없이 제출 상태만 확인합니다.'
-					: '교사 확인이 완료되면 다음 단계로 이동합니다.'
+					: '선생님의 확인이 완료되면 다음 단계로 이동합니다.'
 			}
 		]);
 

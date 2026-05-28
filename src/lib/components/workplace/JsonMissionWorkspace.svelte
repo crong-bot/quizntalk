@@ -23,6 +23,7 @@
 		submitFinalMissionPieceAction
 	} from './actions/finalMissionAction.js';
 	import MissionWorkspaceHeader from './MissionWorkspaceHeader.svelte';
+	import ReadMissionPanel from './ReadMissionPanel.svelte';
 	import FinalReadyModal from './modals/FinalReadyModal.svelte';
 	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
 	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
@@ -83,7 +84,18 @@
 			showRoomIntroModal = Boolean(course?.intro);
 		}
 	}
+	//--------- 테마완료멘트
+	$: completion = course?.completion ?? {};
 
+	$: completionBadge = completion.badge ?? 'MISSION COMPLETE';
+	$: completionTitle = completion.title ?? '모든 미션 완료!';
+	$: completionSubtitle =
+		completion.subtitle ?? '팀의 JSON 분석과 최종 판단이 모두 승인되었습니다.';
+	$: completionSummaryTitle = completion.summaryTitle ?? '최종 결과';
+	$: completionSummary =
+		completion.summary ?? '공용화면에서 최종 결과를 확인해 보세요.';
+	$: completionPrimaryButtonText = completion.primaryButtonText ?? '홈으로';
+	//----------------------------
 	let lastSeenMissionEventKey = '';
 
 	function getMissionEventKey(event) {
@@ -97,12 +109,44 @@
 		if (event.status === 'completed') {
 			pendingNextMissionIndex = null;
 			status = 'cleared';
-		} else {
-			pendingNextMissionIndex =
-				typeof event.nextMissionIndex === 'number'
-					? event.nextMissionIndex
-					: currentMissionIndex + 1;
+			hasExecuted = true;
+
+			transmissionState = {
+				visible: true,
+				phase: 'success',
+				roleName: currentPlayer?.roleName ?? '',
+				message: event.message ?? '모든 미션이 완료되었습니다.',
+				progress: 100
+			};
+
+			consoleLogs = [
+				{
+					type: 'success',
+					text: event.message ?? '모든 미션이 완료되었습니다.'
+				},
+				{
+					type: 'info',
+					text: isReadCourse
+						? '최종 분석 보고서를 확인하세요.'
+						: '모든 팀 활동이 완료되었습니다.'
+				}
+			];
+
+			if (isReadCourse) {
+				showMissionCompleteModal = false;
+				showFinalReadyModal = false;
+				showFinalSuccessModal = true;
+				return;
+			}
+
+			showMissionCompleteModal = true;
+			return;
 		}
+
+		pendingNextMissionIndex =
+			typeof event.nextMissionIndex === 'number'
+				? event.nextMissionIndex
+				: currentMissionIndex + 1;
 
 		showMissionCompleteModal = true;
 
@@ -121,14 +165,10 @@
 			},
 			{
 				type: 'info',
-				text:
-					event.status === 'completed'
-						? '모든 팀 활동이 완료되었습니다.'
-						: '다음 미션을 확인하세요.'
+				text: '다음 미션을 확인하세요.'
 			}
 		];
 	}
-
 	let showFinalReadyModal = false;
 	let showFinalSuccessModal = false;
 
@@ -513,6 +553,12 @@
 	$: currentMission = course.missions[currentMissionIndex];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
+	$: readQuestion =
+	currentRoleMission?.question ??
+	currentMission?.question ??
+	currentRoleMission?.story?.mission ??
+	'JSON 단서를 읽고 분석 결과를 제출하세요.';
+
 	$: currentReviewKey =
 		currentMission?.type === 'team-json-report' ? 'team' : currentPlayer?.roleId;
 
@@ -524,6 +570,13 @@
 	$: isCurrentReviewRejected = currentReview?.status === 'rejected';
 
 	$: currentRejectReason = currentReview?.rejectReason ?? '';
+
+	$: isCurrentReviewApproved = currentReview?.status === 'approved';
+
+	$: currentApproveMessage =
+		currentReview?.approveMessage ??
+		currentReview?.feedback ??
+		'선생님이 분석 결과를 승인했습니다. 팀원들이 모두 승인되면 다음 미션으로 넘어갑니다.';
 
 	$: {
 		const event = room?.lastMissionEvent;
@@ -857,6 +910,36 @@
 			}
 		];
 
+		if (isReadCourse && currentMissionIndex >= course.missions.length - 1) {
+			status = 'cleared';
+			hasExecuted = true;
+
+			showMissionCompleteModal = false;
+			showFinalReadyModal = false;
+			showFinalSuccessModal = true;
+
+			transmissionState = {
+				visible: true,
+				phase: 'success',
+				roleName: currentPlayer?.roleName ?? '',
+				message: '모든 분석 미션이 완료되었습니다.',
+				progress: 100
+			};
+
+			consoleLogs = [
+				{
+					type: 'success',
+					text: '테스트: 모든 분석 미션이 완료되었습니다.'
+				},
+				{
+					type: 'info',
+					text: '최종 분석 보고서를 확인하세요.'
+				}
+			];
+
+			return;
+		}
+
 		unlockNextMissionIfReady();
 	}
 
@@ -995,8 +1078,8 @@
 						variant={isReadCourse ? 'read' : 'write'}
 						story={currentRoleMission?.story}
 						role={currentRoleMission?.role}
-						clues={currentRoleMission?.clues ?? []}
-						keyChips={currentRoleMission?.keyChips ?? []}
+						clues={isReadCourse ? [] : currentRoleMission?.clues ?? []}
+						keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
 						panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
 						onInsertKey={insertKey}
 					/>
@@ -1038,24 +1121,61 @@
 							</div>
 						</div>
 					{/if}
+					{#if isCurrentReviewApproved}
+						<div class="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+							<div class="flex items-start gap-3">
+								<div
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-lg"
+								>
+									✓
+								</div>
 
-					<JsonEditorPanel
-						bind:jsonText
-						canExecute={status === 'checked'}
-						title={isReadCourse ? '</> JSON 제출서' : '</> JSON 입력기'}
-						executeButtonText={isReadCourse ? '제출하기' : '실행하기'}
-						resetButtonText="처음코드로"
-						onReady={handleEditorReady}
-						onFormat={formatJson}
-						onExecute={executeMission}
-						onReset={resetCurrentJsonToInitial}
-					/>
+								<div class="min-w-0">
+									<div class="text-[14px] font-black text-emerald-700">
+										선생님이 승인했어요
+									</div>
 
-					<div class="h-[300px] shrink-0">
-						<JsonEditorConsole logs={consoleLogs} {status} />
-						<!-- <CheckResultPanel messages={checkResult.messages} />
-						<MissionStepPanel {status} /> -->
-					</div>
+									<div class="mt-1 text-[13px] font-bold leading-6 text-emerald-600">
+										{currentApproveMessage}
+									</div>
+
+									<div class="mt-2 text-[12px] font-bold text-emerald-400">
+										팀원들이 모두 승인되면 다음 미션으로 넘어갑니다.
+									</div>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					{#if isReadCourse}
+							<ReadMissionPanel
+								clues={currentRoleMission?.clues ?? []}
+								question={readQuestion}
+								bind:answerText={jsonText}
+								{status}
+								logs={consoleLogs}
+								onReady={handleEditorReady}
+								onFormat={formatJson}
+								onSubmit={executeMission}
+								onReset={resetCurrentJsonToInitial}
+							/>
+						{:else}
+							<JsonEditorPanel
+								bind:jsonText
+								canExecute={status === 'checked'}
+								title="</> JSON 입력기"
+								executeButtonText="실행하기"
+								resetButtonText="처음코드로"
+								onReady={handleEditorReady}
+								onFormat={formatJson}
+								onExecute={executeMission}
+								onReset={resetCurrentJsonToInitial}
+							/>
+
+							<div class="h-[300px] shrink-0">
+								<JsonEditorConsole logs={consoleLogs} {status} />
+							</div>
+						{/if}
 				</main>
 
 				<aside class="flex min-h-0 flex-col gap-2">
@@ -1107,6 +1227,8 @@
 		{jsonText}
 		{maxVerificationEnergy}
 		{verificationEnergy}
+		mode={isReadCourse ? 'read' : 'write'}
+		completion={course?.completion}
 		onExit={() => {
 			showFinalSuccessModal = false;
 		}}
