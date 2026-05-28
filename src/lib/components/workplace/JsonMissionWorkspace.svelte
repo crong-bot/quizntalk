@@ -23,10 +23,10 @@
 		submitFinalMissionPieceAction
 	} from './actions/finalMissionAction.js';
 	import MissionWorkspaceHeader from './MissionWorkspaceHeader.svelte';
-	import ReadMissionPanel from './ReadMissionPanel.svelte';
 	import FinalReadyModal from './modals/FinalReadyModal.svelte';
 	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
 	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
+	import ReadMissionPanel from './ReadMissionPanel.svelte';
 	import {
 		buildWorkspacePlayers,
 		getNextMissionProgressForPlayer,
@@ -92,8 +92,7 @@
 	$: completionSubtitle =
 		completion.subtitle ?? '팀의 JSON 분석과 최종 판단이 모두 승인되었습니다.';
 	$: completionSummaryTitle = completion.summaryTitle ?? '최종 결과';
-	$: completionSummary =
-		completion.summary ?? '공용화면에서 최종 결과를 확인해 보세요.';
+	$: completionSummary = completion.summary ?? '공용화면에서 최종 결과를 확인해 보세요.';
 	$: completionPrimaryButtonText = completion.primaryButtonText ?? '홈으로';
 	//----------------------------
 	let lastSeenMissionEventKey = '';
@@ -126,9 +125,7 @@
 				},
 				{
 					type: 'info',
-					text: isReadCourse
-						? '최종 분석 보고서를 확인하세요.'
-						: '모든 팀 활동이 완료되었습니다.'
+					text: isReadCourse ? '최종 분석 보고서를 확인하세요.' : '모든 팀 활동이 완료되었습니다.'
 				}
 			];
 
@@ -144,9 +141,7 @@
 		}
 
 		pendingNextMissionIndex =
-			typeof event.nextMissionIndex === 'number'
-				? event.nextMissionIndex
-				: currentMissionIndex + 1;
+			typeof event.nextMissionIndex === 'number' ? event.nextMissionIndex : currentMissionIndex + 1;
 
 		showMissionCompleteModal = true;
 
@@ -553,11 +548,14 @@
 	$: currentMission = course.missions[currentMissionIndex];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
+	$: shouldShowSupportGuide =
+		isReadCourse && requiredParticipantCount === 3 && currentMission?.supportGuideForThreePlayers;
+
 	$: readQuestion =
-	currentRoleMission?.question ??
-	currentMission?.question ??
-	currentRoleMission?.story?.mission ??
-	'JSON 단서를 읽고 분석 결과를 제출하세요.';
+		currentRoleMission?.question ??
+		currentMission?.question ??
+		currentRoleMission?.story?.mission ??
+		'JSON 단서를 읽고 분석 결과를 제출하세요.';
 
 	$: currentReviewKey =
 		currentMission?.type === 'team-json-report' ? 'team' : currentPlayer?.roleId;
@@ -1083,6 +1081,37 @@
 						panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
 						onInsertKey={insertKey}
 					/>
+					{#if shouldShowSupportGuide}
+						<div class="rounded-[22px] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+							<div class="flex items-start gap-3">
+								<div
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-xl"
+								>
+									🛰️
+								</div>
+
+								<div class="min-w-0">
+									<div class="text-[14px] font-black text-emerald-700">
+										{currentMission.supportGuideForThreePlayers.title}
+									</div>
+
+									<div class="mt-1 text-[12px] font-bold leading-5 text-emerald-700/80">
+										{currentMission.supportGuideForThreePlayers.description}
+									</div>
+
+									<ul class="mt-3 flex flex-col gap-1.5">
+										{#each currentMission.supportGuideForThreePlayers.items as item}
+											<li class="flex gap-2 text-[12px] font-bold leading-5 text-slate-700">
+												<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+												></span>
+												<span>{item}</span>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
 					<!-- <MissionCluePanel clues={powerMission.clues} /> -->
 
 					<!-- <div class="min-h-0 flex-1 overflow-hidden">
@@ -1131,9 +1160,7 @@
 								</div>
 
 								<div class="min-w-0">
-									<div class="text-[14px] font-black text-emerald-700">
-										선생님이 승인했어요
-									</div>
+									<div class="text-[14px] font-black text-emerald-700">선생님이 승인했어요</div>
 
 									<div class="mt-1 text-[13px] font-bold leading-6 text-emerald-600">
 										{currentApproveMessage}
@@ -1148,34 +1175,34 @@
 					{/if}
 
 					{#if isReadCourse}
-							<ReadMissionPanel
-								clues={currentRoleMission?.clues ?? []}
-								question={readQuestion}
-								bind:answerText={jsonText}
-								{status}
-								logs={consoleLogs}
-								onReady={handleEditorReady}
-								onFormat={formatJson}
-								onSubmit={executeMission}
-								onReset={resetCurrentJsonToInitial}
-							/>
-						{:else}
-							<JsonEditorPanel
-								bind:jsonText
-								canExecute={status === 'checked'}
-								title="</> JSON 입력기"
-								executeButtonText="실행하기"
-								resetButtonText="처음코드로"
-								onReady={handleEditorReady}
-								onFormat={formatJson}
-								onExecute={executeMission}
-								onReset={resetCurrentJsonToInitial}
-							/>
+						<ReadMissionPanel
+							clues={currentRoleMission?.clues ?? []}
+							question={readQuestion}
+							bind:answerText={jsonText}
+							{status}
+							logs={consoleLogs}
+							onReady={handleEditorReady}
+							onFormat={formatJson}
+							onSubmit={executeMission}
+							onReset={resetCurrentJsonToInitial}
+						/>
+					{:else}
+						<JsonEditorPanel
+							bind:jsonText
+							canExecute={status === 'checked'}
+							title="</> JSON 입력기"
+							executeButtonText="실행하기"
+							resetButtonText="처음코드로"
+							onReady={handleEditorReady}
+							onFormat={formatJson}
+							onExecute={executeMission}
+							onReset={resetCurrentJsonToInitial}
+						/>
 
-							<div class="h-[300px] shrink-0">
-								<JsonEditorConsole logs={consoleLogs} {status} />
-							</div>
-						{/if}
+						<div class="h-[300px] shrink-0">
+							<JsonEditorConsole logs={consoleLogs} {status} />
+						</div>
+					{/if}
 				</main>
 
 				<aside class="flex min-h-0 flex-col gap-2">
