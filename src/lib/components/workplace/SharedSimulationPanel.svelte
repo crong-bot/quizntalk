@@ -4,6 +4,7 @@
 	import OldCameraBootOverlay from './simulation/effects/OldCameraBootOverlay.svelte';
 
 	import { animalRescueTheme } from './theme/animalRescue/animalRescueTheme';
+	import { hackerTraceTheme } from './theme/hackerTrace/hackerTraceTheme';
 	import { spaceBaseTheme } from './theme/spaceBase/spaceBaseTheme';
 
 	export let themeId = 'spaceBase';
@@ -16,7 +17,8 @@
 
 	const pixiThemeById = {
 		spaceBase: spaceBaseTheme,
-		animalRescue: animalRescueTheme
+		animalRescue: animalRescueTheme,
+		hackerTrace: hackerTraceTheme
 	};
 
 	$: pixiTheme = pixiThemeById[themeId] ?? spaceBaseTheme;

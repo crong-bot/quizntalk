@@ -1,11 +1,20 @@
 // C:\quizntalk\src\lib\components\workplace\simulation\simulationMapper.js
 import { mapAnimalRescueRoomToSimulationState } from '../theme/animalRescue/animalRescueMapper';
+import { mapBikeRebalanceRoomToSimulationState } from '../theme/bike/bikeRebalanceMapper';
+import { mapDisasterSafetyRoomToSimulationState } from '../theme/disasterSafety/disasterSafetyMapper';
+import { mapHackerTraceJsonToSimulationState } from '../theme/hackerTrace/hackerTraceMapper';
+import { mapMarketBasketJsonToSimulationState } from '../theme/market/marketBasketMapper';
+import { mapOwlBusRoomToSimulationState } from '../theme/owlBus/owlBusMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
 
 const mapperByThemeId = {
 	spaceBase: mapSpaceBaseJsonToSimulationState,
 	animalRescue: mapAnimalRescueRoomToSimulationState,
-	hackerTrace: mapAnimalRescueRoomToSimulationState
+	hackerTrace: mapHackerTraceJsonToSimulationState,
+	marketBasket: mapMarketBasketJsonToSimulationState,
+	bikeRebalance: mapBikeRebalanceRoomToSimulationState,
+	disasterSafety: mapDisasterSafetyRoomToSimulationState,
+	owlBus: mapOwlBusRoomToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {

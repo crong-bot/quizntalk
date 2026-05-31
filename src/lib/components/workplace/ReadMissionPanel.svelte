@@ -139,9 +139,9 @@
 		class="flex min-h-0 flex-[1.05] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm"
 	>
 		<div class="shrink-0 border-b border-slate-100 px-4 py-3">
-			<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-violet-500">
+			<!-- <div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-violet-500">
 				JSON CLUE
-			</div>
+			</div> -->
 
 			<div class="mt-1 flex items-center justify-between gap-3">
 				<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
@@ -226,7 +226,7 @@
 	<section
 		class="flex min-h-0 flex-[0.95] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm"
 	>
-		<div class="shrink-0 border-b border-slate-100 px-4 py-3">
+		<div class="shrink-0 border-b border-slate-100 px-4">
 			<!-- <div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-blue-500">
 				ANSWER CONSOLE
 			</div> -->
@@ -236,18 +236,16 @@
 			</div> -->
 
 			{#if question}
-				<div class="mt-2 rounded-2xl bg-blue-50 px-3 py-2 text-[13px] font-bold leading-5 text-blue-700">
+				<div
+					class="mt-2 rounded-2xl bg-blue-50 px-3 py-1 text-[13px] font-bold leading-5 text-blue-700"
+				>
 					{question}
 				</div>
 			{/if}
 		</div>
 
 		<div class="min-h-0 flex-1 overflow-hidden bg-[#101827]">
-			<JsonCodeMirrorEditor
-				bind:value={answerText}
-				onChange={handleAnswerChange}
-				onReady={onReady}
-			/>
+			<JsonCodeMirrorEditor bind:value={answerText} onChange={handleAnswerChange} {onReady} />
 		</div>
 
 		<div class="shrink-0 border-t border-slate-100 bg-white p-3">

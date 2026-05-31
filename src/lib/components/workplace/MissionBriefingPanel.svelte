@@ -5,7 +5,7 @@
 
 	export let story = null;
 	export let role = null;
-
+	export let playerName = '';
 	export let clues = [];
 	export let keyChips = [];
 	export let onInsertKey = () => {};
@@ -172,7 +172,7 @@
 </script>
 
 <div
-	class={`relative flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border p-4 text-white shadow-[0_18px_42px_rgba(15,23,42,0.18)] ${
+	class={`relative flex  min-h-0 flex-col overflow-hidden rounded-[26px] border p-4 text-white ${
 		isRead ? 'border-emerald-200 bg-[#082f2c]' : 'border-blue-200 bg-[#071a3d]'
 	}`}
 >
@@ -211,7 +211,7 @@
 		</div>
 
 		<section
-			class="rounded-[20px] border border-white/15 bg-white/10 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur"
+			class="rounded-[20px] border border-white/15 bg-white/10 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur"
 		>
 			<div class="flex items-center gap-3">
 				<div
@@ -223,8 +223,22 @@
 				</div>
 
 				<div class="min-w-0">
-					<div class="truncate text-[17px] font-black tracking-[-0.04em] text-white">
-						{roleTitle}
+					<div class=" flex min-w-0 items-center gap-1">
+						<span class="shrink-0 text-[12px]">📍</span>
+
+						<span class="truncate text-[11px] font-extrabold tracking-[-0.03em] text-blue-50">
+							{roleTitle}
+						</span>
+					</div>
+					<div class="flex min-w-0 items-center gap-1.5">
+						<span class="shrink-0 text-[16px]">🛡️</span>
+
+						<span class="truncate text-[17px] font-black tracking-[-0.04em] text-white">
+							{playerName}
+						</span>
+						<span class="truncate text-[14px] font-black tracking-[-0.04em] text-white">
+							요원
+						</span>
 					</div>
 
 					<div class="mt-0.5 truncate text-xs font-bold text-blue-100">
@@ -233,7 +247,7 @@
 				</div>
 			</div>
 		</section>
-
+		<!-- ////🥇📍🛡️🔱⚜️🔰 -->
 		<button
 			type="button"
 			on:click={() => (showMissionModal = true)}
@@ -253,7 +267,7 @@
 				</div>
 
 				<div class="mt-0.5 text-[18px] font-black leading-6 tracking-[-0.055em] text-slate-950">
-					미션 확인하기
+					나의 미션 확인하기
 				</div>
 			</div>
 
@@ -393,7 +407,7 @@
 		{/if}
 
 		<section
-			class="min-h-0 flex-1 overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3.5 text-slate-900 shadow-sm"
+			class="h-[306px] shrink-0 overflow-hidden rounded-[22px] border border-slate-200 bg-white p-3.5 text-slate-900 shadow-sm"
 		>
 			<div class="mb-3 flex items-center justify-between">
 				<div class="flex items-center gap-2">
@@ -409,7 +423,7 @@
 						isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
 					}`}
 				>
-					{isRead ? 'READ ONLY' : `단서 ${textClues.length}/3`}
+					{isRead ? 'READ ONLY' : `단서 ${textClues.length}`}
 				</div>
 			</div>
 

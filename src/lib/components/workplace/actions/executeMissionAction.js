@@ -120,6 +120,82 @@ export async function executeMissionAction({ context, actions }) {
 
 	await wait(450);
 
+	if (isReadCourse) {
+		try {
+			const parsedJson = JSON.parse(jsonText);
+
+			if (!parsedJson || typeof parsedJson !== 'object' || Array.isArray(parsedJson)) {
+				setStatus('editing');
+				setHasExecuted(false);
+
+				setTransmissionState({
+					visible: true,
+					phase: 'error',
+					roleName: currentPlayer?.roleName ?? '',
+					message: '분석 결과는 { }로 감싼 JSON 객체 형태여야 합니다.',
+					progress: 100
+				});
+
+				setConsoleLogs([
+					{
+						type: 'error',
+						text: '분석 결과는 { }로 감싼 JSON 객체 형태여야 합니다.'
+					}
+				]);
+
+				return;
+			}
+		} catch (error) {
+			setStatus('editing');
+			setHasExecuted(false);
+
+			setTransmissionState({
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer?.roleName ?? '',
+				message: 'JSON 문법이 올바르지 않습니다.',
+				progress: 100
+			});
+
+			setConsoleLogs([
+				{
+					type: 'error',
+					text: 'JSON 문법이 올바르지 않습니다.'
+				},
+				{
+					type: 'info',
+					text: '읽기 미션은 정답을 맞히는 것이 아니라 분석 결과를 JSON 형식으로 제출하는 미션입니다.'
+				}
+			]);
+
+			return;
+		}
+
+		await recordCurrentAttempt({
+			ok: true,
+			type: 'read-submit',
+			messages: []
+		});
+
+		await submitReadMissionAction({
+			useMockPlayers,
+			lessonId,
+			roomId,
+			activeParticipantId,
+			currentMission,
+			currentMissionIndex,
+			currentPlayer,
+			jsonText,
+
+			setStatus,
+			setHasExecuted,
+			setConsoleLogs,
+			setTransmissionState
+		});
+
+		return;
+	}
+
 	const validateResult = validateMissionJson({
 		jsonText,
 		course,
@@ -127,9 +203,9 @@ export async function executeMissionAction({ context, actions }) {
 		roleId: currentPlayer?.roleId
 	});
 
-	await recordCurrentAttempt(validateResult);
-
 	if (!validateResult.ok) {
+		await recordCurrentAttempt(validateResult);
+
 		const energyResult = await consumeEnergyOnWrongAnswer();
 
 		setStatus('editing');
@@ -159,27 +235,62 @@ export async function executeMissionAction({ context, actions }) {
 
 		return;
 	}
-	if (isReadCourse) {
-		await submitReadMissionAction({
-			useMockPlayers,
-			lessonId,
-			roomId,
-			activeParticipantId,
-			currentMission,
-			currentMissionIndex,
-			currentPlayer,
-			jsonText,
-
-			setStatus,
-			setHasExecuted,
-			setConsoleLogs,
-			setTransmissionState
-		});
-
-		return;
-	}
 
 	if (currentMission?.type === 'team-final') {
+		setTransmissionState({
+			visible: true,
+			phase: 'mapping',
+			roleName: currentPlayer?.roleName ?? '',
+			message: '최종 JSON 값을 확인하는 중입니다.',
+			progress: 65
+		});
+
+		await wait(450);
+
+		const finalMapResult = mapJsonToSimulationState(themeId, jsonText);
+
+		if (!finalMapResult.ok) {
+			await recordCurrentAttempt({
+				ok: false,
+				type: 'condition',
+				messages: [
+					{
+						type: 'error',
+						concept: 'final_sync',
+						text: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.'
+					}
+				]
+			});
+
+			const energyResult = await consumeEnergyOnWrongAnswer();
+
+			setStatus('editing');
+			setHasExecuted(false);
+
+			setTransmissionState({
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer?.roleName ?? '',
+				message: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.',
+				progress: 100
+			});
+
+			setConsoleLogs([
+				{
+					type: 'error',
+					text: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.'
+				},
+				{
+					type: energyResult.nextEnergy <= 0 ? 'error' : 'warning',
+					text: energyResult.message
+				}
+			]);
+
+			return;
+		}
+
+		await recordCurrentAttempt(validateResult);
+
 		setTransmissionState({
 			visible: true,
 			phase: 'applying',
@@ -202,6 +313,8 @@ export async function executeMissionAction({ context, actions }) {
 
 		return;
 	}
+
+	await recordCurrentAttempt(validateResult);
 
 	setTransmissionState({
 		visible: true,

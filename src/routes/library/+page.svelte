@@ -73,24 +73,24 @@
 			enabled: true
 		},
 		{
-			id: 'animalCenter',
+			id: 'hackerTrace',
 			categoryId: 'read',
 			categoryTitle: '제이슨 해석',
-			title: '동물 보호 센터',
-			subtitle: '동물 상태 JSON을 읽고 보호가 필요한 동물을 찾습니다.',
-			icon: '🦊',
+			title: '해커 추적대: 사라진 학생정보',
+			subtitle: '흩어진 로그를 연결해 진짜 의심 아이디를 찾아보세요!',
+			icon: '👻',
 			level: '준비 중',
 			players: 4,
 			tags: ['데이터 읽기', '분류', '상태 판단'],
 			enabled: true
 		},
 		{
-			id: 'spaceLog',
+			id: 'marketBasket',
 			categoryId: 'read',
 			categoryTitle: '제이슨 해석',
-			title: '우주 관측 기록',
-			subtitle: '관측 기록 JSON을 해석해 탐사 목적지를 찾아냅니다.',
-			icon: '🔭',
+			title: '장바구니 탐정단: 숨은 구매 패턴을 찾아라',
+			subtitle: '마트 판매 JSON 데이터를 분석해 함께 잘 팔리는 상품의 비밀을 밝혀보세요!',
+			icon: '🛒',
 			level: '준비 중',
 			players: 4,
 			tags: ['배열', '객체', '조건 찾기'],
@@ -239,12 +239,12 @@
 		};
 	}
 	function decreaseRoomCount() {
-			roomCount = Math.max(1, roomCount - 1);
-		}
+		roomCount = Math.max(1, roomCount - 1);
+	}
 
-		function increaseRoomCount() {
-			roomCount = Math.min(10, roomCount + 1);
-		}
+	function increaseRoomCount() {
+		roomCount = Math.min(10, roomCount + 1);
+	}
 </script>
 
 <div class="min-h-screen bg-[#f4f7fb] px-4 py-6 font-nanum text-slate-800">
@@ -595,58 +595,62 @@
 								</div>
 							</div>
 
-							<div class="mt-3 rounded-2xl bg-white px-3 py-2 text-[12px] font-bold text-slate-500 ring-1 ring-slate-200">
+							<div
+								class="mt-3 rounded-2xl bg-white px-3 py-2 text-[12px] font-bold text-slate-500 ring-1 ring-slate-200"
+							>
 								총 예상 인원:
 								<span class="font-black text-slate-950">
 									{roomCapacities.reduce((sum, value) => sum + value, 0)}명
 								</span>
 							</div>
 
-															<div class="mt-3 grid max-h-[300px] grid-cols-2 gap-2 overflow-auto pr-1">
-									{#each Array(roomCount) as _, index}
-										<div class="rounded-2xl bg-white p-2.5 ring-1 ring-slate-200">
-											<div class="flex items-center justify-between gap-2">
-												<div class="text-[12px] font-black text-slate-800">
-													{index + 1}번방
-												</div>
-
-												<div
-													class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600"
-												>
-													{roomCapacities[index]}명
-												</div>
+							<div class="mt-3 grid max-h-[300px] grid-cols-2 gap-2 overflow-auto pr-1">
+								{#each Array(roomCount) as _, index}
+									<div class="rounded-2xl bg-white p-2.5 ring-1 ring-slate-200">
+										<div class="flex items-center justify-between gap-2">
+											<div class="text-[12px] font-black text-slate-800">
+												{index + 1}번방
 											</div>
 
-											<div class="mt-2 grid grid-cols-2 gap-1.5">
-												<button
-													type="button"
-													on:click={() => setRoomCapacity(index, 3)}
-													class={`h-8 rounded-lg text-[11px] font-black transition ${
-														roomCapacities[index] === 3
-															? 'bg-blue-600 text-white shadow-sm'
-															: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-													}`}
-												>
-													3명
-												</button>
-
-												<button
-													type="button"
-													on:click={() => setRoomCapacity(index, 4)}
-													class={`h-8 rounded-lg text-[11px] font-black transition ${
-														roomCapacities[index] === 4
-															? 'bg-blue-600 text-white shadow-sm'
-															: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-													}`}
-												>
-													4명
-												</button>
+											<div
+												class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600"
+											>
+												{roomCapacities[index]}명
 											</div>
 										</div>
-									{/each}
-								</div>
 
-							<div class="mt-3 rounded-2xl bg-blue-50 px-3 py-2 text-[12px] font-bold leading-5 text-blue-700">
+										<div class="mt-2 grid grid-cols-2 gap-1.5">
+											<button
+												type="button"
+												on:click={() => setRoomCapacity(index, 3)}
+												class={`h-8 rounded-lg text-[11px] font-black transition ${
+													roomCapacities[index] === 3
+														? 'bg-blue-600 text-white shadow-sm'
+														: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+												}`}
+											>
+												3명
+											</button>
+
+											<button
+												type="button"
+												on:click={() => setRoomCapacity(index, 4)}
+												class={`h-8 rounded-lg text-[11px] font-black transition ${
+													roomCapacities[index] === 4
+														? 'bg-blue-600 text-white shadow-sm'
+														: 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+												}`}
+											>
+												4명
+											</button>
+										</div>
+									</div>
+								{/each}
+							</div>
+
+							<div
+								class="mt-3 rounded-2xl bg-blue-50 px-3 py-2 text-[12px] font-bold leading-5 text-blue-700"
+							>
 								기본은 4명 방입니다. 3명 방은 남는 역할이 자동 완료 처리됩니다.
 							</div>
 						</div>

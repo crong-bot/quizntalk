@@ -1,19 +1,20 @@
 <!-- C:\quizntalk\src\lib\components\workplace\JsonMissionWorkspace.svelte -->
 <script>
-	import { executeMissionAction } from './actions/executeMissionAction.js';
-	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
-
 	import {
 		applyMissionSuccess,
+		leaveRoom,
 		recordParticipantAttempt,
 		updateRoomState
 	} from '$lib/firebase/missionRoom/missionRoomRepository.js';
+	import { executeMissionAction } from './actions/executeMissionAction.js';
 	import CommandTransmissionPanel from './CommandTransmissionPanel.svelte';
 	import JsonEditorConsole from './JsonEditorConsole.svelte';
 	import JsonEditorPanel from './JsonEditorPanel.svelte';
 	import MissionBriefingPanel from './MissionBriefingPanel.svelte';
+	import FinalAnalyzingModal from './modals/FinalAnalyzingModal.svelte';
 	import SharedSimulationPanel from './SharedSimulationPanel.svelte';
 	import TeamExecutionBoard from './TeamExecutionBoard.svelte';
+	import { moonBaseCourse } from './theme/spaceBase/spaceBaseCourse';
 
 	import { isReadMissionCourse } from '$lib/firebase/missionRoom/missionRoomService.js';
 	import {
@@ -23,7 +24,6 @@
 		submitFinalMissionPieceAction
 	} from './actions/finalMissionAction.js';
 	import MissionWorkspaceHeader from './MissionWorkspaceHeader.svelte';
-	import FinalReadyModal from './modals/FinalReadyModal.svelte';
 	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
 	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
 	import ReadMissionPanel from './ReadMissionPanel.svelte';
@@ -35,13 +35,14 @@
 		setAllPlayersMissionState
 	} from './state/workspaceState.js';
 
+	import LeaveRoomModal from './modals/LeaveRoomModal.svelte';
 	import RoomIntroModal from './modals/RoomIntroModal.svelte';
 	import RoomWaitingModal from './modals/RoomWaitingModal.svelte';
 
 	export let roomCode = '';
 	export let lessonId = '';
 	export let roomId = '';
-	export let lesson = null;
+
 	export let room = null;
 	export let participants = [];
 	export let participantId = '';
@@ -49,10 +50,7 @@
 
 	export let course = moonBaseCourse;
 
-	$: participantName =
-		typeof localStorage !== 'undefined'
-			? localStorage.getItem(`participant_name_${roomCode}`) ?? ''
-			: '';
+	let lastRestartEventVersion = 0;
 
 	$: localParticipantId =
 		typeof localStorage !== 'undefined'
@@ -65,8 +63,9 @@
 
 	let jsonText = course.missions[0].initialJson;
 	let status = 'editing';
-	//let canExecute = false;
+
 	let hasExecuted = false;
+	//let canExecute = false;
 	$: themeId = course?.themeId ?? 'spaceBase';
 	let showMissionCompleteModal = false;
 	let completedMissionIndex = null;
@@ -96,14 +95,94 @@
 	$: completionPrimaryButtonText = completion.primaryButtonText ?? '홈으로';
 	//----------------------------
 	let lastSeenMissionEventKey = '';
+	let lastHandledRestartVersion = 0;
 
 	function getMissionEventKey(event) {
 		if (!event) return '';
 		return `${event.type}:${event.missionId}:${event.version}`;
 	}
+	function getInitialMissionProgress() {
+		return Array.from({ length: course?.missions?.length ?? 1 }, (_, index) => {
+			return index === 0 ? 'playing' : 'locked';
+		});
+	}
 
 	function openMissionCompleteFromEvent(event) {
+		if (!event) return;
+
+		if (event.type === 'room_restarted') {
+			return;
+		}
+
 		completedMissionIndex = event.missionIndex ?? currentMissionIndex;
+
+		if (event.type === 'final_ready' || event.status === 'finalReady') {
+			pendingNextMissionIndex = null;
+			status = 'finalReady';
+			hasExecuted = true;
+
+			showMissionCompleteModal = false;
+			showFinalReadyModal = false;
+			showFinalSuccessModal = false;
+			showFinalAnalyzingModal = true;
+
+			transmissionState = {
+				visible: true,
+				phase: 'sending',
+				roleName: currentPlayer?.roleName ?? '',
+				message: event.message ?? '모든 JSON 데이터를 모아 최종 결과를 분석하고 있습니다.',
+				progress: 70
+			};
+
+			consoleLogs = [
+				{
+					type: 'success',
+					text: event.message ?? '모든 친구의 최종 JSON 데이터가 모였습니다.'
+				},
+				{
+					type: 'info',
+					text: '최종 결과를 자동으로 분석하고 있습니다.'
+				}
+			];
+
+			return;
+		}
+
+		const isFinalCompletedEvent =
+			event.type === 'final_completed' ||
+			(event.status === 'completed' && currentMission?.type === 'team-final');
+
+		if (isFinalCompletedEvent) {
+			pendingNextMissionIndex = null;
+			status = 'cleared';
+			hasExecuted = true;
+
+			showMissionCompleteModal = false;
+			showFinalReadyModal = false;
+			showFinalAnalyzingModal = false;
+			showFinalSuccessModal = true;
+
+			transmissionState = {
+				visible: true,
+				phase: 'success',
+				roleName: currentPlayer?.roleName ?? '',
+				message: event.message ?? '최종 결과가 완성되었습니다.',
+				progress: 100
+			};
+
+			consoleLogs = [
+				{
+					type: 'success',
+					text: event.message ?? '최종 결과가 완성되었습니다.'
+				},
+				{
+					type: 'info',
+					text: '최종 결과를 확인하세요.'
+				}
+			];
+
+			return;
+		}
 
 		if (event.status === 'completed') {
 			pendingNextMissionIndex = null;
@@ -129,20 +208,19 @@
 				}
 			];
 
-			if (isReadCourse) {
-				showMissionCompleteModal = false;
-				showFinalReadyModal = false;
-				showFinalSuccessModal = true;
-				return;
-			}
-
-			showMissionCompleteModal = true;
+			showMissionCompleteModal = false;
+			showFinalReadyModal = false;
+			showFinalAnalyzingModal = false;
+			showFinalSuccessModal = true;
 			return;
 		}
 
 		pendingNextMissionIndex =
 			typeof event.nextMissionIndex === 'number' ? event.nextMissionIndex : currentMissionIndex + 1;
 
+		showFinalReadyModal = false;
+		showFinalAnalyzingModal = false;
+		showFinalSuccessModal = false;
 		showMissionCompleteModal = true;
 
 		transmissionState = {
@@ -165,9 +243,11 @@
 		];
 	}
 	let showFinalReadyModal = false;
+	let showFinalAnalyzingModal = false;
 	let showFinalSuccessModal = false;
 
 	let isFinalSequencePlaying = false;
+	let autoFinalExecutionStarted = false;
 
 	let simulationState = {
 		layers: {}
@@ -371,6 +451,53 @@
 			console.error('미션 성공 동기화 실패:', error);
 		}
 	}
+	function requestLeaveCurrentRoom() {
+		if (isLeavingRoom) return;
+		showLeaveRoomModal = true;
+	}
+
+	async function confirmLeaveCurrentRoom() {
+		if (isLeavingRoom) return;
+
+		try {
+			isLeavingRoom = true;
+
+			if (shouldUseFirebase && lessonId && roomId && activeParticipantId) {
+				await leaveRoom({
+					lessonId,
+					roomId,
+					participantId: activeParticipantId
+				});
+			}
+
+			if (typeof localStorage !== 'undefined' && roomCode) {
+				localStorage.removeItem(`participant_id_${roomCode}`);
+				localStorage.removeItem(`participant_name_${roomCode}`);
+			}
+
+			showLeaveRoomModal = false;
+			window.location.href = '/';
+		} catch (error) {
+			console.error('방 나가기 실패:', error);
+
+			consoleLogs = [
+				{
+					type: 'error',
+					text: error?.message ?? '방에서 나가지 못했습니다.'
+				}
+			];
+
+			transmissionState = {
+				visible: true,
+				phase: 'error',
+				roleName: currentPlayer?.roleName ?? '',
+				message: error?.message ?? '방에서 나가지 못했습니다.',
+				progress: 100
+			};
+		} finally {
+			isLeavingRoom = false;
+		}
+	}
 	async function executeMission() {
 		if (shouldUseFirebase && !isRoomReadyToPlay) {
 			showRoomWaitingModal = true;
@@ -458,8 +585,10 @@
 		pendingNextMissionIndex = null;
 
 		showFinalReadyModal = false;
+		showFinalAnalyzingModal = false;
 		showFinalSuccessModal = false;
 		isFinalSequencePlaying = false;
+		autoFinalExecutionStarted = false;
 
 		jsonText = course.missions[0].initialJson;
 		status = 'editing';
@@ -535,7 +664,8 @@
 	$: isRoomReadyToPlay = !shouldUseFirebase || joinedParticipantCount >= requiredParticipantCount;
 
 	let showRoomWaitingModal = false;
-
+	let isLeavingRoom = false;
+	let showLeaveRoomModal = false;
 	$: players = buildWorkspacePlayers({
 		course,
 		participants,
@@ -545,7 +675,7 @@
 	});
 
 	$: currentPlayer = players.find((player) => player.id === currentPlayerId) ?? players[0];
-	$: currentMission = course.missions[currentMissionIndex];
+	$: currentMission = course.missions[currentMissionIndex] ?? course.missions[0];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
 	$: shouldShowSupportGuide =
@@ -575,7 +705,6 @@
 		currentReview?.approveMessage ??
 		currentReview?.feedback ??
 		'선생님이 분석 결과를 승인했습니다. 팀원들이 모두 승인되면 다음 미션으로 넘어갑니다.';
-
 	$: {
 		const event = room?.lastMissionEvent;
 		const eventKey = getMissionEventKey(event);
@@ -583,6 +712,19 @@
 		if (shouldUseFirebase && event && eventKey && eventKey !== lastSeenMissionEventKey) {
 			lastSeenMissionEventKey = eventKey;
 			openMissionCompleteFromEvent(event);
+		}
+	}
+	$: {
+		const restartVersion = room?.restartVersion ?? 0;
+
+		if (shouldUseFirebase && restartVersion && restartVersion !== lastHandledRestartVersion) {
+			lastHandledRestartVersion = restartVersion;
+
+			resetWorkspaceFromRestartEvent({
+				type: 'room_restarted',
+				version: restartVersion,
+				message: '선생님이 방을 미션 1부터 다시 시작했습니다.'
+			});
 		}
 	}
 
@@ -767,22 +909,50 @@
 			return;
 		}
 
-		try {
-			await applyMissionSuccess({
-				lessonId,
-				roomId,
-				participantId: activeParticipantId,
-				missionProgress: nextMissionProgress,
-				currentMissionIndex,
-				status: 'final'
-			});
+		const nextFinalSubmissions = {
+			...(finalSubmissions ?? {}),
+			[roleId]: finalPiece
+		};
 
+		const requiredRoleIds = currentMission?.requiredRoleIds ?? course.roles.map((role) => role.id);
+
+		const autoClearedRoleIds = shouldUseFirebase ? room?.autoClearedRoles ?? [] : [];
+
+		const isFinalReady = requiredRoleIds.every((requiredRoleId) => {
+			return (
+				Boolean(nextFinalSubmissions[requiredRoleId]) || autoClearedRoleIds.includes(requiredRoleId)
+			);
+		});
+
+		try {
 			await updateRoomState({
 				lessonId,
 				roomId,
 				patch: {
 					[`finalSubmissions.${roleId}`]: finalPiece
 				}
+			});
+
+			await applyMissionSuccess({
+				lessonId,
+				roomId,
+				participantId: activeParticipantId,
+				missionProgress: nextMissionProgress,
+				currentMissionIndex,
+				status: isFinalReady ? 'finalReady' : 'final',
+				lastMissionEvent: isFinalReady
+					? {
+							type: 'final_ready',
+							missionId: currentMission?.id ?? '',
+							missionTitle: currentMission?.title ?? `미션 ${currentMissionIndex + 1}`,
+							missionIndex: currentMissionIndex,
+							nextMissionIndex: currentMissionIndex,
+							status: 'finalReady',
+							message: '모든 친구의 최종 JSON 데이터가 모였습니다.',
+							version: Date.now(),
+							createdAt: new Date().toISOString()
+					  }
+					: null
 			});
 		} catch (error) {
 			console.error('최종 미션 제출 동기화 실패:', error);
@@ -892,7 +1062,7 @@
 				},
 				{
 					type: 'info',
-					text: '최종 실행하기를 누르면 공용 시뮬레이션에 반영됩니다.'
+					text: '최종 결과를 자동으로 분석하고 있습니다.'
 				}
 			];
 
@@ -956,13 +1126,13 @@
 				currentMissionIndex,
 				status: 'completed',
 				lastMissionEvent: {
-					type: 'mission_completed',
+					type: 'final_completed',
 					missionId: currentMission?.id ?? '',
 					missionTitle: currentMission?.title ?? `미션 ${currentMissionIndex + 1}`,
 					missionIndex: currentMissionIndex,
 					nextMissionIndex: currentMissionIndex,
 					status: 'completed',
-					message: '모든 미션이 완료되었습니다.',
+					message: '최종 결과가 완성되었습니다.',
 					version: Date.now(),
 					createdAt: new Date().toISOString()
 				}
@@ -971,8 +1141,56 @@
 			console.error('최종 실행 동기화 실패:', error);
 		}
 	}
+	function sleep(ms) {
+		return new Promise((resolve) => {
+			setTimeout(resolve, ms);
+		});
+	}
+	$: if (showFinalReadyModal && !autoFinalExecutionStarted) {
+		startAutoFinalExecution();
+	}
+
+	async function startAutoFinalExecution() {
+		if (autoFinalExecutionStarted) return;
+
+		autoFinalExecutionStarted = true;
+
+		showMissionCompleteModal = false;
+		showFinalReadyModal = false;
+		showFinalSuccessModal = false;
+		showFinalAnalyzingModal = true;
+
+		transmissionState = {
+			visible: true,
+			phase: 'sending',
+			roleName: currentPlayer?.roleName ?? '',
+			message: '모든 JSON 데이터를 모아 최종 결과를 분석하고 있습니다.',
+			progress: 70
+		};
+
+		consoleLogs = [
+			{
+				type: 'success',
+				text: '모든 친구의 최종 JSON 데이터가 모였습니다.'
+			},
+			{
+				type: 'info',
+				text: '최종 결과를 자동으로 분석하고 있습니다.'
+			}
+		];
+
+		await sleep(1600);
+
+		await runFinalSequence();
+	}
 
 	async function runFinalSequence() {
+		showMissionCompleteModal = false;
+		showFinalReadyModal = false;
+		showFinalSuccessModal = false;
+		showFinalAnalyzingModal = true;
+		isFinalSequencePlaying = true;
+
 		await runFinalSequenceAction({
 			context: {
 				currentMission,
@@ -993,6 +1211,7 @@
 					isFinalSequencePlaying = nextIsFinalSequencePlaying;
 				},
 				setShowFinalSuccessModal: (nextShowFinalSuccessModal) => {
+					showFinalAnalyzingModal = false;
 					showFinalSuccessModal = nextShowFinalSuccessModal;
 				},
 				setSimulationState: (nextSimulationState) => {
@@ -1013,6 +1232,54 @@
 			}
 		});
 	}
+	function resetWorkspaceFromRestartEvent(event) {
+		currentMissionIndex = 0;
+		localVerificationEnergy = maxVerificationEnergy;
+		finalSubmissions = {};
+
+		showMissionCompleteModal = false;
+		completedMissionIndex = null;
+		pendingNextMissionIndex = null;
+
+		showFinalReadyModal = false;
+		showFinalAnalyzingModal = false;
+		showFinalSuccessModal = false;
+		isFinalSequencePlaying = false;
+		autoFinalExecutionStarted = false;
+
+		jsonText = course.missions[0]?.initialJson ?? '';
+		status = 'editing';
+		hasExecuted = false;
+
+		simulationState = {
+			layers: {}
+		};
+
+		lastRoomSimulationStateKey = '';
+
+		if (typeof lastAppliedAutoClearSimulationKey !== 'undefined') {
+			lastAppliedAutoClearSimulationKey = '';
+		}
+
+		transmissionState = {
+			visible: true,
+			phase: 'idle',
+			roleName: currentPlayer?.roleName ?? '',
+			message: event?.message ?? '선생님이 방을 미션 1부터 다시 시작했습니다.',
+			progress: 0
+		};
+
+		consoleLogs = [
+			{
+				type: 'info',
+				text: event?.message ?? '선생님이 방을 미션 1부터 다시 시작했습니다.'
+			},
+			{
+				type: 'info',
+				text: '미션 1의 JSON을 다시 작성해 주세요.'
+			}
+		];
+	}
 </script>
 
 <div class="flex h-full w-full items-start justify-center bg-[#eef3fb]">
@@ -1026,9 +1293,10 @@
 				{currentMissionIndex}
 				{verificationEnergy}
 				{maxVerificationEnergy}
-				onMenuClick={() => {
-					console.log('메뉴 클릭');
-				}}
+				roomNumber={room?.roomNumber}
+				roomCode={room?.code ?? roomCode}
+				onMenuClick={() => {}}
+				onLeaveRoom={requestLeaveCurrentRoom}
 			/>
 			<!-- 테스트바 부분 -->
 			{#if !shouldUseFirebase}
@@ -1076,6 +1344,7 @@
 						variant={isReadCourse ? 'read' : 'write'}
 						story={currentRoleMission?.story}
 						role={currentRoleMission?.role}
+						playerName={currentPlayer?.name ?? ''}
 						clues={isReadCourse ? [] : currentRoleMission?.clues ?? []}
 						keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
 						panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
@@ -1210,7 +1479,7 @@
 						<CommandTransmissionPanel state={transmissionState} />
 					</div>
 
-					<div class="h-[400px] shrink-0">
+					<div class="h-[400px] z-0 shrink-0">
 						<SharedSimulationPanel {themeId} {simulationState} />
 					</div>
 					<div class="shrink-0">
@@ -1247,7 +1516,12 @@
 		onStartNextMission={startPendingMission}
 	/>
 
-	<FinalReadyModal show={showFinalReadyModal} {jsonText} onRunFinalSequence={runFinalSequence} />
+	<!-- <FinalReadyModal show={showFinalReadyModal} {jsonText} onRunFinalSequence={runFinalSequence} /> -->
+	<FinalAnalyzingModal
+		show={showFinalAnalyzingModal}
+		title="모든 JSON 데이터 수신 완료"
+		subtitle="팀원들의 데이터를 합치고 최종 결과를 분석하고 있어요."
+	/>
 
 	<FinalSuccessModal
 		show={showFinalSuccessModal}
@@ -1267,6 +1541,18 @@
 		onClose={() => {
 			showRoomWaitingModal = false;
 		}}
+	/>
+	<LeaveRoomModal
+		show={showLeaveRoomModal}
+		isLeaving={isLeavingRoom}
+		roomNumber={room?.roomNumber}
+		roomCode={room?.code ?? roomCode}
+		onCancel={() => {
+			if (!isLeavingRoom) {
+				showLeaveRoomModal = false;
+			}
+		}}
+		onConfirm={confirmLeaveCurrentRoom}
 	/>
 </div>
 

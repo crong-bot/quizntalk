@@ -14,7 +14,7 @@ export const hackerTraceCourse = {
 		badge: 'SECURITY BRIEFING',
 		title: '학교 서버 긴급 보안 분석',
 		subtitle: '학생정보.json 파일이 수상하게 수정되었습니다.',
-		image: '/images/themes/hacker/intro.png',
+		image: '/images/themes/hacker/base.png',
 		imageAlt: '보안 분석팀이 서버 로그를 확인하는 장면',
 		summaryTitle: '현재 상황',
 		summary:
@@ -67,10 +67,9 @@ export const hackerTraceCourse = {
 			type: 'role-analysis',
 
 			initialJson: `{
-  "분석결과": "",
   "의심아이디": "",
-  "근거": "",
-  "혼자판단의한계": ""
+  "이유": "",
+  "더 필요한 정보": ""
 }`,
 
 			roleMissions: {
@@ -252,20 +251,20 @@ export const hackerTraceCourse = {
 								권한변경기록: [
 									{
 										시간: '12:53',
-										변경한아이디: '초록여우',
-										대상아이디: '은빛고양이',
+										접속아이디: '초록여우',
+										권한변경대상: '은빛고양이',
 										변경내용: '학생정보.json 수정 권한 임시 부여'
 									},
 									{
 										시간: '12:57',
-										변경한아이디: '초록여우',
-										대상아이디: '은빛고양이',
+										접속아이디: '초록여우',
+										권한변경대상: '은빛고양이',
 										변경내용: '학생정보.json 수정 권한 회수'
 									},
 									{
 										시간: '13:05',
-										변경한아이디: '파란새',
-										대상아이디: '붉은판다',
+										접속아이디: '파란새',
+										권한변경대상: '붉은판다',
 										변경내용: '운동장예약.json 읽기 권한 부여'
 									}
 								]

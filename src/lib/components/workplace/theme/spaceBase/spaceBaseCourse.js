@@ -203,7 +203,13 @@ export const moonBaseCourse = {
 						icon: 'O₂',
 						description: '산소센터의 전원을 연결하는 역할'
 					},
-					clues: ['장치는 "산소센터"입니다.', '연결은 true입니다.', '전압은 숫자 110입니다.'],
+					clues: [
+						'장치는 "산소센터"입니다.',
+						'연결은 true입니다.',
+						'전압은 숫자 110입니다.',
+						'연결은 true입니다.',
+						'연결은 true입니다.'
+					],
 					keyChips: ['장치', '연결', '전압'],
 					valueChips: ['"산소센터"', 'true', '110'],
 					answer: {

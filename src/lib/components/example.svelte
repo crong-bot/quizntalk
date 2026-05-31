@@ -1,3 +1,0 @@
-<div>
-	<p>example!!</p>
-</div>

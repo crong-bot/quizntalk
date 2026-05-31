@@ -4,6 +4,7 @@ import { db } from '$lib/firebase/client';
 import {
 	arrayUnion,
 	collection,
+	deleteField,
 	doc,
 	getDoc,
 	getDocs,
@@ -50,6 +51,29 @@ function createInitialMissionProgress(missionCount = 3) {
 		index === 0 ? 'playing' : 'locked'
 	);
 }
+function getActiveParticipantSummaries(room) {
+	if (!room?.participantSummaries || typeof room.participantSummaries !== 'object') {
+		return [];
+	}
+
+	return Object.values(room.participantSummaries).filter(Boolean);
+}
+
+function getFirstEmptyRole({ room, roles = [] }) {
+	const maxParticipants = room?.maxParticipants ?? 4;
+	const availableRoles = roles.slice(0, maxParticipants);
+
+	const activeSummaries = getActiveParticipantSummaries(room);
+	const usedRoleIds = new Set(
+		activeSummaries.map((participant) => participant?.roleId).filter(Boolean)
+	);
+
+	return (
+		availableRoles.find((role) => {
+			return role?.id && !usedRoleIds.has(role.id);
+		}) ?? null
+	);
+}
 
 function createRoomData({
 	lessonId,
@@ -78,6 +102,7 @@ function createRoomData({
 
 		participantCount: 0,
 		participantNames: [],
+		participantSummaries: {},
 
 		simulationState: {
 			layers: {}
@@ -362,10 +387,14 @@ export function subscribeParticipants({ lessonId, roomId }, callback, errorCallb
 	return onSnapshot(
 		participantsRef,
 		(snapshot) => {
-			const participants = snapshot.docs.map((participantDoc) => ({
-				id: participantDoc.id,
-				...participantDoc.data()
-			}));
+			const participants = snapshot.docs
+				.map((participantDoc) => ({
+					id: participantDoc.id,
+					...participantDoc.data()
+				}))
+				.filter((participant) => {
+					return participant.active !== false && participant.status !== 'left';
+				});
 
 			callback(participants);
 		},
@@ -420,18 +449,96 @@ export async function joinRoom({
 		if (participantSnap.exists()) {
 			const savedParticipant = participantSnap.data();
 
+			const wasLeft = savedParticipant.active === false || savedParticipant.status === 'left';
+
+			const currentCount = room.participantCount ?? 0;
+			const maxParticipants = room.maxParticipants ?? 4;
+
+			if (!wasLeft) {
+				const savedRoleId = savedParticipant.roleId ?? null;
+				const savedRoleName = savedParticipant.roleName ?? null;
+				const savedAvatarSrc = savedParticipant.avatarSrc ?? null;
+
+				tx.set(
+					participantRef,
+					{
+						id: participantId,
+						name: name.trim(),
+
+						roleId: savedRoleId,
+						roleName: savedRoleName,
+						avatarSrc: savedAvatarSrc,
+
+						active: true,
+						status: 'playing',
+
+						missionProgress:
+							savedParticipant.missionProgress ?? createInitialMissionProgress(missionCount),
+						learningStats: savedParticipant.learningStats ?? {
+							totalAttempts: 0,
+							successCount: 0,
+							failCount: 0,
+							conceptErrors: {},
+							missionStats: {}
+						},
+
+						joinedAt: savedParticipant.joinedAt,
+						updatedAt: serverTimestamp()
+					},
+					{ merge: true }
+				);
+
+				tx.update(roomRef, {
+					[`participantSummaries.${participantId}`]: {
+						id: participantId,
+						name: name.trim(),
+						roleId: savedRoleId,
+						roleName: savedRoleName,
+						avatarSrc: savedAvatarSrc
+					},
+					updatedAt: serverTimestamp()
+				});
+
+				return {
+					roleId: savedRoleId,
+					roleName: savedRoleName,
+					avatarSrc: savedAvatarSrc
+				};
+			}
+
+			if (currentCount >= maxParticipants) {
+				throw new Error('이 방은 정원이 가득 찼습니다.');
+			}
+
+			const assignedRole = getFirstEmptyRole({
+				room,
+				roles
+			});
+
+			if (!assignedRole) {
+				throw new Error('배정할 수 있는 빈 역할이 없습니다.');
+			}
+
+			const assignedRoleId = assignedRole.id ?? null;
+			const assignedRoleName = assignedRole.roleName ?? assignedRole.name ?? null;
+			const assignedAvatarSrc = assignedRole.avatarSrc ?? null;
+
+			const nextCount = currentCount + 1;
+
 			tx.set(
 				participantRef,
 				{
 					id: participantId,
 					name: name.trim(),
 
-					roleId: savedParticipant.roleId ?? null,
-					roleName: savedParticipant.roleName ?? null,
-					avatarSrc: savedParticipant.avatarSrc ?? null,
+					roleId: assignedRoleId,
+					roleName: assignedRoleName,
+					avatarSrc: assignedAvatarSrc,
 
-					missionProgress:
-						savedParticipant.missionProgress ?? createInitialMissionProgress(missionCount),
+					active: true,
+					status: 'playing',
+
+					missionProgress: createInitialMissionProgress(missionCount),
 					learningStats: savedParticipant.learningStats ?? {
 						totalAttempts: 0,
 						successCount: 0,
@@ -440,16 +547,31 @@ export async function joinRoom({
 						missionStats: {}
 					},
 
-					joinedAt: savedParticipant.joinedAt,
+					joinedAt: savedParticipant.joinedAt ?? serverTimestamp(),
+					rejoinedAt: serverTimestamp(),
 					updatedAt: serverTimestamp()
 				},
 				{ merge: true }
 			);
 
+			tx.update(roomRef, {
+				participantCount: nextCount,
+				participantNames: arrayUnion(name.trim()),
+				[`participantSummaries.${participantId}`]: {
+					id: participantId,
+					name: name.trim(),
+					roleId: assignedRoleId,
+					roleName: assignedRoleName,
+					avatarSrc: assignedAvatarSrc
+				},
+				status: nextCount >= maxParticipants ? 'playing' : 'waiting',
+				updatedAt: serverTimestamp()
+			});
+
 			return {
-				roleId: savedParticipant.roleId ?? null,
-				roleName: savedParticipant.roleName ?? null,
-				avatarSrc: savedParticipant.avatarSrc ?? null
+				roleId: assignedRoleId,
+				roleName: assignedRoleName,
+				avatarSrc: assignedAvatarSrc
 			};
 		}
 
@@ -460,12 +582,18 @@ export async function joinRoom({
 			throw new Error('이 방은 정원이 가득 찼습니다.');
 		}
 
-		const availableRoles = roles.slice(0, maxParticipants);
-		const assignedRole = availableRoles[participantCount] ?? null;
+		const assignedRole = getFirstEmptyRole({
+			room,
+			roles
+		});
 
-		const assignedRoleId = assignedRole?.id ?? null;
-		const assignedRoleName = assignedRole?.roleName ?? assignedRole?.name ?? null;
-		const assignedAvatarSrc = assignedRole?.avatarSrc ?? null;
+		if (!assignedRole) {
+			throw new Error('배정할 수 있는 빈 역할이 없습니다.');
+		}
+
+		const assignedRoleId = assignedRole.id ?? null;
+		const assignedRoleName = assignedRole.roleName ?? assignedRole.name ?? null;
+		const assignedAvatarSrc = assignedRole.avatarSrc ?? null;
 
 		tx.set(
 			participantRef,
@@ -476,6 +604,9 @@ export async function joinRoom({
 				roleId: assignedRoleId,
 				roleName: assignedRoleName,
 				avatarSrc: assignedAvatarSrc,
+
+				active: true,
+				status: 'playing',
 
 				missionProgress: createInitialMissionProgress(missionCount),
 				learningStats: {
@@ -495,7 +626,14 @@ export async function joinRoom({
 		tx.update(roomRef, {
 			participantCount: participantCount + 1,
 			participantNames: arrayUnion(name.trim()),
-			status: 'waiting',
+			[`participantSummaries.${participantId}`]: {
+				id: participantId,
+				name: name.trim(),
+				roleId: assignedRoleId,
+				roleName: assignedRoleName,
+				avatarSrc: assignedAvatarSrc
+			},
+			status: participantCount + 1 >= maxParticipants ? 'playing' : 'waiting',
 			updatedAt: serverTimestamp()
 		});
 
@@ -504,6 +642,71 @@ export async function joinRoom({
 			roleName: assignedRoleName,
 			avatarSrc: assignedAvatarSrc
 		};
+	});
+}
+export async function leaveRoom({ lessonId, roomId, participantId }) {
+	if (!lessonId || !roomId) {
+		throw new Error('방 정보가 부족합니다.');
+	}
+
+	if (!participantId) {
+		throw new Error('참가자 정보가 없습니다.');
+	}
+
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	await runTransaction(db, async (tx) => {
+		const roomSnap = await tx.get(roomRef);
+		const participantSnap = await tx.get(participantRef);
+
+		if (!roomSnap.exists()) {
+			throw new Error('방 정보를 찾을 수 없습니다.');
+		}
+
+		if (!participantSnap.exists()) {
+			return;
+		}
+
+		const room = roomSnap.data();
+		const participant = participantSnap.data();
+
+		if (participant?.active === false || participant?.status === 'left') {
+			return;
+		}
+
+		const currentCount = room.participantCount ?? 0;
+		const nextCount = Math.max(currentCount - 1, 0);
+		const maxParticipants = room.maxParticipants ?? 4;
+
+		const nextStatus =
+			room.status === 'completed'
+				? 'completed'
+				: nextCount >= maxParticipants
+				  ? room.status ?? 'playing'
+				  : 'waiting';
+
+		tx.update(participantRef, {
+			active: false,
+			status: 'left',
+			leftAt: serverTimestamp(),
+			updatedAt: serverTimestamp()
+		});
+
+		tx.update(roomRef, {
+			participantCount: nextCount,
+			[`participantSummaries.${participantId}`]: deleteField(),
+			status: nextStatus,
+			updatedAt: serverTimestamp()
+		});
 	});
 }
 
@@ -544,6 +747,33 @@ export async function updateParticipantProgress({
 		missionProgress,
 		updatedAt: serverTimestamp()
 	});
+}
+export async function resetRoomParticipantsProgress({ lessonId, roomId, missionCount }) {
+	if (!lessonId || !roomId) {
+		throw new Error('방 정보가 부족합니다.');
+	}
+
+	const safeMissionCount = Math.max(1, Number(missionCount) || 1);
+
+	const initialMissionProgress = Array.from({ length: safeMissionCount }, (_, index) => {
+		return index === 0 ? 'playing' : 'locked';
+	});
+
+	const participantsRef = collection(db, 'lessons', lessonId, 'rooms', roomId, 'participants');
+	const participantsSnap = await getDocs(participantsRef);
+
+	const batch = writeBatch(db);
+
+	participantsSnap.docs.forEach((participantDoc) => {
+		batch.update(participantDoc.ref, {
+			missionProgress: [...initialMissionProgress],
+			currentMissionIndex: 0,
+			status: 'playing',
+			updatedAt: serverTimestamp()
+		});
+	});
+
+	await batch.commit();
 }
 export async function approveReadMissionSubmission({
 	lessonId,
@@ -777,8 +1007,8 @@ export async function applyMissionSuccess({
 		roomPatch.status = status;
 	}
 	if (lastMissionEvent) {
-	roomPatch.lastMissionEvent = lastMissionEvent;
-}
+		roomPatch.lastMissionEvent = lastMissionEvent;
+	}
 
 	batch.update(roomRef, roomPatch);
 

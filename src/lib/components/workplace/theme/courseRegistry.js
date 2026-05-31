@@ -1,8 +1,20 @@
 import { animalRescueCourse } from './animalRescue/animalRescueCourse.js';
+import { bikeRebalanceCourse } from './bike/bikeRebalanceCourse.js';
+import { disasterSafetyCourse } from './disasterSafety/disasterSafetyCourse.js';
 import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
+import { marketBasketCourse } from './market/marketBasketCourse.js';
+import { owlBusCourse } from './owlBus/owlBusCourse.js';
 import { moonBaseCourse } from './spaceBase/spaceBaseCourse';
 
-export const courses = [moonBaseCourse, animalRescueCourse, hackerTraceCourse];
+export const courses = [
+	moonBaseCourse,
+	animalRescueCourse,
+	hackerTraceCourse,
+	marketBasketCourse,
+	bikeRebalanceCourse,
+	disasterSafetyCourse,
+	owlBusCourse
+];
 
 // const courseByThemeId = {
 // 	spaceBase: moonBaseCourse

@@ -8,6 +8,7 @@ import {
 	getRoomByInviteCode,
 	joinRoom,
 	rejectReadMissionSubmission,
+	resetRoomParticipantsProgress,
 	updateRoomState
 } from './missionRoomRepository';
 
@@ -459,6 +460,114 @@ export async function rejectReadMissionForRoom({
 		missionId: mission.id,
 		reviewKey,
 		reason
+	});
+
+	return {
+		ok: true
+	};
+}
+/* -------------------------------------------------------------------------- */
+/* 교사용 방 재시작                                                            */
+/* -------------------------------------------------------------------------- */
+
+function buildRestartMissionProgress(missionCount) {
+	return Array.from({ length: missionCount }, (_, index) => {
+		return index === 0 ? 'playing' : 'locked';
+	});
+}
+
+function buildRestartedParticipants({ room, missionCount }) {
+	const initialMissionProgress = buildRestartMissionProgress(missionCount);
+
+	if (Array.isArray(room?.participants)) {
+		return room.participants.map((participant) => ({
+			...participant,
+			missionProgress: [...initialMissionProgress],
+			currentMissionIndex: 0,
+			status: 'playing'
+		}));
+	}
+
+	if (room?.participants && typeof room.participants === 'object') {
+		return Object.fromEntries(
+			Object.entries(room.participants).map(([key, participant]) => [
+				key,
+				{
+					...participant,
+					missionProgress: [...initialMissionProgress],
+					currentMissionIndex: 0,
+					status: 'playing'
+				}
+			])
+		);
+	}
+
+	return room?.participants ?? [];
+}
+
+export async function restartRoomForTeacher({ lessonId, room, course }) {
+	if (!lessonId) {
+		throw new Error('수업 정보가 없습니다.');
+	}
+
+	if (!room?.id) {
+		throw new Error('방 정보가 없습니다.');
+	}
+
+	const missionCount = course?.missions?.length ?? 1;
+	const restartedAt = new Date().toISOString();
+	const restartVersion = Date.now();
+
+	await resetRoomParticipantsProgress({
+		lessonId,
+		roomId: room.id,
+		missionCount
+	});
+
+	await updateRoomState({
+		lessonId,
+		roomId: room.id,
+		patch: {
+			status: 'playing',
+			currentMissionIndex: 0,
+			verificationEnergy: 5,
+
+			simulationState: {
+				layers: {}
+			},
+
+			finalSubmissions: {},
+			finalExecutionStatus: null,
+			finalExecutionStartedAt: null,
+			finalExecutionCompletedAt: null,
+			finalExecutionStartedBy: null,
+
+			pendingReviews: {},
+			reviewStatus: null,
+
+			participants: buildRestartedParticipants({
+				room,
+				missionCount
+			}),
+
+			restartVersion,
+			restartRequestedAt: restartedAt,
+			restartedAt,
+
+			lastMissionEvent: {
+				type: 'room_restarted',
+				missionId: 'restart',
+				missionTitle: '방 재시작',
+				missionIndex: 0,
+				nextMissionIndex: 0,
+				status: 'playing',
+				message: '선생님이 방을 미션 1부터 다시 시작했습니다.',
+				version: restartVersion,
+				createdAt: restartedAt
+			},
+
+			updatedAt: new Date()
+		}
 	});
 
 	return {

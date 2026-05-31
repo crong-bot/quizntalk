@@ -13,7 +13,8 @@
 		getReviewItemsForRoom,
 		getRoomToneClass,
 		isReadMissionCourse,
-		rejectReadMissionForRoom
+		rejectReadMissionForRoom,
+		restartRoomForTeacher
 	} from '$lib/firebase/missionRoom/missionRoomService';
 	import { createLessonRoomsStore } from '$lib/firebase/missionRoom/missionRoomStore';
 	import { onDestroy, onMount } from 'svelte';
@@ -98,6 +99,7 @@
 		}
 	}
 	let processingReviewKey = '';
+	let restartingRoomId = '';
 
 	$: course = getCourseByThemeId(lesson.themeId);
 	$: isReadCourse = isReadMissionCourse(course);
@@ -131,6 +133,10 @@
 	}
 
 	function getRoomParticipants(room) {
+		if (room?.participantSummaries && typeof room.participantSummaries === 'object') {
+			return Object.values(room.participantSummaries);
+		}
+
 		if (Array.isArray(room?.participants)) {
 			return room.participants;
 		}
@@ -242,6 +248,30 @@
 			errorMessage = error?.message ?? '반려 처리에 실패했습니다.';
 		} finally {
 			processingReviewKey = '';
+		}
+	}
+	async function restartRoom(room) {
+		if (restartingRoomId) return;
+
+		const ok = confirm(
+			`${room.roomNumber}번 방을 미션 1부터 다시 시작할까요?\n학생들의 현재 진행 상태, 에너지, 최종 제출값이 초기화됩니다.`
+		);
+
+		if (!ok) return;
+
+		try {
+			restartingRoomId = room.id;
+			errorMessage = '';
+
+			await restartRoomForTeacher({
+				lessonId: data.lessonId,
+				room,
+				course
+			});
+		} catch (error) {
+			errorMessage = error?.message ?? '방 재시작에 실패했습니다.';
+		} finally {
+			restartingRoomId = '';
 		}
 	}
 </script>
@@ -430,6 +460,7 @@
 						{@const roomCreatedAt = getRoomCreatedAt(room)}
 						{@const totalAttempts = getRoomTotalAttempts(room)}
 						{@const failCount = getRoomFailCount(room)}
+						{@const isEnergyEmpty = (room.verificationEnergy ?? 5) <= 0}
 
 						<details class="group rounded-3xl border border-slate-200 bg-slate-50 p-4">
 							<summary
@@ -537,6 +568,45 @@
 									class="mt-3 rounded-2xl bg-white px-3 py-3 text-sm font-bold text-slate-500 ring-1 ring-slate-200"
 								>
 									{roomSummary.detail}
+								</div>
+
+								<div
+									class={`mt-3 flex items-center justify-between gap-3 rounded-2xl border p-3 ${
+										isEnergyEmpty ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'
+									}`}
+								>
+									<div>
+										<div
+											class={`text-[13px] font-black ${
+												isEnergyEmpty ? 'text-rose-700' : 'text-slate-800'
+											}`}
+										>
+											방 재시작
+										</div>
+
+										<div
+											class={`mt-1 text-[12px] font-bold ${
+												isEnergyEmpty ? 'text-rose-500' : 'text-slate-400'
+											}`}
+										>
+											{isEnergyEmpty
+												? '검증 기회를 모두 사용했습니다. 미션 1부터 다시 시작할 수 있습니다.'
+												: '필요할 때 이 방을 미션 1부터 다시 시작할 수 있습니다.'}
+										</div>
+									</div>
+
+									<button
+										type="button"
+										on:click={() => restartRoom(room)}
+										disabled={restartingRoomId === room.id}
+										class={`shrink-0 rounded-xl px-3 py-2 text-xs font-black text-white transition disabled:bg-slate-300 ${
+											isEnergyEmpty
+												? 'bg-rose-600 hover:bg-rose-700'
+												: 'bg-slate-800 hover:bg-slate-900'
+										}`}
+									>
+										{restartingRoomId === room.id ? '재시작 중...' : '미션 1부터 재시작'}
+									</button>
 								</div>
 
 								<div class="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
