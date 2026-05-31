@@ -71,6 +71,25 @@ function markErrorCharacter(lineText, column) {
 function markLineEnd(lineText) {
 	return `${lineText}❌`;
 }
+function markMissingCommaPosition(jsonText, valueEndOffset, nextOffset) {
+	const valuePosition = getLineColumn(jsonText, valueEndOffset);
+	const nextPosition = getLineColumn(jsonText, nextOffset);
+	const lineText = getLineText(jsonText, valuePosition.line);
+
+	if (valuePosition.line === nextPosition.line) {
+		return {
+			line: valuePosition.line,
+			isSameLine: true,
+			text: markErrorCharacter(lineText, valuePosition.column + 1)
+		};
+	}
+
+	return {
+		line: valuePosition.line,
+		isSameLine: false,
+		text: markLineEnd(lineText)
+	};
+}
 
 function makeMarkedLineFromOffset(jsonText, offset) {
 	const position = getLineColumn(jsonText, offset);
@@ -176,8 +195,6 @@ function findBracketMismatch(text) {
 	for (let index = 0; index < text.length; index += 1) {
 		const char = text[index];
 
-		// 문자열 안쪽의 괄호는 검사하지 않음
-		// 예: "설명": "배열은 [ ]로 씁니다"
 		if (inString) {
 			if (escaped) {
 				escaped = false;
@@ -686,12 +703,11 @@ function findMissingCommaBetweenValuesIssue(text) {
 					cursor += 1;
 				}
 
-				// 예: "이름": "홍길동" "나이": 12
-				// 예: ["쌀밥" "미역국"]
 				if (text[cursor] === '"') {
 					return {
 						ok: false,
-						offset: cursor
+						offset: cursor,
+						missingCommaAfterOffset: index
 					};
 				}
 			}
@@ -701,6 +717,141 @@ function findMissingCommaBetweenValuesIssue(text) {
 
 		if (char === '"') {
 			inString = true;
+		}
+	}
+
+	return {
+		ok: true
+	};
+}
+function findMissingCommaAfterPrimitiveValueIssue(text) {
+	let inString = false;
+	let escaped = false;
+
+	function isWordStartAt(index, word) {
+		return text.slice(index, index + word.length) === word;
+	}
+
+	for (let index = 0; index < text.length; index += 1) {
+		const char = text[index];
+
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+
+			if (char === '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (char === '"') {
+				inString = false;
+			}
+
+			continue;
+		}
+
+		if (char === '"') {
+			inString = true;
+			continue;
+		}
+
+		let valueEndOffset = -1;
+
+		if (/[0-9]/.test(char)) {
+			let cursor = index + 1;
+
+			while (cursor < text.length && /[0-9eE+\-.]/.test(text[cursor])) {
+				cursor += 1;
+			}
+
+			valueEndOffset = cursor - 1;
+			index = cursor - 1;
+		} else if (isWordStartAt(index, 'true')) {
+			valueEndOffset = index + 3;
+			index += 3;
+		} else if (isWordStartAt(index, 'false')) {
+			valueEndOffset = index + 4;
+			index += 4;
+		} else if (isWordStartAt(index, 'null')) {
+			valueEndOffset = index + 3;
+			index += 3;
+		}
+
+		if (valueEndOffset < 0) continue;
+
+		let cursor = valueEndOffset + 1;
+
+		while (cursor < text.length && /\s/.test(text[cursor])) {
+			cursor += 1;
+		}
+
+		if (text[cursor] === '"') {
+			return {
+				ok: false,
+				offset: cursor,
+				missingCommaAfterOffset: valueEndOffset
+			};
+		}
+	}
+
+	return {
+		ok: true
+	};
+}
+function findMissingCommaAfterClosedValueIssue(text) {
+	let inString = false;
+	let escaped = false;
+
+	for (let index = 0; index < text.length; index += 1) {
+		const char = text[index];
+
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+
+			if (char === '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (char === '"') {
+				inString = false;
+			}
+
+			continue;
+		}
+
+		if (char === '"') {
+			inString = true;
+			continue;
+		}
+
+		if (char !== '}' && char !== ']') continue;
+
+		let cursor = index + 1;
+
+		while (cursor < text.length && /\s/.test(text[cursor])) {
+			cursor += 1;
+		}
+
+		// 예:
+		// [
+		//   { "이름": "A" }
+		//   { "이름": "B" }
+		// ]
+		if (text[cursor] === '{' || text[cursor] === '[' || text[cursor] === '"') {
+			return {
+				ok: false,
+				offset: cursor,
+				missingCommaAfterOffset: index,
+				closedChar: char,
+				nextChar: text[cursor]
+			};
 		}
 	}
 
@@ -745,9 +896,6 @@ ${markedLine.text}`
 			concept: 'quote',
 			message: `${position.line}번째 줄에서 문자열을 닫는 큰따옴표(")가 빠졌어요.
 문자열은 큰따옴표(")로 시작했으면 큰따옴표(")로 닫아야 해요.
-
-예:
-"과학"
 
 ${markLineEnd(lineText)}`
 		};
@@ -794,34 +942,180 @@ ${markedLine.text}`
 			message: `${markedLine.line}번째 줄에서 배열 모양이 잘못되었어요.
 여러 값을 순서대로 묶을 때는 중괄호 { }가 아니라 대괄호 [ ]를 사용해야 해요.
 
-잘못된 예:
-"급식": { "쌀밥", "미역국", "불고기", "김치" }
-
-올바른 예:
-"급식": ["쌀밥", "미역국", "불고기", "김치"]
-
 ${markedLine.text}`
 		};
 	}
+	const missingObjectBraceInArrayIssue = findMissingObjectBraceInArrayIssue(jsonText);
 
-	const missingCommaIssue = findMissingCommaBetweenValuesIssue(jsonText);
+if (!missingObjectBraceInArrayIssue.ok) {
+	const arrayPosition = getLineColumn(
+		jsonText,
+		missingObjectBraceInArrayIssue.arrayStartOffset
+	);
 
-	if (!missingCommaIssue.ok) {
-		const markedLine = makeMarkedLineFromOffset(jsonText, missingCommaIssue.offset);
+	const targetLineNumber = arrayPosition.line + 1;
+	const arrayLineText = getLineText(jsonText, arrayPosition.line);
+	const indentText = ' '.repeat(arrayPosition.column + 1);
 
-		return {
-			ok: false,
-			concept: 'comma',
-			message: `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.
+	return {
+		ok: false,
+		concept: 'objectStructure',
+		message: `${targetLineNumber}번째 줄에 중괄호({)를 넣어야 해요.
+책 정보 하나는 { }로 묶어야 해요.
+
+${arrayLineText}
+${indentText}❌`
+	};
+}
+
+const missingCommaIssue = findMissingCommaBetweenValuesIssue(jsonText);
+
+if (!missingCommaIssue.ok) {
+	const markedLine = markMissingCommaPosition(
+		jsonText,
+		missingCommaIssue.missingCommaAfterOffset,
+		missingCommaIssue.offset
+	);
+
+	const lineMessage = markedLine.isSameLine
+		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+
+	return {
+		ok: false,
+		concept: 'comma',
+		message: `${lineMessage}
 항목과 항목 사이에는 쉼표를 넣어야 해요.
 
 ${markedLine.text}`
-		};
+	};
+}
+
+const missingCommaAfterPrimitiveValueIssue =
+	findMissingCommaAfterPrimitiveValueIssue(jsonText);
+
+if (!missingCommaAfterPrimitiveValueIssue.ok) {
+	const markedLine = markMissingCommaPosition(
+		jsonText,
+		missingCommaAfterPrimitiveValueIssue.missingCommaAfterOffset,
+		missingCommaAfterPrimitiveValueIssue.offset
+	);
+
+	const lineMessage = markedLine.isSameLine
+		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+
+	return {
+		ok: false,
+		concept: 'comma',
+		message: `${lineMessage}
+항목과 항목 사이에는 쉼표를 넣어야 해요.
+
+${markedLine.text}`
+	};
+}
+
+const missingCommaAfterClosedValueIssue = findMissingCommaAfterClosedValueIssue(jsonText);
+
+if (!missingCommaAfterClosedValueIssue.ok) {
+	const markedLine = markMissingCommaPosition(
+		jsonText,
+		missingCommaAfterClosedValueIssue.missingCommaAfterOffset,
+		missingCommaAfterClosedValueIssue.offset
+	);
+
+	const lineMessage = markedLine.isSameLine
+		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+
+	return {
+		ok: false,
+		concept: 'comma',
+		message: `${lineMessage}
+정보가 하나 끝난 뒤 다음 정보가 이어질 때는 쉼표를 넣어야 해요.
+
+${markedLine.text}`
+	};
+}
+
+return {
+	ok: true
+};
+}
+function findMissingObjectBraceInArrayIssue(text) {
+	let inString = false;
+	let escaped = false;
+	const stack = [];
+
+	for (let index = 0; index < text.length; index += 1) {
+		const char = text[index];
+
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+
+			if (char === '\\') {
+				escaped = true;
+				continue;
+			}
+
+			if (char === '"') {
+				inString = false;
+
+				let cursor = index + 1;
+
+				while (cursor < text.length && /\s/.test(text[cursor])) {
+					cursor += 1;
+				}
+
+				const last = stack[stack.length - 1];
+
+				if (text[cursor] === ':' && last?.char === '[') {
+					return {
+						ok: false,
+						offset: index,
+						keyStartOffset: findStringStartOffset(text, index),
+						arrayStartOffset: last.offset
+					};
+				}
+			}
+
+			continue;
+		}
+
+		if (char === '"') {
+			inString = true;
+			continue;
+		}
+
+		if (char === '[' || char === '{') {
+			stack.push({
+				char,
+				offset: index
+			});
+			continue;
+		}
+
+		if (char === ']' || char === '}') {
+			stack.pop();
+		}
 	}
 
 	return {
 		ok: true
 	};
+}
+
+function findStringStartOffset(text, stringEndOffset) {
+	for (let index = stringEndOffset - 1; index >= 0; index -= 1) {
+		if (text[index] === '"') {
+			return index;
+		}
+	}
+
+	return stringEndOffset;
 }
 
 export function parseJsonWithFriendlyError(jsonText) {
