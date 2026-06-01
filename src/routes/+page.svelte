@@ -52,10 +52,7 @@
 						</button>
 
 						{#if $authUser}
-						<button type="button" on:click={() => goto('/individual')}>
-								<HoverButton hoverBtnContent={'작성미션'} />
-							</button>
-							<button type="button" on:click={() => goto('/library')}>
+							<button type="button" on:click={() => goto('/library/new')}>
 								<HoverButton hoverBtnContent={'미션 생성하기'} />
 							</button>
 						{:else}

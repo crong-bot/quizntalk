@@ -2,6 +2,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { getAllCourses } from '$lib/components/workplace/theme/courseRegistry';
+	import Nav from '../../lib/components/nav.svelte';
 
 	const courses = getAllCourses();
 
@@ -18,6 +19,7 @@
 	}
 </script>
 
+<Nav />
 <div class="min-h-screen bg-[#eef3fb] px-4 py-8 font-nanum">
 	<div class="mx-auto flex max-w-[1180px] flex-col gap-6">
 		<section

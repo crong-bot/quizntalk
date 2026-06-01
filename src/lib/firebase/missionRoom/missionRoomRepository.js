@@ -1433,6 +1433,14 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 		participantId
 	);
 
+	const defaultIndividualWrite = {
+		status: 'writing',
+		jsonText: '',
+		feedback: '',
+		submittedAt: null,
+		reviewedAt: null
+	};
+
 	return runTransaction(db, async (tx) => {
 		const roomSnap = await tx.get(roomRef);
 
@@ -1449,6 +1457,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 		if (participantSnap.exists()) {
 			const savedParticipant = participantSnap.data();
 			const wasLeft = savedParticipant.active === false || savedParticipant.status === 'left';
+			const savedIndividualWrite = savedParticipant.individualWrite ?? defaultIndividualWrite;
 
 			if (!wasLeft) {
 				tx.set(
@@ -1458,13 +1467,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 						name: name.trim(),
 						active: true,
 						status: savedParticipant.status ?? 'playing',
-						individualWrite: savedParticipant.individualWrite ?? {
-							status: 'writing',
-							jsonText: '',
-							feedback: '',
-							submittedAt: null,
-							reviewedAt: null
-						},
+						individualWrite: savedIndividualWrite,
 						joinedAt: savedParticipant.joinedAt,
 						updatedAt: serverTimestamp()
 					},
@@ -1474,7 +1477,9 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				tx.update(roomRef, {
 					[`participantSummaries.${participantId}`]: {
 						id: participantId,
-						name: name.trim()
+						name: name.trim(),
+						status: savedParticipant.status ?? 'playing',
+						individualWrite: savedIndividualWrite
 					},
 					updatedAt: serverTimestamp()
 				});
@@ -1495,13 +1500,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 					name: name.trim(),
 					active: true,
 					status: 'playing',
-					individualWrite: savedParticipant.individualWrite ?? {
-						status: 'writing',
-						jsonText: '',
-						feedback: '',
-						submittedAt: null,
-						reviewedAt: null
-					},
+					individualWrite: savedIndividualWrite,
 					joinedAt: savedParticipant.joinedAt ?? serverTimestamp(),
 					rejoinedAt: serverTimestamp(),
 					updatedAt: serverTimestamp()
@@ -1514,7 +1513,9 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				participantNames: arrayUnion(name.trim()),
 				[`participantSummaries.${participantId}`]: {
 					id: participantId,
-					name: name.trim()
+					name: name.trim(),
+					status: 'playing',
+					individualWrite: savedIndividualWrite
 				},
 				status: 'playing',
 				updatedAt: serverTimestamp()
@@ -1536,13 +1537,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				name: name.trim(),
 				active: true,
 				status: 'playing',
-				individualWrite: {
-					status: 'writing',
-					jsonText: '',
-					feedback: '',
-					submittedAt: null,
-					reviewedAt: null
-				},
+				individualWrite: defaultIndividualWrite,
 				joinedAt: serverTimestamp(),
 				updatedAt: serverTimestamp()
 			},
@@ -1554,7 +1549,9 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 			participantNames: arrayUnion(name.trim()),
 			[`participantSummaries.${participantId}`]: {
 				id: participantId,
-				name: name.trim()
+				name: name.trim(),
+				status: 'playing',
+				individualWrite: defaultIndividualWrite
 			},
 			status: 'playing',
 			updatedAt: serverTimestamp()
@@ -1565,12 +1562,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 		};
 	});
 }
-export async function submitIndividualWriteMission({
-	lessonId,
-	roomId,
-	participantId,
-	jsonText
-}) {
+export async function submitIndividualWriteMission({ lessonId, roomId, participantId, jsonText }) {
 	if (!lessonId || !roomId || !participantId) {
 		throw new Error('제출 정보가 부족합니다.');
 	}
@@ -1578,6 +1570,8 @@ export async function submitIndividualWriteMission({
 	if (!jsonText?.trim()) {
 		throw new Error('제출할 JSON이 없습니다.');
 	}
+
+	const submittedAt = new Date().toISOString();
 
 	const participantRef = doc(
 		db,
@@ -1589,13 +1583,171 @@ export async function submitIndividualWriteMission({
 		participantId
 	);
 
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+
 	await updateDoc(participantRef, {
 		'individualWrite.status': 'submitted',
 		'individualWrite.jsonText': jsonText,
 		'individualWrite.feedback': '',
-		'individualWrite.submittedAt': new Date().toISOString(),
+		'individualWrite.submittedAt': submittedAt,
 		'individualWrite.reviewedAt': null,
 		status: 'submitted',
 		updatedAt: serverTimestamp()
+	});
+
+	await updateDoc(roomRef, {
+		[`participantSummaries.${participantId}.individualWrite`]: {
+			status: 'submitted',
+			jsonText,
+			feedback: '',
+			submittedAt,
+			reviewedAt: null
+		},
+		[`participantSummaries.${participantId}.status`]: 'submitted',
+		updatedAt: serverTimestamp()
+	});
+}
+export async function approveIndividualWriteSubmission({
+	lessonId,
+	roomId,
+	participantId,
+	feedback = '좋아요. JSON 작성 미션을 완료했습니다.'
+}) {
+	if (!lessonId || !roomId || !participantId) {
+		throw new Error('승인 정보가 부족합니다.');
+	}
+
+	const reviewedAt = new Date().toISOString();
+
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+
+	await updateDoc(participantRef, {
+		'individualWrite.status': 'approved',
+		'individualWrite.feedback': feedback,
+		'individualWrite.reviewedAt': reviewedAt,
+		status: 'cleared',
+		updatedAt: serverTimestamp()
+	});
+
+	await updateDoc(roomRef, {
+		[`participantSummaries.${participantId}.individualWrite.status`]: 'approved',
+		[`participantSummaries.${participantId}.individualWrite.feedback`]: feedback,
+		[`participantSummaries.${participantId}.individualWrite.reviewedAt`]: reviewedAt,
+		[`participantSummaries.${participantId}.status`]: 'cleared',
+		updatedAt: serverTimestamp()
+	});
+}
+
+export async function rejectIndividualWriteSubmission({
+	lessonId,
+	roomId,
+	participantId,
+	feedback
+}) {
+	if (!lessonId || !roomId || !participantId) {
+		throw new Error('반려 정보가 부족합니다.');
+	}
+
+	if (!feedback?.trim()) {
+		throw new Error('반려 피드백을 입력하세요.');
+	}
+
+	const reviewedAt = new Date().toISOString();
+
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+
+	await updateDoc(participantRef, {
+		'individualWrite.status': 'rejected',
+		'individualWrite.feedback': feedback.trim(),
+		'individualWrite.reviewedAt': reviewedAt,
+		status: 'playing',
+		updatedAt: serverTimestamp()
+	});
+
+	await updateDoc(roomRef, {
+		[`participantSummaries.${participantId}.individualWrite.status`]: 'rejected',
+		[`participantSummaries.${participantId}.individualWrite.feedback`]: feedback.trim(),
+		[`participantSummaries.${participantId}.individualWrite.reviewedAt`]: reviewedAt,
+		[`participantSummaries.${participantId}.status`]: 'playing',
+		updatedAt: serverTimestamp()
+	});
+}
+export async function leaveIndividualWriteRoom({ lessonId, roomId, participantId }) {
+	if (!lessonId || !roomId || !participantId) {
+		throw new Error('나가기 정보가 부족합니다.');
+	}
+
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	return runTransaction(db, async (tx) => {
+		const roomSnap = await tx.get(roomRef);
+		const participantSnap = await tx.get(participantRef);
+
+		if (!roomSnap.exists()) {
+			throw new Error('방 정보를 찾을 수 없습니다.');
+		}
+
+		if (!participantSnap.exists()) {
+			return { ok: true };
+		}
+
+		const room = roomSnap.data();
+		const participant = participantSnap.data();
+
+		if (participant.active === false || participant.status === 'left') {
+			return { ok: true };
+		}
+
+		const currentCount = room.participantCount ?? 0;
+
+		tx.set(
+			participantRef,
+			{
+				active: false,
+				status: 'left',
+				leftAt: serverTimestamp(),
+				updatedAt: serverTimestamp()
+			},
+			{ merge: true }
+		);
+
+		tx.update(roomRef, {
+			participantCount: Math.max(0, currentCount - 1),
+			[`participantSummaries.${participantId}.active`]: false,
+			[`participantSummaries.${participantId}.status`]: 'left',
+			[`participantSummaries.${participantId}.leftAt`]: serverTimestamp(),
+			updatedAt: serverTimestamp()
+		});
+
+		return { ok: true };
 	});
 }

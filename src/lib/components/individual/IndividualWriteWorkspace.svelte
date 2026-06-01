@@ -1,7 +1,7 @@
 <script>
 	import JsonCodeMirrorEditor from '$lib/components/workplace/JsonCodeMirrorEditor.svelte';
 	import { submitIndividualWriteMission } from '$lib/firebase/missionRoom/missionRoomRepository.js';
-
+	import { leaveIndividualWriteRoomByParticipant } from '$lib/firebase/missionRoom/missionRoomService.js';
 	export let roomCode = '';
 	export let lessonId = '';
 	export let roomId = '';
@@ -12,6 +12,16 @@
 
 	export let participantId = '';
 	export let participantName = '';
+
+	let isMenuOpen = false;
+
+	function toggleMenu() {
+		isMenuOpen = !isMenuOpen;
+	}
+
+	function closeMenu() {
+		isMenuOpen = false;
+	}
 
 	let jsonText = '';
 	let editorApi = null;
@@ -166,8 +176,18 @@
 		}
 	}
 
-	function requestLeave() {
-		window.location.href = '/';
+	async function requestLeave() {
+		try {
+			await leaveIndividualWriteRoomByParticipant({
+				lessonId,
+				roomId,
+				participantId
+			});
+		} catch (error) {
+			console.error(error);
+		} finally {
+			window.location.href = '/';
+		}
 	}
 </script>
 
@@ -178,6 +198,62 @@
 				class="flex h-[86px] shrink-0 items-center justify-between rounded-b-[28px] border border-slate-200 bg-white px-5 shadow-sm"
 			>
 				<div class="flex items-center gap-4">
+					<div class="relative shrink-0">
+						<button
+							type="button"
+							on:click={toggleMenu}
+							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-black text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
+							aria-label="메뉴 열기"
+						>
+							☰
+						</button>
+
+						{#if isMenuOpen}
+							<div
+								class="absolute left-0 top-[48px] z-[999] w-[180px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.16)]"
+							>
+								<a
+									href="/"
+									on:click={closeMenu}
+									class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-extrabold text-slate-700 transition hover:bg-slate-100"
+								>
+									<span>🏠</span>
+									<span>홈</span>
+								</a>
+
+								<a
+									href="/lesson"
+									on:click={closeMenu}
+									class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-extrabold text-slate-700 transition hover:bg-slate-100"
+								>
+									<span>📘</span>
+									<span>학습하기</span>
+								</a>
+
+								<a
+									href="/invite"
+									on:click={closeMenu}
+									class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-extrabold text-slate-700 transition hover:bg-slate-100"
+								>
+									<span>📘</span>
+									<span>미션참여</span>
+								</a>
+								<div class="my-1 h-px bg-slate-100"></div>
+
+								<button
+									type="button"
+									on:click={() => {
+										closeMenu();
+										requestLeave();
+									}}
+									class="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-extrabold text-rose-600 transition hover:bg-rose-50"
+								>
+									<span>🚪</span>
+									<span>방 나가기</span>
+								</button>
+							</div>
+						{/if}
+					</div>
 					<div
 						class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[24px]"
 					>
@@ -207,13 +283,13 @@
 						</div>
 					</div>
 
-					<button
+					<!-- <button
 						type="button"
 						on:click={requestLeave}
 						class="rounded-2xl bg-slate-100 px-4 py-3 text-[13px] font-black text-slate-600 transition hover:bg-slate-200"
 					>
 						나가기
-					</button>
+					</button> -->
 				</div>
 			</header>
 
@@ -251,16 +327,13 @@
 									<ul class="mt-3 flex flex-col gap-2">
 										{#each mission.notes as note}
 											<li class="flex gap-2 text-[13px] font-bold leading-6 text-slate-700">
-												<span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
-												></span>
+												<span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"></span>
 												<span>{note}</span>
 											</li>
 										{/each}
 									</ul>
 								{:else}
-									<p class="mt-3 text-[13px] font-bold text-slate-400">
-										주의할 점이 없습니다.
-									</p>
+									<p class="mt-3 text-[13px] font-bold text-slate-400">주의할 점이 없습니다.</p>
 								{/if}
 							</section>
 
@@ -268,7 +341,8 @@
 								<div class="text-[13px] font-extrabold text-slate-400">코드 예시</div>
 
 								<pre
-									class="mt-3 max-h-[330px] overflow-auto whitespace-pre-wrap font-mono text-[13px] font-bold leading-6 text-emerald-100">{mission.exampleCode ?? '// 예시 코드가 없습니다.'}</pre>
+									class="mt-3 max-h-[330px] overflow-auto whitespace-pre-wrap font-mono text-[13px] font-bold leading-6 text-emerald-100">{mission.exampleCode ??
+										'// 예시 코드가 없습니다.'}</pre>
 							</section>
 						</div>
 					</div>
@@ -311,9 +385,7 @@
 					{/if}
 
 					{#if isApproved}
-						<div
-							class="mt-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3"
-						>
+						<div class="mt-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3">
 							<div class="text-[14px] font-black text-emerald-700">
 								클리어! 데이터 작성 미션을 완료했어요.
 							</div>
@@ -341,8 +413,8 @@
 								localMessageType === 'error'
 									? 'border border-rose-200 bg-rose-50 text-rose-700'
 									: localMessageType === 'success'
-										? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-										: 'border border-blue-200 bg-blue-50 text-blue-700'
+									  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+									  : 'border border-blue-200 bg-blue-50 text-blue-700'
 							}`}
 						>
 							{localMessage}

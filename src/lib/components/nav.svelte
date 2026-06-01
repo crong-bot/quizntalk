@@ -78,6 +78,17 @@
 						<button
 							type="button"
 							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/')}
+						>
+							홈
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
+							/>
+						</button>
+
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
 							on:click={() => goto('/lesson')}
 						>
 							학습하기
@@ -92,6 +103,16 @@
 							on:click={() => goto('/library')}
 						>
 							내 수업실
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
+							/>
+						</button>
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/library/new')}
+						>
+							미션 생성
 							<span
 								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
 							/>

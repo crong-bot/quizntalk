@@ -2,13 +2,16 @@
 
 import { getCourseByThemeId } from '$lib/components/workplace/theme/courseRegistry';
 import {
+	approveIndividualWriteSubmission,
 	approveReadMissionSubmission,
-	createLessonWithRooms,
 	createIndividualWriteLessonRoom,
+	createLessonWithRooms,
 	deleteLessonCompletely,
 	getRoomByInviteCode,
 	joinIndividualWriteRoom,
 	joinRoom,
+	leaveIndividualWriteRoom,
+	rejectIndividualWriteSubmission,
 	rejectReadMissionSubmission,
 	resetRoomParticipantsProgress,
 	updateRoomState
@@ -33,6 +36,13 @@ export async function createIndividualWriteSession({
 		notes,
 		exampleCode,
 		maxParticipants
+	});
+}
+export async function leaveIndividualWriteRoomByParticipant({ lessonId, roomId, participantId }) {
+	return leaveIndividualWriteRoom({
+		lessonId,
+		roomId,
+		participantId
 	});
 }
 
@@ -619,4 +629,66 @@ export async function restartRoomForTeacher({ lessonId, room, course }) {
 	return {
 		ok: true
 	};
+}
+export async function approveIndividualWriteForRoom({
+	lessonId,
+	room,
+	participant,
+	feedback = '좋아요. JSON 작성 미션을 완료했습니다.'
+}) {
+	if (!lessonId) {
+		throw new Error('수업 정보가 없습니다.');
+	}
+
+	if (!room?.id) {
+		throw new Error('방 정보가 없습니다.');
+	}
+
+	if (!participant?.id) {
+		throw new Error('학생 정보가 없습니다.');
+	}
+
+	if (participant?.individualWrite?.status !== 'submitted') {
+		throw new Error('제출 대기 상태의 학생만 승인할 수 있습니다.');
+	}
+
+	await approveIndividualWriteSubmission({
+		lessonId,
+		roomId: room.id,
+		participantId: participant.id,
+		feedback
+	});
+
+	return { ok: true };
+}
+
+export async function rejectIndividualWriteForRoom({ lessonId, room, participant, feedback }) {
+	if (!lessonId) {
+		throw new Error('수업 정보가 없습니다.');
+	}
+
+	if (!room?.id) {
+		throw new Error('방 정보가 없습니다.');
+	}
+
+	if (!participant?.id) {
+		throw new Error('학생 정보가 없습니다.');
+	}
+
+	if (participant?.individualWrite?.status !== 'submitted') {
+		throw new Error('제출 대기 상태의 학생만 반려할 수 있습니다.');
+	}
+
+	if (!feedback?.trim()) {
+		throw new Error('반려 피드백을 입력하세요.');
+	}
+
+	await rejectIndividualWriteSubmission({
+		lessonId,
+		roomId: room.id,
+		participantId: participant.id,
+		feedback
+	});
+
+	return { ok: true };
 }

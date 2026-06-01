@@ -8,11 +8,13 @@
 		deleteLessonCompletely
 	} from '$lib/firebase/missionRoom/missionRoomRepository';
 	import {
+		approveIndividualWriteForRoom,
 		approveReadMissionForRoom,
 		buildRoomSummary,
 		getReviewItemsForRoom,
 		getRoomToneClass,
 		isReadMissionCourse,
+		rejectIndividualWriteForRoom,
 		rejectReadMissionForRoom,
 		restartRoomForTeacher
 	} from '$lib/firebase/missionRoom/missionRoomService';
@@ -43,6 +45,102 @@
 
 	function goBack() {
 		goto('/library');
+	}
+
+	let processingIndividualId = '';
+	let viewingParticipant = null;
+	let rejectingParticipant = null;
+	let rejectingRoom = null;
+	let rejectFeedback = '';
+
+	function getIndividualStatus(participant) {
+		return participant?.individualWrite?.status ?? 'writing';
+	}
+
+	function getIndividualStatusLabel(participant) {
+		const status = getIndividualStatus(participant);
+
+		if (status === 'submitted') return '제출함';
+		if (status === 'approved') return '클리어';
+		if (status === 'rejected') return '반려됨';
+
+		return '작성 중';
+	}
+
+	function getIndividualStatusClass(participant) {
+		const status = getIndividualStatus(participant);
+
+		if (status === 'submitted') return 'bg-violet-50 text-violet-700 ring-violet-100';
+		if (status === 'approved') return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+		if (status === 'rejected') return 'bg-rose-50 text-rose-700 ring-rose-100';
+
+		return 'bg-slate-100 text-slate-600 ring-slate-200';
+	}
+
+	function openIndividualJson(participant) {
+		viewingParticipant = participant;
+	}
+
+	function closeIndividualJson() {
+		viewingParticipant = null;
+	}
+
+	function openIndividualReject(room, participant) {
+		rejectingRoom = room;
+		rejectingParticipant = participant;
+		rejectFeedback =
+			participant?.individualWrite?.feedback ?? '조건을 다시 확인해서 수정해 주세요.';
+	}
+
+	function closeIndividualReject() {
+		rejectingRoom = null;
+		rejectingParticipant = null;
+		rejectFeedback = '';
+	}
+
+	async function approveIndividualSubmission(room, participant) {
+		if (processingIndividualId) return;
+
+		const ok = confirm(`${participant.name ?? '학생'}의 제출물을 승인할까요?`);
+		if (!ok) return;
+
+		try {
+			processingIndividualId = participant.id;
+			errorMessage = '';
+
+			await approveIndividualWriteForRoom({
+				lessonId: data.lessonId,
+				room,
+				participant,
+				feedback: '좋아요. JSON 작성 미션을 완료했습니다.'
+			});
+		} catch (error) {
+			errorMessage = error?.message ?? '승인 처리에 실패했습니다.';
+		} finally {
+			processingIndividualId = '';
+		}
+	}
+
+	async function rejectIndividualSubmission() {
+		if (processingIndividualId) return;
+
+		try {
+			processingIndividualId = rejectingParticipant?.id ?? '';
+			errorMessage = '';
+
+			await rejectIndividualWriteForRoom({
+				lessonId: data.lessonId,
+				room: rejectingRoom,
+				participant: rejectingParticipant,
+				feedback: rejectFeedback
+			});
+
+			closeIndividualReject();
+		} catch (error) {
+			errorMessage = error?.message ?? '반려 처리에 실패했습니다.';
+		} finally {
+			processingIndividualId = '';
+		}
 	}
 
 	async function handleCompleteLesson() {
@@ -101,8 +199,9 @@
 	let processingReviewKey = '';
 	let restartingRoomId = '';
 
-	$: course = getCourseByThemeId(lesson.themeId);
-	$: isReadCourse = isReadMissionCourse(course);
+	$: isIndividualWriteLesson = lesson?.missionType === 'individual-write';
+	$: course = isIndividualWriteLesson ? null : getCourseByThemeId(lesson.themeId);
+	$: isReadCourse = !isIndividualWriteLesson && isReadMissionCourse(course);
 
 	function getCurrentMission(room) {
 		return course?.missions?.[room?.currentMissionIndex ?? 0] ?? null;
@@ -153,6 +252,11 @@
 		}
 
 		return [];
+	}
+	function getActiveRoomParticipants(room) {
+		return getRoomParticipants(room).filter((participant) => {
+			return participant.active !== false && participant.status !== 'left';
+		});
 	}
 
 	function getParticipantName(participant, index) {
@@ -446,6 +550,155 @@
 					</div>
 				</section>
 			{/each}
+		{:else if isIndividualWriteLesson}
+			<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+				<div class="flex items-center justify-between gap-3">
+					<div>
+						<div class="text-[18px] font-black text-slate-950">개인 작성미션 관리</div>
+						<div class="mt-1 text-sm font-bold text-slate-500">
+							학생 제출 상태를 확인하고 승인 또는 반려합니다.
+						</div>
+					</div>
+
+					<div class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+						개인 작성미션
+					</div>
+				</div>
+
+				<div class="mt-4 grid grid-cols-1 gap-3">
+					{#each rooms as room (room.id)}
+						{@const roomParticipants = getActiveRoomParticipants(room)}
+						{@const submittedCount = roomParticipants.filter(
+							(p) => getIndividualStatus(p) === 'submitted'
+						).length}
+						{@const approvedCount = roomParticipants.filter(
+							(p) => getIndividualStatus(p) === 'approved'
+						).length}
+						{@const rejectedCount = roomParticipants.filter(
+							(p) => getIndividualStatus(p) === 'rejected'
+						).length}
+
+						<div class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+							<div class="flex items-start justify-between gap-4">
+								<div>
+									<div class="text-[22px] font-black text-slate-950">
+										{room.roomNumber ?? 1}번 방
+									</div>
+
+									<div class="mt-2 flex flex-wrap gap-1.5">
+										<div
+											class="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700"
+										>
+											입장 {room.participantCount ?? 0}/{room.maxParticipants ?? 40}
+										</div>
+
+										<div
+											class="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-black text-violet-700"
+										>
+											제출 {submittedCount}명
+										</div>
+
+										<div
+											class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700"
+										>
+											클리어 {approvedCount}명
+										</div>
+
+										<div
+											class="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-700"
+										>
+											반려 {rejectedCount}명
+										</div>
+									</div>
+								</div>
+
+								<div
+									class="font-gmarket text-[60px] font-black leading-none tracking-[0.08em] text-emerald-600"
+								>
+									{room.code}
+								</div>
+							</div>
+
+							<div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+								<div
+									class="grid grid-cols-[1fr_0.7fr_1.3fr] bg-slate-50 px-4 py-3 text-xs font-black text-slate-500"
+								>
+									<div>학생</div>
+									<div>상태</div>
+									<div class="text-right">관리</div>
+								</div>
+
+								{#if roomParticipants.length > 0}
+									<div class="divide-y divide-slate-100">
+										{#each roomParticipants as participant, index}
+											<div class="grid grid-cols-[1fr_0.7fr_1.3fr] items-center gap-3 px-4 py-3">
+												<div>
+													<div class="text-[15px] font-black text-slate-950">
+														{getParticipantName(participant, index)}
+													</div>
+
+													<div class="mt-1 text-[11px] font-bold text-slate-400">
+														제출 {formatDateTime(participant.individualWrite?.submittedAt)}
+													</div>
+												</div>
+
+												<div>
+													<span
+														class={`inline-flex rounded-full px-3 py-1 text-xs font-black ring-1 ${getIndividualStatusClass(
+															participant
+														)}`}
+													>
+														{getIndividualStatusLabel(participant)}
+													</span>
+												</div>
+
+												<div class="flex justify-end gap-2">
+													<button
+														type="button"
+														on:click={() => openIndividualJson(participant)}
+														disabled={!participant.individualWrite?.jsonText}
+														class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 disabled:opacity-40"
+													>
+														JSON 보기
+													</button>
+
+													<button
+														type="button"
+														on:click={() => openIndividualReject(room, participant)}
+														disabled={getIndividualStatus(participant) !== 'submitted'}
+														class="rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 disabled:opacity-40"
+													>
+														반려
+													</button>
+
+													<button
+														type="button"
+														on:click={() => approveIndividualSubmission(room, participant)}
+														disabled={getIndividualStatus(participant) !== 'submitted'}
+														class="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white disabled:bg-slate-300"
+													>
+														승인
+													</button>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{:else}
+									<div class="px-4 py-8 text-center text-sm font-bold text-slate-400">
+										아직 입장한 학생이 없습니다.
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+
+					{#if rooms.length === 0}
+						<div class="rounded-3xl bg-slate-50 p-5 text-sm font-bold text-slate-500">
+							방 정보가 없습니다.
+						</div>
+					{/if}
+				</div>
+			</section>
 		{:else}
 			<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
 				<div class="text-[18px] font-black text-slate-950">방 관리</div>
@@ -724,3 +977,83 @@
 		{/if}
 	</div>
 </div>
+{#if viewingParticipant}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+		<div class="w-full max-w-[760px] rounded-[30px] bg-white p-5 shadow-2xl">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-blue-500">
+						SUBMITTED JSON
+					</div>
+
+					<h3 class="mt-1 font-gmarket text-[24px] font-bold tracking-[-0.055em] text-slate-950">
+						{viewingParticipant.name} 제출 JSON
+					</h3>
+				</div>
+
+				<button
+					type="button"
+					on:click={closeIndividualJson}
+					class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-[18px] font-black text-slate-500"
+				>
+					×
+				</button>
+			</div>
+
+			<pre
+				class="mt-4 max-h-[520px] overflow-auto whitespace-pre-wrap rounded-[24px] bg-slate-950 p-5 font-mono text-[14px] font-bold leading-7 text-emerald-100">{viewingParticipant
+					.individualWrite?.jsonText}</pre>
+		</div>
+	</div>
+{/if}
+
+{#if rejectingParticipant}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+		<div class="w-full max-w-[560px] rounded-[30px] bg-white p-5 shadow-2xl">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-rose-500">
+						REJECT FEEDBACK
+					</div>
+
+					<h3 class="mt-1 font-gmarket text-[24px] font-bold tracking-[-0.055em] text-slate-950">
+						{rejectingParticipant.name} 반려 피드백
+					</h3>
+				</div>
+
+				<button
+					type="button"
+					on:click={closeIndividualReject}
+					class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-[18px] font-black text-slate-500"
+				>
+					×
+				</button>
+			</div>
+
+			<textarea
+				bind:value={rejectFeedback}
+				class="mt-4 min-h-[160px] w-full resize-none rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-[14px] font-bold leading-7 text-slate-800 outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-100"
+				placeholder="학생에게 보여줄 피드백을 입력하세요."
+			></textarea>
+
+			<div class="mt-4 flex justify-end gap-2">
+				<button
+					type="button"
+					on:click={closeIndividualReject}
+					class="h-11 rounded-2xl bg-slate-100 px-4 text-[13px] font-black text-slate-600"
+				>
+					취소
+				</button>
+
+				<button
+					type="button"
+					on:click={rejectIndividualSubmission}
+					disabled={processingIndividualId === rejectingParticipant.id}
+					class="h-11 rounded-2xl bg-rose-600 px-5 text-[13px] font-black text-white disabled:bg-slate-300"
+				>
+					{processingIndividualId === rejectingParticipant.id ? '반려 중...' : '반려 보내기'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

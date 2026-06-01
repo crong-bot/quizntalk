@@ -1,5 +1,6 @@
 <script>
 	import { jsonLearningCourses } from '$lib/components/jsonstudy/courses/index.js';
+	import Nav from '$lib/components/nav.svelte';
 
 	const course = jsonLearningCourses[0];
 
@@ -9,32 +10,24 @@
 	}
 </script>
 
-<div class="min-h-screen bg-[#f4f7fb] px-4 py-8 font-nanum text-slate-800">
+<Nav />
+<div class="min-h-screen bg-[#f4f7fb] px-4 py-4 font-nanum text-slate-800">
 	<div class="mx-auto flex w-full max-w-[1180px] flex-col gap-6">
 		<header class="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
-			<div class="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
-				<a
-					href="/"
-					class="rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
-				>
-					← 홈으로
-				</a>
-
-				<div class="rounded-2xl bg-blue-50 px-4 py-2.5 text-[13px] font-extrabold text-blue-700">
-					총 {course.lessons.length}단계
-				</div>
-			</div>
-
-			<div class="px-6 py-6">
-				<!-- <div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
-					JSON LEARNING
-				</div> -->
-
+			<div class="px-6 py-4">
 				<div class="mt-0 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 					<div>
-						<h1 class="font-gmarket text-[34px] font-bold tracking-[-0.065em] text-slate-950">
-							{course.title}
-						</h1>
+						<div class="flex flex-wrap items-center gap-3">
+							<h1 class="font-gmarket text-[34px] font-bold tracking-[-0.065em] text-slate-950">
+								{course.title}
+							</h1>
+
+							<div
+								class="rounded-2xl bg-blue-50 px-4 py-2.5 text-[13px] font-extrabold text-blue-700"
+							>
+								총 {course.lessons.length}단계
+							</div>
+						</div>
 
 						<p class="mt-2 text-[15px] font-bold leading-7 text-slate-500">
 							{course.subtitle}
