@@ -1,8 +1,12 @@
 export const lesson06 = {
 	id: 'lesson06',
-	title: 'true와 false: 상태 표현하기',
+	title: 'true (트루)와 false (펄스): 상태 표현하기',
 	conceptLabel: 'true / false',
-
+	successFeedback: {
+							title: '성공! 대단해요!',
+							message: 'true 는 O, false 는 X 라고 생각하면 편해요!',
+							
+						},
 	contentBlocks: [
 		{
 			type: 'image',
@@ -17,9 +21,9 @@ export const lesson06 = {
 				{ text: ', 또는 ' },
 				{ text: '아닌지', tone: 'rose' },
 				{ text: '를 나타낼 때 ' },
-				{ text: 'true', tone: 'emerald' },
+				{ text: 'true (트루)', tone: 'emerald' },
 				{ text: '와 ' },
-				{ text: 'false', tone: 'rose' },
+				{ text: 'false (펄스)', tone: 'rose' },
 				{ text: '를 써요.' }
 			]
 		},

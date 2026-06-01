@@ -2,7 +2,11 @@ export const lesson02 = {
 	id: 'lesson02',
 	title: '키와 값: 정보 상자 안에 넣기',
 	conceptLabel: '정보 상자와 키·값',
-
+	successFeedback: {
+			title: '잘했어요!',
+			message: '제이슨 연습장을 잘 익혔나요? 다음 단계에 도전해보세요!',
+			
+		},
 	guide: [
 		'{ 는 정보 상자의 시작이에요.',
 		'} 는 정보 상자의 끝이에요.',
@@ -132,7 +136,7 @@ export const lesson02 = {
 		}
 	],
 
-	task: '실행하기를 눌러보세요.',
+	task: '포맷 정리는 제이슨의 모양을 정리해줍니다. 다시하기 버튼은 제이슨을 처음으로 되돌립니다. 키나 값을 내용을 다양하게 바꿔보세요.',
 	initialCode: `{
  	"취미": "독서"
 }`,

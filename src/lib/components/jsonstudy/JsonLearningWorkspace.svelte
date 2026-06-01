@@ -11,6 +11,7 @@
 	export let lessonIndex = 0;
 	export let stepNumber = 1;
 	export let totalCount = 1;
+	let showHintModal = false;
 
 	let jsonText = lesson.initialCode ?? '';
 	let resultMessage = '';
@@ -27,7 +28,7 @@
 	let introRightScrollEl;
 
 	$: progressPercent = Math.round((stepNumber / totalCount) * 100);
-	$: storageKey = `json_learning_progress_${course.slug}`;
+	$: storageKey = `json_learning_progress_v2 ${course.slug}`;
 
 	$: currentLessonCleared = getCurrentLessonCleared(clearedVersion, lesson?.id, storageKey);
 
@@ -38,6 +39,27 @@
 		description: ''
 	};
 	let showFinalSuccessModal = false;
+	let showSuccessModal = false;
+
+	let successModal = {
+		title: '',
+		message: '',
+		images: []
+	};
+
+	function openSuccessModal({ title, message, images = [] }) {
+		successModal = {
+			title,
+			message,
+			images: images.slice(0, 3)
+		};
+
+		showSuccessModal = true;
+	}
+
+	function closeSuccessModal() {
+		showSuccessModal = false;
+	}
 
 	$: isLastStep = stepNumber >= totalCount;
 
@@ -104,9 +126,9 @@
 		if (tone === 'blue') return 'font-black text-blue-600';
 		if (tone === 'purple') return 'font-black text-violet-600';
 		if (tone === 'amber') return 'font-black text-amber-600';
-		if (tone === 'emerald') return 'font-black text-emerald-600';
+		if (tone === 'emerald') return 'font-black text-teal-600';
 		if (tone === 'rose') return 'font-black text-rose-600';
-		if (tone === 'green') return 'font-black text-green-600';
+		if (tone === 'green') return 'font-black text-green-500';
 
 		return 'text-slate-600';
 	}
@@ -264,6 +286,26 @@
 			openQuiz();
 			return;
 		}
+			// 레슨2는 실행하기만 누르면 바로 성공 처리
+	if (lesson.id === 'lesson02') {
+		resultMessage = lesson.successFeedback?.message || '좋아요! 이번 단계가 완료되었어요.';
+		resultType = 'success';
+
+		markCleared();
+
+		openSuccessModal({
+			title: lesson.successFeedback?.title || '성공!',
+			message: lesson.successFeedback?.message || '이번 단계가 완료되었어요.',
+			images: lesson.successFeedback?.images || []
+		});
+
+		if (isAllLessonsCleared()) {
+			showFinalSuccessModal = true;
+		}
+
+		return;
+	}
+		
 
 		const result = validateJsonLearningAnswer({
 			jsonText,
@@ -275,6 +317,15 @@
 
 		if (result.ok) {
 			markCleared();
+
+			openSuccessModal({
+				title: lesson.successFeedback?.title || '성공!',
+				message:
+					lesson.successFeedback?.message ||
+					result.message ||
+					'이번 단계의 JSON을 올바르게 작성했어요.',
+				images: lesson.successFeedback?.images || []
+			});
 
 			if (isAllLessonsCleared()) {
 				showFinalSuccessModal = true;
@@ -635,8 +686,18 @@
 										</div>
 									</div>
 
-									<pre
-										class="overflow-x-auto rounded-[20px] bg-slate-950 p-4 font-mono text-[14px] font-bold leading-7 text-emerald-100">{block.after}</pre>
+									{#if block.afterImage}
+										<div class="overflow-hidden rounded-[20px] bg-slate-950 shadow-sm">
+											<img
+												src={block.afterImage}
+												alt={block.afterImageAlt || block.title}
+												class="block w-full"
+											/>
+										</div>
+									{:else}
+										<pre
+											class="overflow-x-auto whitespace-pre-wrap rounded-[20px] bg-slate-950 p-4 font-mono text-[14px] font-bold leading-7 text-emerald-100">{block.after}</pre>
+									{/if}
 								</div>
 							{:else if block.type === 'imageModalButton'}
 								<div class="rounded-[24px] border border-blue-100 bg-blue-50 p-4">
@@ -676,37 +737,9 @@
 					</p>
 				{/if}
 
-				<div class="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 p-4">
-					<div class="text-[13px] font-extrabold text-amber-700">이번 단계에서 할 일</div>
-					<div class="mt-2 text-[16px] font-extrabold leading-7 text-slate-800">
-						{lesson.task}
-					</div>
-				</div>
+			
 
-				<div class="mt-auto pt-5">
-					{#if lesson.hints?.length}
-						<button
-							type="button"
-							on:click={() => (showHint = !showHint)}
-							class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] font-extrabold text-slate-600 transition hover:bg-slate-50"
-						>
-							{showHint ? '힌트 닫기' : '힌트 보기'}
-						</button>
-					{/if}
-
-					{#if showHint && lesson.hints?.length}
-						<div class="mt-3 rounded-[22px] bg-slate-950 p-4 text-white">
-							<div class="text-[12px] font-extrabold text-slate-400">HINT</div>
-							<ul class="mt-2 flex flex-col gap-1.5">
-								{#each lesson.hints as hint}
-									<li class="text-[13px] font-bold leading-6 text-slate-100">
-										• {hint}
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
+				
 			</div>
 		</section>
 
@@ -798,13 +831,32 @@
 					</div>
 				</div>
 			{:else}
-				<div class="flex items-center justify-between">
-					<div>
-						<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-slate-400">
-							PLAYGROUND
+			<div class="mt-auto pt-0">
+				<div class="rounded-[24px] border border-amber-200 bg-amber-50 p-4">
+					<div class="flex items-center justify-between gap-3">
+						<div class="text-[13px] font-extrabold text-amber-700">
+							이번 단계에서 할 일
 						</div>
 
-						<h2 class="mt-1 font-gmarket text-[22px] font-bold tracking-[-0.055em] text-slate-950">
+						{#if lesson.hints?.length}
+							<button
+								type="button"
+								on:click={() => (showHintModal = true)}
+								class="shrink-0 rounded-xl border border-amber-200 bg-white px-3 py-2 text-[12px] font-extrabold text-amber-700 shadow-sm transition hover:bg-amber-100"
+							>
+								힌트 보기
+							</button>
+						{/if}
+					</div>
+
+					<div class="mt-2 text-[16px] font-extrabold leading-7 text-slate-800">
+						{lesson.task}
+					</div>
+				</div>
+
+				<div class="mt-4 flex items-center justify-between">
+					<div>
+						<h2 class="font-gmarket text-[22px] font-bold tracking-[-0.055em] text-slate-950">
 							제이슨 연습장
 						</h2>
 					</div>
@@ -827,6 +879,47 @@
 						</button>
 					</div>
 				</div>
+			</div>
+
+			{#if showHintModal && lesson.hints?.length}
+				<div
+					class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4"
+					on:click={() => (showHintModal = false)}
+				>
+					<div
+						class="w-full max-w-[420px] rounded-[28px] bg-white p-5 shadow-2xl"
+						on:click|stopPropagation
+					>
+						<div class="flex items-start justify-between gap-4">
+							<div>
+								<div class="text-[12px] font-extrabold text-amber-600">
+									HINT
+								</div>
+
+								<h3 class="mt-1 font-gmarket text-[22px] font-bold tracking-[-0.055em] text-slate-950">
+									힌트 확인하기
+								</h3>
+							</div>
+
+							<button
+								type="button"
+								on:click={() => (showHintModal = false)}
+								class="rounded-full bg-slate-100 px-3 py-1.5 text-[13px] font-extrabold text-slate-500 transition hover:bg-slate-200"
+							>
+								닫기
+							</button>
+						</div>
+
+						<ul class="mt-5 flex flex-col gap-2">
+							{#each lesson.hints as hint}
+								<li class="rounded-2xl bg-amber-50 px-4 py-3 text-[14px] font-bold leading-6 text-slate-800">
+									• {hint}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 
 				<div
 					class="mt-4 min-h-0 flex-1 overflow-hidden rounded-[24px] border border-slate-800 bg-[#101827] transition focus-within:ring-4 focus-within:ring-blue-100"
@@ -967,6 +1060,67 @@
 			</div>
 		</div>
 	{/if}
+	{#if showSuccessModal}
+	<div class="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 px-4">
+		<button
+			type="button"
+			class="absolute inset-0"
+			aria-label="성공 모달 닫기"
+			on:click={closeSuccessModal}
+		></button>
+
+		<div class="relative z-10 w-full max-w-[680px] rounded-[32px] bg-white p-6 shadow-2xl">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-emerald-500">
+						SUCCESS
+					</div>
+
+					<h2 class="mt-2 font-gmarket text-[26px] font-bold tracking-[-0.06em] text-slate-950">
+						{successModal.title}
+					</h2>
+				</div>
+
+				<button
+					type="button"
+					on:click={closeSuccessModal}
+					class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-lg font-black text-slate-500 transition hover:bg-slate-200"
+					aria-label="성공 모달 닫기"
+				>
+					×
+				</button>
+			</div>
+
+			{#if successModal.images?.length}
+				<div class="mt-5 grid grid-cols-3 gap-3">
+					{#each successModal.images as image}
+						<div class="overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50">
+							<img
+								src={image.src}
+								alt={image.alt || successModal.title}
+								class="max-h-[34vh] w-full object-contain"
+							/>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<div class="mt-5 rounded-[22px] bg-emerald-50 px-4 py-3 text-[15px] font-extrabold leading-7 text-slate-800">
+				{successModal.message}
+			</div>
+
+			<div class="mt-5 flex justify-end">
+				<button
+					type="button"
+					on:click={closeSuccessModal}
+					class="h-12 rounded-2xl bg-slate-950 px-6 text-[14px] font-extrabold text-white transition hover:bg-slate-800"
+				>
+					확인
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 	{#if imageModal.open && imageModal.src}
 		<div class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 px-4">
 			<button

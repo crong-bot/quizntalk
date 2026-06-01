@@ -2,7 +2,11 @@ export const lesson03 = {
 	id: 'lesson03',
 	title: '글자 값: 큰따옴표 안에 넣기',
 	conceptLabel: '글자 값',
-
+	successFeedback: {
+				title: '성공! 잘했어요!',
+				message: '문자 값은 쌍따옴표 안에! 잊지 마세요!',
+				
+			},
 	contentBlocks: [
 		{
 			type: 'image',
@@ -78,7 +82,7 @@ export const lesson03 = {
 		}
 	],
 
-	task: '"좋아하는과목" 값을 "과학"으로 완성하고 실행하기를 눌러보세요.',
+	task: '"좋아하는과목" 키의 값을 "과학"으로 완성하고 실행하기를 눌러보세요.',
 	initialCode: `{
   "좋아하는과목": ""
 }`,

@@ -1275,3 +1275,327 @@ export async function deleteLessonCompletely({ lessonId }) {
 
 	await batch.commit();
 }
+export async function createIndividualWriteLessonRoom({
+	ownerUid,
+	title,
+	description,
+	notes = [],
+	exampleCode = '',
+	maxParticipants = 40
+}) {
+	if (!ownerUid) {
+		throw new Error('교사 정보가 없습니다.');
+	}
+
+	if (!title?.trim()) {
+		throw new Error('미션 제목을 입력하세요.');
+	}
+
+	if (!description?.trim()) {
+		throw new Error('상황 설명을 입력하세요.');
+	}
+
+	const safeMaxParticipants = Math.max(1, Math.min(Number(maxParticipants) || 40, 40));
+	const MAX_TRY = 30;
+
+	for (let attempt = 0; attempt < MAX_TRY; attempt += 1) {
+		const lessonRef = doc(collection(db, 'lessons'));
+		const lessonId = lessonRef.id;
+
+		const code = randomCode(4);
+		const inviteRef = doc(db, 'invites', code);
+
+		const roomId = 'room_1';
+		const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+
+		try {
+			await runTransaction(db, async (tx) => {
+				const inviteSnap = await tx.get(inviteRef);
+
+				if (inviteSnap.exists()) {
+					throw new Error('DUPLICATE_CODE');
+				}
+
+				const mission = {
+					title: title.trim(),
+					description: description.trim(),
+					notes: Array.isArray(notes) ? notes.filter(Boolean) : [],
+					exampleCode: exampleCode ?? ''
+				};
+
+				tx.set(lessonRef, {
+					id: lessonId,
+					ownerUid,
+
+					title: title.trim(),
+
+					categoryId: 'individual-write',
+					categoryTitle: '개인 작성미션',
+					themeId: 'individualWrite',
+					themeTitle: '데이터 작성 미션',
+
+					missionType: 'individual-write',
+					roomCount: 1,
+					status: 'waiting',
+
+					individualWriteMission: mission,
+
+					createdAt: serverTimestamp(),
+					updatedAt: serverTimestamp()
+				});
+
+				tx.set(roomRef, {
+					id: roomId,
+					lessonId,
+					roomNumber: 1,
+					code,
+
+					categoryId: 'individual-write',
+					categoryTitle: '개인 작성미션',
+					themeId: 'individualWrite',
+					themeTitle: '데이터 작성 미션',
+
+					missionType: 'individual-write',
+					status: 'waiting',
+
+					maxParticipants: safeMaxParticipants,
+					participantCount: 0,
+					participantNames: [],
+					participantSummaries: {},
+
+					individualWriteMission: mission,
+
+					createdAt: serverTimestamp(),
+					updatedAt: serverTimestamp()
+				});
+
+				tx.set(inviteRef, {
+					code,
+
+					lessonId,
+					roomId,
+					roomNumber: 1,
+
+					missionType: 'individual-write',
+
+					maxParticipants: safeMaxParticipants,
+
+					ownerUid,
+					themeId: 'individualWrite',
+					themeTitle: '데이터 작성 미션',
+
+					active: true,
+					status: 'waiting',
+
+					createdAt: serverTimestamp(),
+					updatedAt: serverTimestamp()
+				});
+			});
+
+			return {
+				lessonId,
+				roomId,
+				code,
+				roomCount: 1
+			};
+		} catch (error) {
+			if (error?.message === 'DUPLICATE_CODE') {
+				continue;
+			}
+
+			throw error;
+		}
+	}
+
+	throw new Error('방 코드 생성 실패. 다시 시도해 주세요.');
+}
+export async function joinIndividualWriteRoom({ lessonId, roomId, participantId, name }) {
+	if (!lessonId || !roomId) {
+		throw new Error('방 정보가 부족합니다.');
+	}
+
+	if (!participantId) {
+		throw new Error('참가자 ID가 없습니다.');
+	}
+
+	if (!name?.trim()) {
+		throw new Error('이름을 입력하세요.');
+	}
+
+	const roomRef = doc(db, 'lessons', lessonId, 'rooms', roomId);
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	return runTransaction(db, async (tx) => {
+		const roomSnap = await tx.get(roomRef);
+
+		if (!roomSnap.exists()) {
+			throw new Error('방 정보를 찾을 수 없습니다.');
+		}
+
+		const room = roomSnap.data();
+		const participantSnap = await tx.get(participantRef);
+
+		const currentCount = room.participantCount ?? 0;
+		const maxParticipants = room.maxParticipants ?? 40;
+
+		if (participantSnap.exists()) {
+			const savedParticipant = participantSnap.data();
+			const wasLeft = savedParticipant.active === false || savedParticipant.status === 'left';
+
+			if (!wasLeft) {
+				tx.set(
+					participantRef,
+					{
+						id: participantId,
+						name: name.trim(),
+						active: true,
+						status: savedParticipant.status ?? 'playing',
+						individualWrite: savedParticipant.individualWrite ?? {
+							status: 'writing',
+							jsonText: '',
+							feedback: '',
+							submittedAt: null,
+							reviewedAt: null
+						},
+						joinedAt: savedParticipant.joinedAt,
+						updatedAt: serverTimestamp()
+					},
+					{ merge: true }
+				);
+
+				tx.update(roomRef, {
+					[`participantSummaries.${participantId}`]: {
+						id: participantId,
+						name: name.trim()
+					},
+					updatedAt: serverTimestamp()
+				});
+
+				return {
+					ok: true
+				};
+			}
+
+			if (currentCount >= maxParticipants) {
+				throw new Error('이 방은 정원이 가득 찼습니다.');
+			}
+
+			tx.set(
+				participantRef,
+				{
+					id: participantId,
+					name: name.trim(),
+					active: true,
+					status: 'playing',
+					individualWrite: savedParticipant.individualWrite ?? {
+						status: 'writing',
+						jsonText: '',
+						feedback: '',
+						submittedAt: null,
+						reviewedAt: null
+					},
+					joinedAt: savedParticipant.joinedAt ?? serverTimestamp(),
+					rejoinedAt: serverTimestamp(),
+					updatedAt: serverTimestamp()
+				},
+				{ merge: true }
+			);
+
+			tx.update(roomRef, {
+				participantCount: currentCount + 1,
+				participantNames: arrayUnion(name.trim()),
+				[`participantSummaries.${participantId}`]: {
+					id: participantId,
+					name: name.trim()
+				},
+				status: 'playing',
+				updatedAt: serverTimestamp()
+			});
+
+			return {
+				ok: true
+			};
+		}
+
+		if (currentCount >= maxParticipants) {
+			throw new Error('이 방은 정원이 가득 찼습니다.');
+		}
+
+		tx.set(
+			participantRef,
+			{
+				id: participantId,
+				name: name.trim(),
+				active: true,
+				status: 'playing',
+				individualWrite: {
+					status: 'writing',
+					jsonText: '',
+					feedback: '',
+					submittedAt: null,
+					reviewedAt: null
+				},
+				joinedAt: serverTimestamp(),
+				updatedAt: serverTimestamp()
+			},
+			{ merge: true }
+		);
+
+		tx.update(roomRef, {
+			participantCount: currentCount + 1,
+			participantNames: arrayUnion(name.trim()),
+			[`participantSummaries.${participantId}`]: {
+				id: participantId,
+				name: name.trim()
+			},
+			status: 'playing',
+			updatedAt: serverTimestamp()
+		});
+
+		return {
+			ok: true
+		};
+	});
+}
+export async function submitIndividualWriteMission({
+	lessonId,
+	roomId,
+	participantId,
+	jsonText
+}) {
+	if (!lessonId || !roomId || !participantId) {
+		throw new Error('제출 정보가 부족합니다.');
+	}
+
+	if (!jsonText?.trim()) {
+		throw new Error('제출할 JSON이 없습니다.');
+	}
+
+	const participantRef = doc(
+		db,
+		'lessons',
+		lessonId,
+		'rooms',
+		roomId,
+		'participants',
+		participantId
+	);
+
+	await updateDoc(participantRef, {
+		'individualWrite.status': 'submitted',
+		'individualWrite.jsonText': jsonText,
+		'individualWrite.feedback': '',
+		'individualWrite.submittedAt': new Date().toISOString(),
+		'individualWrite.reviewedAt': null,
+		status: 'submitted',
+		updatedAt: serverTimestamp()
+	});
+}

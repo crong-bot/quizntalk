@@ -2,7 +2,11 @@ export const lesson05 = {
 	id: 'lesson05',
 	title: '숫자 값: 큰따옴표 없이 쓰기',
 	conceptLabel: '숫자 값',
-
+	successFeedback: {
+						title: '성공!  혹시 코딩영재??',
+						message: '숫자도 쌍따옴표 안에 넣으면 문자로 인식됩니다.',
+						
+					},
 	contentBlocks: [
 		{
 			type: 'image',

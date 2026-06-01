@@ -2,7 +2,11 @@ export const lesson04 = {
 	id: 'lesson04',
 	title: '쉼표: 여러 정보를 나누기',
 	conceptLabel: '쉼표',
-
+	successFeedback: {
+					title: '성공! 잘했어요!',
+					message: '쉼표는 정보를 구분하는 표시에요!',
+					
+				},
 	contentBlocks: [
 		{
 			type: 'image',
@@ -55,7 +59,7 @@ export const lesson04 = {
 		}
 	],
 
-	task: '"학교앞" 뒤에 빠진 쉼표를 넣고 실행하기를 눌러보세요.',
+	task: '실행하기를 눌러보고 지시대로 수정한 다음 다시 실행하기를 눌러보세요.',
 	initialCode: `{
   "정류장": "학교앞"
   "버스번호": "101",

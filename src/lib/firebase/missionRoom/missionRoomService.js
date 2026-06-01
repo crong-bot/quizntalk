@@ -4,13 +4,37 @@ import { getCourseByThemeId } from '$lib/components/workplace/theme/courseRegist
 import {
 	approveReadMissionSubmission,
 	createLessonWithRooms,
+	createIndividualWriteLessonRoom,
 	deleteLessonCompletely,
 	getRoomByInviteCode,
+	joinIndividualWriteRoom,
 	joinRoom,
 	rejectReadMissionSubmission,
 	resetRoomParticipantsProgress,
 	updateRoomState
 } from './missionRoomRepository';
+
+export async function createIndividualWriteSession({
+	ownerUid,
+	title,
+	description,
+	notes = [],
+	exampleCode = '',
+	maxParticipants = 40
+}) {
+	if (!ownerUid) {
+		throw new Error('교사 로그인 후 사용할 수 있습니다.');
+	}
+
+	return createIndividualWriteLessonRoom({
+		ownerUid,
+		title,
+		description,
+		notes,
+		exampleCode,
+		maxParticipants
+	});
+}
 
 export function normalizeInviteCode(value) {
 	return value.trim().toUpperCase().replace(/\s+/g, '');
@@ -83,11 +107,33 @@ export async function joinRoomByCode({ code, name }) {
 
 	const roomResult = await getRoomByInviteCode(normalizedCode);
 	const participantId = createLocalParticipantId(normalizedCode);
+
+	saveLocalParticipantName(normalizedCode, studentName);
+
+	const isIndividualWriteRoom =
+		roomResult.invite?.missionType === 'individual-write' ||
+		roomResult.room?.missionType === 'individual-write' ||
+		roomResult.lesson?.missionType === 'individual-write';
+
+	if (isIndividualWriteRoom) {
+		await joinIndividualWriteRoom({
+			lessonId: roomResult.lessonId,
+			roomId: roomResult.roomId,
+			participantId,
+			name: studentName
+		});
+
+		return {
+			...roomResult,
+			participantId,
+			participantName: studentName,
+			missionType: 'individual-write'
+		};
+	}
+
 	const course = getCourseByThemeId(roomResult.room.themeId);
 	const roles = course?.roles ?? [];
 	const missionCount = course?.missions?.length ?? 3;
-
-	saveLocalParticipantName(normalizedCode, studentName);
 
 	const joinResult = await joinRoom({
 		lessonId: roomResult.lessonId,

@@ -20,6 +20,11 @@
 				name: studentName
 			});
 
+			if (result.missionType === 'individual-write') {
+				goto(`/indiplay/${result.code}`);
+				return;
+			}
+
 			goto(`/invite/${result.code}`);
 		} catch (error) {
 			errorMessage = error?.message ?? '방에 참여하지 못했습니다.';

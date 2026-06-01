@@ -2,7 +2,11 @@ export const lesson10 = {
 	id: 'lesson10',
 	title: '오류 메시지 읽기: 디버깅 연습',
 	conceptLabel: '디버깅',
-
+	successFeedback: {
+								title: '더 이상 가르칠게 없습니다! JSON 고수!',
+								message: '틀리는 걸 두려워하지 마세요. 천천히 디버깅을 하면 됩니다!',
+								
+							},
 	contentBlocks: [
 		{
 			type: 'image',
@@ -107,7 +111,7 @@ export const lesson10 = {
 
 	initialCode: `{
   "캐릭터이름": 번개검사,
-  "레벨": "5",
+  "레벨": 5
   "아이템": {"나무검", "회복물약", "방패"},
   "체력": 80
   "접속중": "true"
