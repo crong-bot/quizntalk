@@ -8,6 +8,7 @@
 	import { createTeacherLessonsStore } from '$lib/firebase/missionRoom/missionRoomStore';
 	import { authUser } from '$lib/stores/authUser';
 	import { onDestroy } from 'svelte';
+	import Nav from '../../../lib/components/nav.svelte';
 
 	export let data;
 
@@ -247,18 +248,14 @@
 	}
 </script>
 
-<div class="min-h-screen bg-[#f4f7fb] px-4 py-6 font-nanum text-slate-800">
+<Nav/>
+<div class="min-h-screen bg-[#f4f7fb] px-4 py-2 font-nanum text-slate-800">
 	<div class="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
 		<header
 			class="flex items-center justify-between rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm"
 		>
 			<div>
-				<a
-					href="/"
-					class="rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
-				>
-					← 홈으로
-				</a>
+				
 				<!-- <button
 					type="button"
 					on:click={() => goto('/')}
@@ -270,8 +267,8 @@
 					CREATE GAME
 				</div> -->
 
-				<h1 class="mt-4 font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
-					수업 만들기
+				<h1 class=" font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
+					미션 생성 - 팀미션 만들기
 				</h1>
 
 				<p class="mt-2 text-[14px] font-bold leading-6 text-slate-500">

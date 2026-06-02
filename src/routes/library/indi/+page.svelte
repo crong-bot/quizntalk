@@ -7,6 +7,7 @@
 	} from '$lib/components/individual/individualTemplate.js';
 	import { createIndividualWriteSession } from '$lib/firebase/missionRoom/missionRoomService.js';
 	import { authUser } from '$lib/stores/authUser';
+	import Nav from '../../../lib/components/nav.svelte';
 
 	const defaultTemplate = getIndividualWriteTemplate('air');
 
@@ -94,25 +95,19 @@
 		}
 	}
 </script>
-
-<div class="min-h-screen bg-[#f4f7fb] px-4 py-6 font-nanum text-slate-800">
+<Nav/>
+<div class="min-h-screen bg-[#f4f7fb] px-4 py-2 font-nanum text-slate-800">
 	<div class="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
 		<header class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
-			<a
-				href="/library/new"
-				class="inline-flex w-fit items-center justify-center rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
-			>
-				← 새 수업 만들기로
-			</a>
-
-			<div class="mt-5 font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
+			
+			<div class=" font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
 				INDIVIDUAL WRITE MISSION
 			</div>
 
 			<div class="mt-2 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 				<div>
 					<h1 class="font-gmarket text-[34px] font-bold tracking-[-0.065em] text-slate-950">
-						개인 작성미션 방 만들기
+						미션 생성 - 개인 작성미션 만들기
 					</h1>
 
 					<p class="mt-2 text-[15px] font-bold leading-7 text-slate-500">
@@ -136,10 +131,10 @@
 					<h2 class="mt-1 font-gmarket text-[23px] font-bold tracking-[-0.055em] text-slate-950">
 						템플릿 선택
 					</h2>
-
-					<p class="mt-1 text-[13px] font-bold text-slate-500">
-						자주 쓰는 개인 작성미션 예시를 불러와서 수정할 수 있습니다.
+					<p class="mt-1 text-[16px] font-bold text-red-500">
+						템플릿을 사용하지 않고 미션을 작성할 수 있습니다. 
 					</p>
+
 				</div>
 
 				<div class="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-black text-slate-500">

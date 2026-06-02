@@ -58,7 +58,7 @@
 					on:keydown={(event) => {
 						if (event.key === 'Enter') joinMission();
 					}}
-					placeholder="예: ABC123"
+					placeholder="예: BC12"
 					class="mt-2 h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-center font-gmarket text-[24px] font-bold uppercase tracking-[0.18em] text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
 				/>
 			</div>
@@ -73,7 +73,7 @@
 						if (event.key === 'Enter') joinMission();
 					}}
 					placeholder="이름을 입력하세요"
-					class="mt-2 h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+					class="mt-2 h-20 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[26px] font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
 				/>
 			</div>
 
@@ -87,7 +87,7 @@
 				type="button"
 				on:click={joinMission}
 				disabled={isJoining}
-				class="mt-5 h-13 w-full rounded-2xl bg-blue-600 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+				class="mt-5 h-20 w-full rounded-2xl bg-blue-600 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
 			>
 				{isJoining ? '입장 중...' : '미션 참여하기'}
 			</button>

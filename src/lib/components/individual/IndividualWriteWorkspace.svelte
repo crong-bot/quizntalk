@@ -1,5 +1,6 @@
 <script>
 	import JsonCodeMirrorEditor from '$lib/components/workplace/JsonCodeMirrorEditor.svelte';
+	import { parseJsonWithFriendlyError } from '$lib/components/workplace/validator/jsonValidator.js';
 	import { submitIndividualWriteMission } from '$lib/firebase/missionRoom/missionRoomRepository.js';
 	import { leaveIndividualWriteRoomByParticipant } from '$lib/firebase/missionRoom/missionRoomService.js';
 	export let roomCode = '';
@@ -113,26 +114,19 @@
 	}
 
 	function validateJsonBeforeSubmit() {
-		if (!jsonText.trim()) {
-			return {
-				ok: false,
-				message: 'JSON을 작성한 뒤 제출하세요.'
-			};
-		}
+		const result = parseJsonWithFriendlyError(jsonText);
 
-		try {
-			JSON.parse(jsonText);
-
+		if (result.ok) {
 			return {
 				ok: true,
 				message: ''
 			};
-		} catch (error) {
-			return {
-				ok: false,
-				message: 'JSON 문법을 다시 확인하세요. 쉼표, 큰따옴표, 괄호가 빠졌을 수 있어요.'
-			};
 		}
+
+		return {
+			ok: false,
+			message: result.message ?? 'JSON 문법을 다시 확인하세요.'
+		};
 	}
 
 	async function submitJson() {
@@ -275,9 +269,9 @@
 					<div class={`rounded-full px-4 py-2 text-[13px] font-black ring-1 ${statusClass}`}>
 						{statusLabel}
 					</div>
-
+	<div class="text-[14px] font-black text-slate-400">방 코드</div>
 					<div class="rounded-2xl bg-slate-950 px-4 py-2 text-right text-white">
-						<div class="text-[10px] font-black text-slate-400">방 코드</div>
+					
 						<div class="font-gmarket text-[22px] font-black tracking-[0.16em] text-blue-300">
 							{room?.code ?? roomCode}
 						</div>
@@ -313,10 +307,10 @@
 
 						<div class="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
 							<section class="rounded-[24px] bg-blue-50 p-4">
-								<div class="text-[13px] font-extrabold text-blue-700">상황 설명</div>
+								<div class="text-[13px]  font-extrabold text-blue-700">해야할 일</div>
 
-								<p class="mt-3 whitespace-pre-line text-[14px] font-bold leading-7 text-slate-700">
-									{mission.description ?? '상황 설명이 없습니다.'}
+								<p class="mt-3 whitespace-pre-line text-[15px] font-gmarket font-bold leading-7 text-slate-700">
+									{mission.description ?? '.'}
 								</p>
 							</section>
 
@@ -326,7 +320,7 @@
 								{#if mission.notes?.length}
 									<ul class="mt-3 flex flex-col gap-2">
 										{#each mission.notes as note}
-											<li class="flex gap-2 text-[13px] font-bold leading-6 text-slate-700">
+											<li class="flex gap-2 text-[13px] font-gmarket font-bold leading-6 text-slate-700">
 												<span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"></span>
 												<span>{note}</span>
 											</li>
@@ -338,11 +332,24 @@
 							</section>
 
 							<section class="mt-4 rounded-[24px] bg-slate-950 p-4">
-								<div class="text-[13px] font-extrabold text-slate-400">코드 예시</div>
+								<div class="flex items-center justify-between gap-2">
+									<div class="text-[13px] font-extrabold text-slate-400">참고용 구조</div>
+
+									<div class="rounded-full bg-slate-800 px-2.5 py-1 text-[10px] font-black text-slate-400">
+										복사 불가
+									</div>
+								</div>
+
+								<p class="mt-2 text-[12px] font-bold leading-5 text-slate-400">
+									JSON 모양을 참고하기 위한 예시입니다.
+								</p>
 
 								<pre
-									class="mt-3 max-h-[330px] overflow-auto whitespace-pre-wrap font-mono text-[13px] font-bold leading-6 text-emerald-100">{mission.exampleCode ??
-										'// 예시 코드가 없습니다.'}</pre>
+									on:copy|preventDefault
+									on:cut|preventDefault
+									on:contextmenu|preventDefault
+									class="mt-3 max-h-[330px] select-none overflow-x-auto overflow-y-auto whitespace-pre rounded-2xl border border-slate-800 bg-slate-900 p-3 font-mono text-[13px] font-bold leading-6 text-emerald-100"
+								>{mission.exampleCode ?? '// 예시 코드가 없습니다.'}</pre>
 							</section>
 						</div>
 					</div>
@@ -367,7 +374,7 @@
 
 						<div class="text-right">
 							<div class="text-[12px] font-black text-slate-400">참가자</div>
-							<div class="mt-1 text-[15px] font-black text-slate-800">
+							<div class="mt-1 text-[16px] font-gmarket font-black text-slate-800">
 								{participantName || currentParticipant?.name || '이름 없음'}
 							</div>
 						</div>
@@ -409,12 +416,12 @@
 
 					{#if localMessage}
 						<div
-							class={`mt-4 rounded-[22px] px-4 py-3 text-[13px] font-black leading-6 ${
+							class={`mt-4 whitespace-pre-line rounded-[22px] px-4 py-3 text-[13px] font-black leading-6 ${
 								localMessageType === 'error'
 									? 'border border-rose-200 bg-rose-50 text-rose-700'
 									: localMessageType === 'success'
-									  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-									  : 'border border-blue-200 bg-blue-50 text-blue-700'
+									? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+									: 'border border-blue-200 bg-blue-50 text-blue-700'
 							}`}
 						>
 							{localMessage}

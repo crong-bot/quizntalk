@@ -49,6 +49,11 @@
 
 	let processingIndividualId = '';
 	let viewingParticipant = null;
+
+	let approvingParticipant = null;
+	let approvingRoom = null;
+	let approveFeedback = '';
+
 	let rejectingParticipant = null;
 	let rejectingRoom = null;
 	let rejectFeedback = '';
@@ -84,6 +89,18 @@
 	function closeIndividualJson() {
 		viewingParticipant = null;
 	}
+	function openIndividualApprove(room, participant) {
+	approvingRoom = room;
+	approvingParticipant = participant;
+	approveFeedback =
+		participant?.individualWrite?.feedback ?? '좋아요. JSON 작성 미션을 완료했습니다.';
+	}
+
+	function closeIndividualApprove() {
+		approvingRoom = null;
+		approvingParticipant = null;
+		approveFeedback = '';
+	}
 
 	function openIndividualReject(room, participant) {
 		rejectingRoom = room;
@@ -98,29 +115,27 @@
 		rejectFeedback = '';
 	}
 
-	async function approveIndividualSubmission(room, participant) {
+	async function approveIndividualSubmission() {
 		if (processingIndividualId) return;
 
-		const ok = confirm(`${participant.name ?? '학생'}의 제출물을 승인할까요?`);
-		if (!ok) return;
-
 		try {
-			processingIndividualId = participant.id;
+			processingIndividualId = approvingParticipant?.id ?? '';
 			errorMessage = '';
 
 			await approveIndividualWriteForRoom({
 				lessonId: data.lessonId,
-				room,
-				participant,
-				feedback: '좋아요. JSON 작성 미션을 완료했습니다.'
+				room: approvingRoom,
+				participant: approvingParticipant,
+				feedback: approveFeedback || '좋아요. JSON 작성 미션을 완료했습니다.'
 			});
+
+			closeIndividualApprove();
 		} catch (error) {
 			errorMessage = error?.message ?? '승인 처리에 실패했습니다.';
 		} finally {
 			processingIndividualId = '';
 		}
 	}
-
 	async function rejectIndividualSubmission() {
 		if (processingIndividualId) return;
 
@@ -673,7 +688,7 @@
 
 													<button
 														type="button"
-														on:click={() => approveIndividualSubmission(room, participant)}
+														on:click={() => openIndividualApprove(room, participant)}
 														disabled={getIndividualStatus(participant) !== 'submitted'}
 														class="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white disabled:bg-slate-300"
 													>
@@ -1003,6 +1018,61 @@
 			<pre
 				class="mt-4 max-h-[520px] overflow-auto whitespace-pre-wrap rounded-[24px] bg-slate-950 p-5 font-mono text-[14px] font-bold leading-7 text-emerald-100">{viewingParticipant
 					.individualWrite?.jsonText}</pre>
+		</div>
+	</div>
+{/if}
+
+{#if approvingParticipant}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+		<div class="w-full max-w-[560px] rounded-[30px] bg-white p-5 shadow-2xl">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<div class="font-gmarket text-[11px] font-bold tracking-[0.16em] text-emerald-500">
+						APPROVE FEEDBACK
+					</div>
+
+					<h3 class="mt-1 font-gmarket text-[24px] font-bold tracking-[-0.055em] text-slate-950">
+						{approvingParticipant.name ?? '학생'} 승인 피드백
+					</h3>
+				</div>
+
+				<button
+					type="button"
+					on:click={closeIndividualApprove}
+					class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-[18px] font-black text-slate-500"
+				>
+					×
+				</button>
+			</div>
+
+			<div class="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-[13px] font-bold leading-6 text-emerald-700">
+				승인하면 학생 화면에 클리어 완료로 표시됩니다.
+			</div>
+
+			<textarea
+				bind:value={approveFeedback}
+				class="mt-4 min-h-[140px] w-full resize-none rounded-[22px] border border-slate-200 bg-slate-50 p-4 text-[14px] font-bold leading-7 text-slate-800 outline-none focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+				placeholder="학생에게 보여줄 승인 피드백을 입력하세요."
+			></textarea>
+
+			<div class="mt-4 flex justify-end gap-2">
+				<button
+					type="button"
+					on:click={closeIndividualApprove}
+					class="h-11 rounded-2xl bg-slate-100 px-4 text-[13px] font-black text-slate-600"
+				>
+					취소
+				</button>
+
+				<button
+					type="button"
+					on:click={approveIndividualSubmission}
+					disabled={processingIndividualId === approvingParticipant.id}
+					class="h-11 rounded-2xl bg-emerald-600 px-5 text-[13px] font-black text-white disabled:bg-slate-300"
+				>
+					{processingIndividualId === approvingParticipant.id ? '승인 중...' : '승인하기'}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}

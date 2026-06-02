@@ -55,19 +55,14 @@
 		<header class="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
 			<div class="flex flex-col justify-between gap-5 md:flex-row md:items-start">
 				<div>
-					<a
-						href="/"
-						class="inline-flex w-fit items-center justify-center rounded-2xl bg-slate-100 px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-200"
-					>
-						← 홈으로
-					</a>
+					
 
 					<div class="mt-5 font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
 						CREATE NEW LESSON
 					</div>
 
 					<h1 class="mt-2 font-gmarket text-[36px] font-bold tracking-[-0.07em] text-slate-950">
-						새 수업 만들기
+						미션 생성
 					</h1>
 
 					<p class="mt-2 max-w-[720px] text-[15px] font-bold leading-7 text-slate-500">
