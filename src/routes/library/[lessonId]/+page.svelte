@@ -245,28 +245,67 @@
 	function getRoomCreatedAt(room) {
 		return room?.createdAt ?? room?.updatedAt ?? lesson?.createdAt ?? '';
 	}
+	function toMillis(value) {
+	if (!value) return 0;
+
+	if (value?.toMillis) return value.toMillis();
+	if (value?.toDate) return value.toDate().getTime();
+
+	const date = value instanceof Date ? value : new Date(value);
+	const time = date.getTime();
+
+	return Number.isNaN(time) ? 0 : time;
+	}
+
+	function sortParticipantsByJoinOrder(participants) {
+		return [...participants].sort((a, b) => {
+			const aTime =
+				toMillis(a.joinedAt) ||
+				toMillis(a.enteredAt) ||
+				toMillis(a.createdAt) ||
+				toMillis(a.updatedAt);
+
+			const bTime =
+				toMillis(b.joinedAt) ||
+				toMillis(b.enteredAt) ||
+				toMillis(b.createdAt) ||
+				toMillis(b.updatedAt);
+
+			if (aTime !== bTime) return aTime - bTime;
+
+			const aOrder = a.joinOrder ?? a.order ?? a.index ?? 9999;
+			const bOrder = b.joinOrder ?? b.order ?? b.index ?? 9999;
+
+			if (aOrder !== bOrder) return aOrder - bOrder;
+
+			return String(a.id ?? a.name ?? '').localeCompare(String(b.id ?? b.name ?? ''));
+		});
+	}
 
 	function getRoomParticipants(room) {
+		let participants = [];
+
 		if (room?.participantSummaries && typeof room.participantSummaries === 'object') {
-			return Object.values(room.participantSummaries);
-		}
-
-		if (Array.isArray(room?.participants)) {
-			return room.participants;
-		}
-
-		if (room?.participants && typeof room.participants === 'object') {
-			return Object.values(room.participants);
-		}
-
-		if (Array.isArray(room?.participantNames)) {
-			return room.participantNames.map((name, index) => ({
+			participants = Object.entries(room.participantSummaries).map(([id, participant]) => ({
+				id: participant?.id ?? id,
+				...participant
+			}));
+		} else if (Array.isArray(room?.participants)) {
+			participants = room.participants;
+		} else if (room?.participants && typeof room.participants === 'object') {
+			participants = Object.entries(room.participants).map(([id, participant]) => ({
+				id: participant?.id ?? id,
+				...participant
+			}));
+		} else if (Array.isArray(room?.participantNames)) {
+			participants = room.participantNames.map((name, index) => ({
 				id: `name_${index}`,
-				name
+				name,
+				joinOrder: index
 			}));
 		}
 
-		return [];
+		return sortParticipantsByJoinOrder(participants);
 	}
 	function getActiveRoomParticipants(room) {
 		return getRoomParticipants(room).filter((participant) => {
@@ -645,7 +684,7 @@
 
 								{#if roomParticipants.length > 0}
 									<div class="divide-y divide-slate-100">
-										{#each roomParticipants as participant, index}
+										{#each roomParticipants as participant, index (participant.id ?? participant.name ?? index)}
 											<div class="grid grid-cols-[1fr_0.7fr_1.3fr] items-center gap-3 px-4 py-3">
 												<div>
 													<div class="text-[15px] font-black text-slate-950">
@@ -890,7 +929,7 @@
 
 									{#if roomParticipants.length > 0}
 										<div class="mt-3 flex flex-wrap gap-2">
-											{#each roomParticipants as participant, index}
+											{#each roomParticipants as participant, index (participant.id ?? participant.name ?? index)}
 												<div
 													class="rounded-full bg-blue-50 px-3 py-1.5 text-[12px] font-black text-blue-700 ring-1 ring-blue-100"
 												>

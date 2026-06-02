@@ -14,10 +14,7 @@ export const lesson09 = {
 				src: '/images/lessson/lesson09_card2.png',
 				alt: 'card2'
 			},
-			{
-				src: '/images/lessson/lesson09_card1.png',
-				alt: 'card3'
-			}
+			
 		]
 	},
 	contentBlocks: [
@@ -99,7 +96,7 @@ export const lesson09 = {
 		}
 	],
 
-	task: '게임캐릭터 3개를 만들어봅시다. 첫 번째 캐릭터 이름은 불꽃용사, 직업은 전사, 레벨은 5, 잠금해제 true 입니다. 두 번째 캐릭터 이름은 얼음마법사, 직업은 마법사, 레벨은 4, 잠금해제 되지 않았습니다. 세 번째 캐릭터 이름은 숲의궁수, 직업은 궁수, 레벨은 4, 잠금해제 되지 않았습니다.',
+	task: '게임캐릭터 2개를 만들어봅시다. 첫 번째 캐릭터 이름은 불꽃용사, 직업은 전사, 레벨은 5, 잠금해제 true 입니다. 두 번째 캐릭터 이름은 얼음마법사, 직업은 마법사, 레벨은 4, 잠금해제 되지 않았습니다.',
 	initialCode: `{
 	"캐릭터":[]
 }`,
@@ -117,12 +114,6 @@ export const lesson09 = {
 				"레벨": 4,
 				"잠금해제": false
 			},
-			{
-				"이름": "숲의궁수",
-				"직업": "궁수",
-				"레벨": 4,
-				"잠금해제": false
-			}
 		]
 	},
 	hints: [

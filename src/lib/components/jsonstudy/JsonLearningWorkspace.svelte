@@ -16,6 +16,7 @@
 	let jsonText = lesson.initialCode ?? '';
 	let resultMessage = '';
 	let resultType = 'ready';
+	let showResultPanel = true;
 	let showHint = false;
 	let isMenuOpen = false;
 
@@ -168,6 +169,7 @@
 		selectedQuizAnswer = '';
 		quizMessage = '';
 		isQuizOpen = false;
+		showResultPanel = true;
 
 		loadSavedCode();
 		resetLessonScroll();
@@ -282,6 +284,7 @@
 	}
 
 	function checkAnswer() {
+		showResultPanel = true;
 		if (lesson.type === 'intro') {
 			openQuiz();
 			return;
@@ -335,6 +338,7 @@
 		}
 	}
 	function formatCode() {
+		showResultPanel = true;
 		const result = formatJsonText(jsonText);
 
 		resultMessage = result.message;
@@ -351,6 +355,7 @@
 		resultMessage = '';
 		resultType = 'ready';
 		showHint = false;
+		showResultPanel = true;
 		saveProgress();
 	}
 
@@ -362,6 +367,7 @@
 	}
 
 	function goNext() {
+			showResultPanel = true;
 		if (isLastStep) {
 			if (isAllLessonsCleared()) {
 				showFinalSuccessModal = true;
@@ -932,18 +938,53 @@
 					/>
 				</div>
 
-				<div
-					class={`mt-4 whitespace-pre-wrap rounded-2xl border px-4 py-3 text-[14px] font-extrabold ${getResultClass(
-						resultType
-					)}`}
-				>
-					{#if resultMessage}
-						{resultMessage}
-					{:else}
-						실행하기를 누르면 결과가 여기에 표시돼요.
+				<div class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+					<div class="flex items-center justify-between gap-3 px-4 py-3">
+						<div class="flex min-w-0 items-center gap-2">
+							<div
+								class={`h-2.5 w-2.5 shrink-0 rounded-full ${
+									resultType === 'success'
+										? 'bg-emerald-500'
+										: resultType === 'error'
+											? 'bg-rose-500'
+											: resultType === 'info'
+												? 'bg-blue-500'
+												: 'bg-slate-300'
+								}`}
+							></div>
+
+							<div class="truncate text-[13px] font-extrabold text-slate-600">
+								{#if resultMessage}
+									실행 결과
+								{:else}
+									결과창
+								{/if}
+							</div>
+						</div>
+
+						<button
+							type="button"
+							on:click={() => (showResultPanel = !showResultPanel)}
+							class="shrink-0 rounded-xl bg-slate-100 px-3 py-1.5 text-[12px] font-extrabold text-slate-600 transition hover:bg-slate-200"
+						>
+							{showResultPanel ? '접기' : '펼치기'}
+						</button>
+					</div>
+
+					{#if showResultPanel}
+						<div
+							class={`max-h-[120px] overflow-y-auto whitespace-pre-wrap border-t px-4 py-3 text-[14px] font-extrabold leading-6 ${getResultClass(
+								resultType
+							)}`}
+						>
+							{#if resultMessage}
+								{resultMessage}
+							{:else}
+								실행하기를 누르면 결과가 여기에 표시돼요.
+							{/if}
+						</div>
 					{/if}
 				</div>
-
 				<div class="mt-4 flex items-center gap-3">
 					<button
 						type="button"
