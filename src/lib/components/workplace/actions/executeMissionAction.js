@@ -247,7 +247,18 @@ export async function executeMissionAction({ context, actions }) {
 
 		await wait(450);
 
-		const finalMapResult = mapJsonToSimulationState(themeId, jsonText);
+		const finalMapResult =
+			themeId === 'monsterDefense'
+				? {
+						ok: true,
+						state: currentMission?.successState ?? {
+							layers: {},
+							sprites: {},
+							camera: {},
+							flags: {}
+						}
+				  }
+				: mapJsonToSimulationState(themeId, jsonText);
 
 		if (!finalMapResult.ok) {
 			await recordCurrentAttempt({
@@ -326,7 +337,18 @@ export async function executeMissionAction({ context, actions }) {
 
 	await wait(450);
 
-	const mapResult = mapJsonToSimulationState(themeId, jsonText);
+	const mapResult =
+		themeId === 'monsterDefense'
+			? {
+					ok: true,
+					state: currentMission?.successState ?? {
+						layers: {},
+						sprites: {},
+						camera: {},
+						flags: {}
+					}
+			  }
+			: mapJsonToSimulationState(themeId, jsonText);
 
 	if (!mapResult.ok) {
 		setStatus('editing');
@@ -367,12 +389,19 @@ export async function executeMissionAction({ context, actions }) {
 	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
 	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
+	const roomPatch =
+		validateResult?.themePatch ??
+		validateResult?.extra?.themePatch ??
+		validateResult?.data?.themePatch ??
+		{};
+
 	await syncMissionSuccessToFirestore({
 		nextMissionProgress,
 		nextSimulationState: simulationScope === 'room' ? mapResult.state : null,
 		nextMissionIndex,
 		nextRoomStatus,
-		shouldSyncSimulationState: simulationScope === 'room'
+		shouldSyncSimulationState: simulationScope === 'room',
+		roomPatch
 	});
 
 	setSimulationState(nextLocalSimulationState);

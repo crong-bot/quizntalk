@@ -4,6 +4,7 @@ import { mapBikeRebalanceRoomToSimulationState } from '../theme/bike/bikeRebalan
 import { mapDisasterSafetyRoomToSimulationState } from '../theme/disasterSafety/disasterSafetyMapper';
 import { mapHackerTraceJsonToSimulationState } from '../theme/hackerTrace/hackerTraceMapper';
 import { mapMarketBasketJsonToSimulationState } from '../theme/market/marketBasketMapper';
+import { mapMonsterDefenseRoomToSimulationState } from '../theme/monsterDefense/monsterDefenseMapper';
 import { mapOwlBusRoomToSimulationState } from '../theme/owlBus/owlBusMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
 
@@ -14,7 +15,8 @@ const mapperByThemeId = {
 	marketBasket: mapMarketBasketJsonToSimulationState,
 	bikeRebalance: mapBikeRebalanceRoomToSimulationState,
 	disasterSafety: mapDisasterSafetyRoomToSimulationState,
-	owlBus: mapOwlBusRoomToSimulationState
+	owlBus: mapOwlBusRoomToSimulationState,
+	monsterDefense: mapMonsterDefenseRoomToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {

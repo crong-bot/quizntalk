@@ -61,7 +61,7 @@
 
 	$: isReadCourse = isReadMissionCourse(course);
 
-	let jsonText = course.missions[0].initialJson;
+	let jsonText = '';
 	let status = 'editing';
 
 	let hasExecuted = false;
@@ -590,7 +590,8 @@
 		isFinalSequencePlaying = false;
 		autoFinalExecutionStarted = false;
 
-		jsonText = course.missions[0].initialJson;
+		const firstPlayer = players.find((player) => player.id === 'player_1') ?? players[0];
+		jsonText = getInitialJsonForMission(0, firstPlayer);
 		status = 'editing';
 		//canExecute = false;
 		hasExecuted = false;
@@ -620,9 +621,7 @@
 		];
 	}
 	function resetCurrentJsonToInitial() {
-		const mission = course.missions[currentMissionIndex];
-
-		jsonText = mission?.initialJson ?? '';
+		jsonText = getInitialJsonForMission(currentMissionIndex, currentPlayer);
 		status = 'editing';
 		hasExecuted = false;
 
@@ -641,7 +640,6 @@
 			}
 		];
 	}
-
 	let localCurrentPlayerId = 'player_1';
 
 	let currentMissionIndex = 0;
@@ -677,6 +675,17 @@
 	$: currentPlayer = players.find((player) => player.id === currentPlayerId) ?? players[0];
 	$: currentMission = course.missions[currentMissionIndex] ?? course.missions[0];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
+
+	let lastInitialJsonKey = '';
+
+	$: initialJsonKey = `${course?.id ?? course?.themeId ?? ''}:${currentMissionIndex}:${
+		currentPlayer?.roleId ?? ''
+	}`;
+
+	$: if (initialJsonKey && initialJsonKey !== lastInitialJsonKey && !hasExecuted) {
+		lastInitialJsonKey = initialJsonKey;
+		jsonText = getInitialJsonForMission(currentMissionIndex, currentPlayer);
+	}
 
 	$: shouldShowSupportGuide =
 		isReadCourse && requiredParticipantCount === 3 && currentMission?.supportGuideForThreePlayers;
@@ -727,12 +736,20 @@
 			});
 		}
 	}
+	function getInitialJsonForMission(missionIndex, player = currentPlayer) {
+		const mission = course.missions[missionIndex];
+		if (!mission) return '';
+
+		const roleMission = mission?.roleMissions?.[player?.roleId];
+
+		return roleMission?.initialJson ?? mission?.initialJson ?? '';
+	}
 
 	function setJsonForCurrentMission(missionIndex) {
 		const mission = course.missions[missionIndex];
 		if (!mission) return;
 
-		jsonText = mission.initialJson ?? '';
+		jsonText = getInitialJsonForMission(missionIndex, currentPlayer);
 		status = 'editing';
 		hasExecuted = false;
 
@@ -1116,6 +1133,29 @@
 			return;
 		}
 
+		const themeResult =
+			typeof course?.finalizeThemeResult === 'function'
+				? course.finalizeThemeResult({
+						room,
+						course,
+						currentMission,
+						finalSubmissions
+				  })
+				: null;
+
+		const roomPatch = themeResult
+			? {
+					themeResult
+			  }
+			: {};
+
+		const finalMessage =
+			themeResult?.status === 'success'
+				? '방어 성공! 팀의 작전으로 도시를 지켰습니다.'
+				: themeResult?.status === 'fail'
+				  ? '방어 실패! 장치 방향이나 무기를 다시 확인해야 합니다.'
+				  : '최종 결과가 완성되었습니다.';
+
 		try {
 			await applyMissionSuccess({
 				lessonId,
@@ -1125,6 +1165,7 @@
 				simulationState: nextSimulationState,
 				currentMissionIndex,
 				status: 'completed',
+				roomPatch,
 				lastMissionEvent: {
 					type: 'final_completed',
 					missionId: currentMission?.id ?? '',
@@ -1132,7 +1173,7 @@
 					missionIndex: currentMissionIndex,
 					nextMissionIndex: currentMissionIndex,
 					status: 'completed',
-					message: '최종 결과가 완성되었습니다.',
+					message: finalMessage,
 					version: Date.now(),
 					createdAt: new Date().toISOString()
 				}

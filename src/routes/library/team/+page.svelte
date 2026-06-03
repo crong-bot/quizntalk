@@ -38,10 +38,10 @@
 			enabled: true
 		},
 		{
-			id: 'smartClassroom',
+			id: 'monster-defense',
 			categoryId: 'write',
 			categoryTitle: '제이슨 작성',
-			title: '스마트 교실 제어',
+			title: '몬스터 디펜스',
 			subtitle: '교실 장치의 상태를 JSON으로 제어합니다.',
 			icon: '🏫',
 			level: '준비 중',
@@ -248,14 +248,13 @@
 	}
 </script>
 
-<Nav/>
+<Nav />
 <div class="min-h-screen bg-[#f4f7fb] px-4 py-2 font-nanum text-slate-800">
 	<div class="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
 		<header
 			class="flex items-center justify-between rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm"
 		>
 			<div>
-				
 				<!-- <button
 					type="button"
 					on:click={() => goto('/')}

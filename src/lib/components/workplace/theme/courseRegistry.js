@@ -3,6 +3,7 @@ import { bikeRebalanceCourse } from './bike/bikeRebalanceCourse.js';
 import { disasterSafetyCourse } from './disasterSafety/disasterSafetyCourse.js';
 import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
 import { marketBasketCourse } from './market/marketBasketCourse.js';
+import { monsterDefenseCourse } from './monsterDefense/monsterDefenseCourse.js';
 import { owlBusCourse } from './owlBus/owlBusCourse.js';
 import { moonBaseCourse } from './spaceBase/spaceBaseCourse';
 
@@ -13,7 +14,8 @@ export const courses = [
 	marketBasketCourse,
 	bikeRebalanceCourse,
 	disasterSafetyCourse,
-	owlBusCourse
+	owlBusCourse,
+	monsterDefenseCourse
 ];
 
 // const courseByThemeId = {

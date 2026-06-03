@@ -1,6 +1,7 @@
 <!-- C:\Users\user\quizntalk\src\lib\components\workplace\PixiSimulationCanvas.svelte -->
 <script>
 	import { onDestroy, onMount, tick as svelteTick } from 'svelte';
+	import { createMonsterDefenseRuntime } from './theme/monsterDefense/monsterDefenseRuntime';
 
 	export let theme;
 	export let simulationState = {
@@ -16,6 +17,7 @@
 	let time = 0;
 	let mounted = false;
 	let resizeObserver;
+	let themeRuntime = null;
 
 	let baseStageScale = 1;
 	let baseStageX = 0;
@@ -65,6 +67,12 @@
 			sprites[asset.id] = sprite;
 			app.stage.addChild(sprite);
 		}
+		if (theme?.id === 'monsterDefense') {
+			themeRuntime = createMonsterDefenseRuntime({
+				sprites,
+				getState: () => simulationState
+			});
+		}
 
 		await svelteTick();
 		resizeCanvas();
@@ -93,6 +101,13 @@
 
 		if (app) {
 			app.ticker?.remove?.(tick);
+
+			// 테마별 런타임 정리
+			if (themeRuntime) {
+				themeRuntime.destroy?.();
+				themeRuntime = null;
+			}
+
 			app.destroy(true);
 			app = null;
 		}
@@ -135,6 +150,10 @@
 		resetSpritesToBaseLayout();
 		applyLayers();
 		applySpriteEffects();
+		themeRuntime?.tick?.({
+			delta: ticker.deltaTime,
+			time
+		});
 		applyCameraEffects();
 	}
 

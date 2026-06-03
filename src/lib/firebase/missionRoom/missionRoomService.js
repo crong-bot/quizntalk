@@ -90,6 +90,7 @@ export async function createClassroomSession({
 
 	const course = getCourseByThemeId(selectedTheme.id);
 	const roles = course?.roles ?? [];
+	const initialThemeState = course?.initialThemeState ?? {};
 
 	return createLessonWithRooms({
 		ownerUid,
@@ -99,7 +100,8 @@ export async function createClassroomSession({
 		categoryTitle: selectedTheme.categoryTitle,
 		roomCount,
 		roomCapacities,
-		roles
+		roles,
+		initialThemeState
 	});
 }
 
@@ -560,6 +562,21 @@ function buildRestartedParticipants({ room, missionCount }) {
 
 	return room?.participants ?? [];
 }
+function buildRestartedParticipantSummaries(room) {
+	if (!room?.participantSummaries || typeof room.participantSummaries !== 'object') {
+		return {};
+	}
+
+	return Object.fromEntries(
+		Object.entries(room.participantSummaries).map(([participantId, summary]) => [
+			participantId,
+			{
+				...summary,
+				status: 'playing'
+			}
+		])
+	);
+}
 
 export async function restartRoomForTeacher({ lessonId, room, course }) {
 	if (!lessonId) {
@@ -589,10 +606,17 @@ export async function restartRoomForTeacher({ lessonId, room, course }) {
 			verificationEnergy: 5,
 
 			simulationState: {
-				layers: {}
+				layers: {},
+				sprites: {},
+				camera: {},
+				flags: {}
 			},
 
 			finalSubmissions: {},
+
+			themeState: course?.initialThemeState ?? {},
+			themeResult: null,
+
 			finalExecutionStatus: null,
 			finalExecutionStartedAt: null,
 			finalExecutionCompletedAt: null,
@@ -601,10 +625,7 @@ export async function restartRoomForTeacher({ lessonId, room, course }) {
 			pendingReviews: {},
 			reviewStatus: null,
 
-			participants: buildRestartedParticipants({
-				room,
-				missionCount
-			}),
+			participantSummaries: buildRestartedParticipantSummaries(room),
 
 			restartVersion,
 			restartRequestedAt: restartedAt,

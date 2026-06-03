@@ -83,7 +83,8 @@ function createRoomData({
 	themeId,
 	themeTitle,
 	maxParticipants = 4,
-	autoClearedRoles = []
+	autoClearedRoles = [],
+	initialThemeState = {}
 }) {
 	return {
 		id: roomId,
@@ -110,6 +111,10 @@ function createRoomData({
 
 		finalSubmissions: {},
 
+		// 테마별 게임 상태 저장용 공통 필드
+		themeState: initialThemeState,
+		themeResult: null,
+
 		createdAt: serverTimestamp(),
 		updatedAt: serverTimestamp()
 	};
@@ -133,7 +138,8 @@ export async function createLessonWithRooms({
 	categoryTitle,
 	roomCount = 4,
 	roomCapacities = null,
-	roles = []
+	roles = [],
+	initialThemeState = {}
 }) {
 	const safeRoomCount = clampRoomCount(roomCount);
 
@@ -203,7 +209,8 @@ export async function createLessonWithRooms({
 							themeId,
 							themeTitle,
 							maxParticipants,
-							autoClearedRoles
+							autoClearedRoles,
+							initialThemeState
 						})
 					);
 
@@ -967,7 +974,8 @@ export async function applyMissionSuccess({
 	simulationState,
 	currentMissionIndex,
 	status,
-	lastMissionEvent = null
+	lastMissionEvent = null,
+	roomPatch = {}
 }) {
 	if (!lessonId || !roomId || !participantId) {
 		throw new Error('미션 성공 처리 정보가 부족합니다.');
@@ -991,26 +999,28 @@ export async function applyMissionSuccess({
 		updatedAt: serverTimestamp()
 	});
 
-	const roomPatch = {
+	const nextRoomPatch = {
+		...roomPatch,
 		updatedAt: serverTimestamp()
 	};
 
 	if (simulationState) {
-		roomPatch.simulationState = simulationState;
+		nextRoomPatch.simulationState = simulationState;
 	}
 
 	if (typeof currentMissionIndex === 'number') {
-		roomPatch.currentMissionIndex = currentMissionIndex;
+		nextRoomPatch.currentMissionIndex = currentMissionIndex;
 	}
 
 	if (status) {
-		roomPatch.status = status;
-	}
-	if (lastMissionEvent) {
-		roomPatch.lastMissionEvent = lastMissionEvent;
+		nextRoomPatch.status = status;
 	}
 
-	batch.update(roomRef, roomPatch);
+	if (lastMissionEvent) {
+		nextRoomPatch.lastMissionEvent = lastMissionEvent;
+	}
+
+	batch.update(roomRef, nextRoomPatch);
 
 	await batch.commit();
 }

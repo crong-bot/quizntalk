@@ -5,6 +5,7 @@
 
 	import { animalRescueTheme } from './theme/animalRescue/animalRescueTheme';
 	import { hackerTraceTheme } from './theme/hackerTrace/hackerTraceTheme';
+	import { monsterDefenseTheme } from './theme/monsterDefense/monsterDefenseTheme';
 	import { spaceBaseTheme } from './theme/spaceBase/spaceBaseTheme';
 
 	export let themeId = 'spaceBase';
@@ -18,7 +19,8 @@
 	const pixiThemeById = {
 		spaceBase: spaceBaseTheme,
 		animalRescue: animalRescueTheme,
-		hackerTrace: hackerTraceTheme
+		hackerTrace: hackerTraceTheme,
+		monsterDefense: monsterDefenseTheme
 	};
 
 	$: pixiTheme = pixiThemeById[themeId] ?? spaceBaseTheme;

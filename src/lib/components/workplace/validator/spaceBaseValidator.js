@@ -1,3 +1,4 @@
+// C:\quizntalk\src\lib\components\workplace\validator\spaceBaseValidator.js
 import {
 	getValueType,
 	isPlainObject,
