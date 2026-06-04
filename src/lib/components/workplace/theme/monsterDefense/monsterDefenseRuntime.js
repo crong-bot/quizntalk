@@ -7,7 +7,7 @@ const MONSTER_START = {
 
 const MONSTER_WALL_POINT = {
 	x: 595,
-	y: 195
+	y: 155
 };
 
 // 실패했을 때 성벽을 뚫고 더 내려오는 위치
@@ -29,6 +29,8 @@ const MONSTER_HIT_FLASH_TIME = 18;
 const MONSTER_WALK_SPEED = 0.4;
 const MONSTER_BREAKTHROUGH_SPEED = 0.9;
 
+const TRAP_HIT_FLASH_TIME = 18;
+
 // 불덩어리탄 시작 위치
 // 물대포 입구에 맞게 여기만 조정하면 됨
 const FIREBALL_START = {
@@ -38,8 +40,13 @@ const FIREBALL_START = {
 
 // 몬스터 몸통 어느 지점을 맞출지 조정
 const FIREBALL_TARGET_OFFSET = {
-	x: 35,
+	x: 120,
 	y: 35
+};
+
+const MONSTER_TRAP_POINT = {
+	x: 595,
+	y: 55
 };
 
 const HP_BAR = {
@@ -79,6 +86,10 @@ function lerp(start, end, progress) {
 
 function easeOutCubic(t) {
 	return 1 - Math.pow(1 - t, 3);
+}
+
+function normalizeText(value = '') {
+	return String(value).replaceAll(' ', '').trim();
 }
 
 function hideMonsterFrames(sprites) {
@@ -129,18 +140,18 @@ function resetDefenseTools(sprites) {
 	hide(sprites.waterShot);
 }
 
-function placeDefenseTools({ sprites, flags }) {
+function placeDefenseTools({ sprites, flags, time }) {
 	hideWallSprites(sprites);
 
 	const wallSprite = getWallSpriteByDirection(sprites, flags.wallDirection);
 
 	if (wallSprite && flags.wallDoorClosed === true) {
-		showOnly(wallSprite);
+		showOnly(wallSprite, 0.82 + Math.sin(time * 0.15) * 0.18);
 	}
 
 	if (sprites.trap) {
 		if (flags.trapActive === true && flags.trapName) {
-			showOnly(sprites.trap, 1);
+			showOnly(sprites.trap, 0.78 + Math.sin(time * 0.15) * 0.22);
 		} else {
 			hide(sprites.trap);
 		}
@@ -148,7 +159,7 @@ function placeDefenseTools({ sprites, flags }) {
 
 	if (sprites.waterCannon) {
 		if (flags.cannonActive === true && flags.cannonType) {
-			showOnly(sprites.waterCannon);
+			showOnly(sprites.waterCannon, 0.78 + Math.sin(time * 0.15) * 0.22);
 		} else {
 			hide(sprites.waterCannon);
 		}
@@ -156,20 +167,26 @@ function placeDefenseTools({ sprites, flags }) {
 }
 
 function getDefenseResult(flags) {
-	const monsterComesFromNorth = flags.monsterDirection === '북쪽';
+	const monsterDirection = normalizeText(flags.monsterDirection);
+	const wallDirection = normalizeText(flags.wallDirection);
+	const trapName = normalizeText(flags.trapName);
+	const trapPosition = normalizeText(flags.trapPosition);
+	const cannonType = normalizeText(flags.cannonType);
 
-	const wallOk =
-		monsterComesFromNorth &&
-		flags.wallDirection === '북쪽' &&
-		flags.wallDoorClosed === true;
+	const monsterComesFromNorth = monsterDirection === '북쪽';
 
+	const wallOk = monsterComesFromNorth && wallDirection === '북쪽' && flags.wallDoorClosed === true;
+
+	// 띄어쓰기 차이 때문에 안 걸리는 문제 방지
+	// "그물트랩", "그물 트랩" 둘 다 허용
+	// "북쪽길", "북쪽 길" 둘 다 허용
 	const trapOk =
 		monsterComesFromNorth &&
-		flags.trapName === '그물트랩' &&
-		flags.trapPosition === '북쪽길' &&
+		trapName === '그물트랩' &&
+		trapPosition === '북쪽길' &&
 		flags.trapActive === true;
 
-	const cannonOk = flags.cannonType === '물대포' && flags.cannonActive === true;
+	const cannonOk = cannonType === '물대포' && flags.cannonActive === true;
 
 	return {
 		wallOk,
@@ -261,43 +278,44 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 	});
 
 	const monster = {
-			x: MONSTER_START.x,
-			y: MONSTER_START.y,
-			state: 'idle',
-			timer: 0,
-			lastFinalKey: '',
-			hp: MONSTER_MAX_HP,
+		x: MONSTER_START.x,
+		y: MONSTER_START.y,
+		state: 'idle',
+		timer: 0,
+		lastFinalKey: '',
+		hp: MONSTER_MAX_HP,
 
-			waterShotIndex: 0,
-			trapDamageApplied: false,
+		waterShotIndex: 0,
+		trapDamageApplied: false,
+		trapHitFlashTimer: 0,
 
-			fireballIndex: 0,
-			fireballPhase: 'waiting',
-			fireballTimer: 0,
+		fireballIndex: 0,
+		fireballPhase: 'waiting',
+		fireballTimer: 0,
 
-			fireballBaseScaleX: null,
-			fireballBaseScaleY: null
-		};
+		fireballBaseScaleX: null,
+		fireballBaseScaleY: null
+	};
 
 	function resetFireballState({ resetCount = true } = {}) {
-	if (resetCount) {
-		monster.fireballIndex = 0;
-		monster.waterShotIndex = 0;
-	}
+		if (resetCount) {
+			monster.fireballIndex = 0;
+			monster.waterShotIndex = 0;
+		}
 
-	monster.fireballPhase = 'waiting';
-	monster.fireballTimer = 0;
+		monster.fireballPhase = 'waiting';
+		monster.fireballTimer = 0;
 
-	if (sprites.waterShot) {
-		hide(sprites.waterShot);
-		sprites.waterShot.rotation = 0;
+		if (sprites.waterShot) {
+			hide(sprites.waterShot);
+			sprites.waterShot.rotation = 0;
 
-		if (monster.fireballBaseScaleX !== null && monster.fireballBaseScaleY !== null) {
-			sprites.waterShot.scale.x = monster.fireballBaseScaleX;
-			sprites.waterShot.scale.y = monster.fireballBaseScaleY;
+			if (monster.fireballBaseScaleX !== null && monster.fireballBaseScaleY !== null) {
+				sprites.waterShot.scale.x = monster.fireballBaseScaleX;
+				sprites.waterShot.scale.y = monster.fireballBaseScaleY;
+			}
 		}
 	}
-}
 
 	function resetFinalAnimation() {
 		monster.x = MONSTER_START.x;
@@ -306,6 +324,7 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		monster.timer = 0;
 		monster.hp = MONSTER_MAX_HP;
 		monster.trapDamageApplied = false;
+		monster.trapHitFlashTimer = 0;
 
 		resetFireballState();
 
@@ -330,7 +349,9 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 			monster.x = MONSTER_START.x;
 			monster.y = MONSTER_START.y;
 			monster.hp = MONSTER_MAX_HP;
+			monster.waterShotIndex = 0;
 			monster.trapDamageApplied = false;
+			monster.trapHitFlashTimer = 0;
 
 			resetFireballState();
 
@@ -360,7 +381,8 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 
 		placeDefenseTools({
 			sprites,
-			flags
+			flags,
+			time
 		});
 
 		const result = getDefenseResult(flags);
@@ -375,8 +397,17 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 				time
 			});
 
+			// 트랩이 맞게 설치되어 있으면 벽이 아니라 트랩 지점에서 먼저 걸림
+			if (result.monsterCaught && monster.y >= MONSTER_TRAP_POINT.y) {
+				monster.state = 'trapped';
+				monster.timer = 0;
+				monster.trapHitFlashTimer = TRAP_HIT_FLASH_TIME;
+				return;
+			}
+
+			// 트랩이 없거나 틀렸으면 벽까지 감
 			if (monster.y >= MONSTER_WALL_POINT.y) {
-				monster.state = result.monsterCaught ? 'trapped' : 'breakthrough';
+				monster.state = 'breakthrough';
 				monster.timer = 0;
 			}
 
@@ -386,22 +417,59 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		if (monster.state === 'trapped') {
 			monster.timer += delta;
 
-			showAt(sprites.monsterWalk2 ?? sprites.monsterWalk1, monster.x, monster.y);
-
 			if (!monster.trapDamageApplied) {
 				damageMonster(1);
 				monster.trapDamageApplied = true;
+				monster.trapHitFlashTimer = TRAP_HIT_FLASH_TIME;
 			}
 
 			if (sprites.trap) {
 				sprites.trap.alpha = 1;
 			}
 
-			if (monster.timer > 45) {
+			if (monster.trapHitFlashTimer > 0) {
+				monster.trapHitFlashTimer = Math.max(monster.trapHitFlashTimer - delta, 0);
+
+				showAt(
+					sprites.monsterHit,
+					monster.x + Math.sin(time * 1.2) * 8,
+					monster.y + Math.sin(time * 0.9) * 5
+				);
+
+				if (sprites.monsterHit) {
+					sprites.monsterHit.rotation = Math.sin(time * 0.9) * 0.14;
+				}
+			} else {
+				showWalkFrame({
+					sprites,
+					x: monster.x,
+					y: monster.y,
+					time
+				});
+			}
+
+			// 트랩에 걸린 뒤 잠깐 hit 표시하고 다시 걸어감
+			if (monster.timer > TRAP_HIT_FLASH_TIME + 12) {
+				monster.state = 'afterTrapWalking';
+				monster.timer = 0;
+			}
+
+			return;
+		}
+
+		if (monster.state === 'afterTrapWalking') {
+			monster.y = Math.min(MONSTER_WALL_POINT.y, monster.y + MONSTER_WALK_SPEED * delta);
+
+			showWalkFrame({
+				sprites,
+				x: monster.x,
+				y: monster.y,
+				time
+			});
+
+			if (monster.y >= MONSTER_WALL_POINT.y) {
 				monster.state = result.cannonOk ? 'hit' : 'breakthrough';
 				monster.timer = 0;
-
-				// 트랩 데미지는 유지하고, 불덩어리탄 카운트만 새로 시작
 				resetFireballState({ resetCount: true });
 			}
 
@@ -448,21 +516,19 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 				const fireballY = lerp(FIREBALL_START.y, targetY, easedProgress);
 
 				if (sprites.waterShot) {
-	// 최초 1번만 theme에서 만들어진 원래 scale 저장
-	if (monster.fireballBaseScaleX === null || monster.fireballBaseScaleY === null) {
-		monster.fireballBaseScaleX = sprites.waterShot.scale.x;
-		monster.fireballBaseScaleY = sprites.waterShot.scale.y;
-	}
+					if (monster.fireballBaseScaleX === null || monster.fireballBaseScaleY === null) {
+						monster.fireballBaseScaleX = sprites.waterShot.scale.x;
+						monster.fireballBaseScaleY = sprites.waterShot.scale.y;
+					}
 
-	showAt(sprites.waterShot, fireballX, fireballY, 1);
+					showAt(sprites.waterShot, fireballX, fireballY, 1);
 
-	sprites.waterShot.rotation += 0.22 * delta;
+					sprites.waterShot.rotation += 0.22 * delta;
 
-	// 원래 크기를 기준으로 살짝 커졌다 작아지게 함
-	const pulse = 1 + Math.sin(progress * Math.PI) * 0.12;
-	sprites.waterShot.scale.x = monster.fireballBaseScaleX * pulse;
-	sprites.waterShot.scale.y = monster.fireballBaseScaleY * pulse;
-}
+					const pulse = 1 + Math.sin(progress * Math.PI) * 0.42;
+					sprites.waterShot.scale.x = monster.fireballBaseScaleX * pulse;
+					sprites.waterShot.scale.y = monster.fireballBaseScaleY * pulse;
+				}
 
 				if (progress >= 1) {
 					damageMonster(1);
@@ -492,10 +558,8 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 						monster.state = monster.hp <= 0 && flags.finalSuccess ? 'groggy' : 'breakthrough';
 						monster.timer = 0;
 
-						// 끝났을 때만 탄 숨기고 상태 정리
 						resetFireballState({ resetCount: false });
 					} else {
-						// 다음 탄 발사 전에는 다시 걷는 프레임으로 보이게 함
 						monster.fireballPhase = 'waiting';
 						monster.fireballTimer = 0;
 						monster.timer = 0;

@@ -18,7 +18,8 @@ export const monsterDefenseTheme = {
 			y: 0,
 			width: 1411,
 			height: 1115
-		},	{
+		},
+		{
 			id: monsterDefenseLayers.trap,
 			src: '/images/themes/monster-defense/trap.png',
 			type: 'effect',
@@ -66,8 +67,8 @@ export const monsterDefenseTheme = {
 			layer: true,
 			x: 635,
 			y: 90,
-			width: 190,
-			height: 190
+			width: 240,
+			height: 240
 		},
 		{
 			id: monsterDefenseLayers.monsterGroggy,
@@ -76,11 +77,9 @@ export const monsterDefenseTheme = {
 			layer: true,
 			x: 635,
 			y: 90,
-			width: 200,
-			height: 170
+			width: 240,
+			height: 240
 		},
-
-		
 
 		{
 			id: monsterDefenseLayers.wallNorth,
@@ -93,7 +92,6 @@ export const monsterDefenseTheme = {
 			height: 325
 		},
 
-	
 		{
 			id: monsterDefenseLayers.city,
 			src: '/images/themes/monster-defense/city.png',
@@ -139,8 +137,6 @@ export const monsterDefenseTheme = {
 			height: 90,
 			anchor: 0.5
 		}
-
-		
 
 		// 성공 이펙트 이미지가 준비되면 다시 추가
 		// {
