@@ -675,6 +675,12 @@
 	$: currentPlayer = players.find((player) => player.id === currentPlayerId) ?? players[0];
 	$: currentMission = course.missions[currentMissionIndex] ?? course.missions[0];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
+	$: missionBriefingKey = [
+		course?.id ?? course?.themeId ?? '',
+		currentMissionIndex,
+		currentPlayer?.roleId ?? '',
+		room?.restartVersion ?? 0
+	].join(':');
 
 	let lastInitialJsonKey = '';
 
@@ -1234,11 +1240,14 @@
 
 		await runFinalSequenceAction({
 			context: {
+				course,
 				currentMission,
 				simulationState,
 				players,
 				currentMissionIndex,
-				consoleLogs
+				consoleLogs,
+				finalSubmissions,
+				autoClearedRoles: shouldUseFirebase ? room?.autoClearedRoles ?? [] : []
 			},
 			actions: {
 				getNextProgressForCurrentPlayer,
@@ -1288,7 +1297,10 @@
 		isFinalSequencePlaying = false;
 		autoFinalExecutionStarted = false;
 
-		jsonText = course.missions[0]?.initialJson ?? '';
+		currentMissionIndex = 0;
+		lastInitialJsonKey = '';
+		jsonText = getInitialJsonForMission(0, currentPlayer);
+		
 		status = 'editing';
 		hasExecuted = false;
 
@@ -1381,16 +1393,18 @@
 			<div class="grid min-h-0 flex-1 grid-cols-[360px_470px_548px] gap-4">
 				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
 					<!-- <MissionRoleCard role={powerMission.role} /> -->
-					<MissionBriefingPanel
-						variant={isReadCourse ? 'read' : 'write'}
-						story={currentRoleMission?.story}
-						role={currentRoleMission?.role}
-						playerName={currentPlayer?.name ?? ''}
-						clues={isReadCourse ? [] : currentRoleMission?.clues ?? []}
-						keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
-						panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
-						onInsertKey={insertKey}
-					/>
+					{#key missionBriefingKey}
+						<MissionBriefingPanel
+							variant={isReadCourse ? 'read' : 'write'}
+							story={currentRoleMission?.story}
+							role={currentRoleMission?.role}
+							playerName={currentPlayer?.name ?? ''}
+							clues={isReadCourse ? [] : currentRoleMission?.clues ?? []}
+							keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
+							panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
+							onInsertKey={insertKey}
+						/>
+					{/key}
 					{#if shouldShowSupportGuide}
 						<div class="rounded-[22px] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
 							<div class="flex items-start gap-3">

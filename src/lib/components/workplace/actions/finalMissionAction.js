@@ -40,6 +40,57 @@ export function buildFinalJsonFromSubmissions({
 		return acc;
 	}, {});
 }
+export function buildFinalJsonBySubmitMode({
+	course,
+	currentMission,
+	finalSubmissions = {},
+	autoClearedRoles = []
+}) {
+	const mode = currentMission?.finalSubmitMode ?? 'pieces';
+
+	if (mode === 'full') {
+		const merged = {
+			...getAutoFinalSubmissions({
+				course,
+				currentMission,
+				autoClearedRoles
+			}),
+			...finalSubmissions
+		};
+
+		const submissions = Object.values(merged).filter(Boolean);
+
+		const fullSubmission =
+			submissions.find((item) => item?.mode === 'full' && item?.value) ??
+			submissions.find((item) => item?.key && item?.value) ??
+			submissions.find((item) => item?.value);
+
+		if (!fullSubmission) {
+			return {};
+		}
+
+		// value가 이미 { 최종방어작전: {...} } 전체 형태면 그대로 사용
+		if (fullSubmission.value?.최종방어작전) {
+			return fullSubmission.value;
+		}
+
+		// value가 내부 계획 {...} 형태면 key로 감싸기
+		if (fullSubmission.key) {
+			return {
+				[fullSubmission.key]: fullSubmission.value
+			};
+		}
+
+		return fullSubmission.value;
+	}
+
+	return buildFinalJsonFromSubmissions({
+		course,
+		currentMission,
+		finalSubmissions,
+		autoClearedRoles
+	});
+}
 
 export function createDebugFinalSubmissions({ currentMission }) {
 	const roleMissions = currentMission?.roleMissions ?? {};
@@ -142,7 +193,7 @@ export async function submitFinalMissionPieceAction({ context, actions }) {
 		return;
 	}
 
-	const finalJson = buildFinalJsonFromSubmissions({
+	const finalJson = buildFinalJsonBySubmitMode({
 		course,
 		currentMission,
 		finalSubmissions: nextFinalSubmissions,
@@ -209,16 +260,31 @@ export async function submitFinalMissionPieceAction({ context, actions }) {
 	]);
 }
 
-function createFinalSequenceState(currentMission) {
+function createFinalSequenceState({ currentMission, finalValidateResult }) {
 	return (
+		finalValidateResult?.simulationState ??
+		finalValidateResult?.extra?.simulationState ??
+		finalValidateResult?.data?.simulationState ??
 		currentMission?.successState ?? {
-			layers: {}
+			layers: {},
+			sprites: {},
+			camera: {},
+			flags: {}
 		}
 	);
 }
 
 export async function runFinalSequenceAction({ context, actions }) {
-	const { currentMission, simulationState, players, currentMissionIndex, consoleLogs } = context;
+	const {
+		course,
+		currentMission,
+		simulationState,
+		players,
+		currentMissionIndex,
+		consoleLogs,
+		finalSubmissions,
+		autoClearedRoles
+	} = context;
 
 	const {
 		getNextProgressForCurrentPlayer,
@@ -235,7 +301,47 @@ export async function runFinalSequenceAction({ context, actions }) {
 		setConsoleLogs
 	} = actions;
 
-	const finalSequenceState = createFinalSequenceState(currentMission);
+	const finalJson = buildFinalJsonBySubmitMode({
+		course,
+		currentMission,
+		finalSubmissions,
+		autoClearedRoles
+	});
+
+	const finalJsonText = JSON.stringify(finalJson, null, 2);
+
+	const finalValidateResult = validateMissionJson({
+		jsonText: finalJsonText,
+		course,
+		missionIndex: currentMissionIndex,
+		roleId: 'team'
+	});
+
+	if (!finalValidateResult.ok) {
+		setShowFinalReadyModal(false);
+		setIsFinalSequencePlaying(false);
+		setShowFinalSuccessModal(false);
+
+		setStatus('editing');
+		setHasExecuted(false);
+
+		setConsoleLogs([
+			...consoleLogs,
+			{
+				type: 'error',
+				text: '최종 JSON 실행 검증에 실패했습니다.'
+			},
+			...(finalValidateResult.messages ?? [])
+		]);
+
+		return;
+	}
+
+	const finalSequenceState = createFinalSequenceState({
+		currentMission,
+		finalValidateResult
+	});
+
 	const nextSimulationState = mergeLayerState(simulationState, finalSequenceState);
 
 	setShowFinalReadyModal(false);
@@ -266,8 +372,11 @@ export async function runFinalSequenceAction({ context, actions }) {
 			text: '최종 JSON을 공용 시뮬레이션으로 전송합니다.'
 		},
 		{
-			type: 'success',
-			text: currentMission?.finalSuccessMessage ?? '최종 미션이 완료되었습니다.'
+			type: finalValidateResult?.finalCorrect === false ? 'warning' : 'success',
+			text:
+				finalValidateResult?.finalCorrect === false
+					? '방어 계획이 실행되었습니다. 공용화면에서 실패 결과를 확인하세요.'
+					: currentMission?.finalSuccessMessage ?? '최종 미션이 완료되었습니다.'
 		}
 	]);
 }

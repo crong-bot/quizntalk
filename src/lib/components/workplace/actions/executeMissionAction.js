@@ -251,13 +251,17 @@ export async function executeMissionAction({ context, actions }) {
 			themeId === 'monsterDefense'
 				? {
 						ok: true,
-						state: currentMission?.successState ?? {
-							layers: {},
-							sprites: {},
-							camera: {},
-							flags: {}
-						}
-				  }
+						state:
+							validateResult?.simulationState ??
+							validateResult?.extra?.simulationState ??
+							validateResult?.data?.simulationState ??
+							currentMission?.successState ?? {
+								layers: {},
+								sprites: {},
+								camera: {},
+								flags: {}
+							}
+				}
 				: mapJsonToSimulationState(themeId, jsonText);
 
 		if (!finalMapResult.ok) {
@@ -311,6 +315,25 @@ export async function executeMissionAction({ context, actions }) {
 		});
 
 		await wait(500);
+
+		const finalRoomPatch =
+			validateResult?.themePatch ??
+			validateResult?.extra?.themePatch ??
+			validateResult?.data?.themePatch ??
+			{};
+
+		const nextMissionProgress = getNextProgressForCurrentPlayer('submitted');
+
+		await syncMissionSuccessToFirestore({
+			nextMissionProgress,
+			nextSimulationState: finalMapResult.state,
+			nextMissionIndex: currentMissionIndex,
+			nextRoomStatus: 'final',
+			shouldSyncSimulationState: true,
+			roomPatch: finalRoomPatch
+		});
+
+		setSimulationState(mergeSimulationState(simulationState, finalMapResult.state));
 
 		await handleFinalMissionSubmit(validateResult.finalPiece);
 

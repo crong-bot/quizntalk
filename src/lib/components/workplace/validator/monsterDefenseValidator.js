@@ -1,11 +1,12 @@
 // src/lib/components/workplace/validator/monsterDefenseValidator.js
 
 import {
-	getValueType,
 	isPlainObject,
 	makeResult,
 	parseJsonWithFriendlyError
 } from './jsonValidator.js';
+
+import { mapMonsterDefenseFinalJsonToSimulationState } from '../theme/monsterDefense/monsterDefenseMapper.js';
 
 function getValueByPath(obj, path) {
 	return path.split('.').reduce((current, key) => current?.[key], obj);
@@ -33,10 +34,10 @@ function pushMissing(messages, path) {
 	});
 }
 
-function pushTypeError(messages, path, expectedValue) {
+function pushTypeError(messages, path, expectedTypeLabel) {
 	messages.push({
 		type: 'error',
-		text: `"${path}" 값은 ${getValueType(expectedValue)}로 입력해야 합니다.`
+		text: `"${path}" 값은 ${expectedTypeLabel}로 입력해야 합니다.`
 	});
 }
 
@@ -53,130 +54,419 @@ function validateRootObject(parsed) {
 	return null;
 }
 
-function isSameArray(actualValue, expectedValue) {
-	return JSON.stringify(actualValue) === JSON.stringify(expectedValue);
-}
-
-function compareObject({ parsed, answer, path = '', messages }) {
-	for (const [key, expectedValue] of Object.entries(answer)) {
-		const currentPath = path ? `${path}.${key}` : key;
-
-		if (!hasPath(parsed, currentPath)) {
-			pushMissing(messages, currentPath);
-			continue;
-		}
-
-		const actualValue = getValueByPath(parsed, currentPath);
-
-		if (Array.isArray(expectedValue)) {
-			if (!Array.isArray(actualValue)) {
-				messages.push({
-					type: 'error',
-					text: `"${currentPath}" 값은 [ ] 배열 형태여야 합니다.`
-				});
-				continue;
-			}
-
-			if (!isSameArray(actualValue, expectedValue)) {
-				messages.push({
-					type: 'warning',
-					text: `"${currentPath}" 배열 내용을 다시 확인하세요.`
-				});
-				continue;
-			}
-
-			messages.push({
-				type: 'success',
-				text: `"${currentPath}" 값이 맞습니다.`
-			});
-
-			continue;
-		}
-
-		if (isPlainObject(expectedValue)) {
-			if (!isPlainObject(actualValue)) {
-				messages.push({
-					type: 'error',
-					text: `"${currentPath}" 값은 { } 객체 형태여야 합니다.`
-				});
-				continue;
-			}
-
-			compareObject({
-				parsed,
-				answer: expectedValue,
-				path: currentPath,
-				messages
-			});
-
-			continue;
-		}
-
-		if (typeof actualValue !== typeof expectedValue) {
-			pushTypeError(messages, currentPath, expectedValue);
-			continue;
-		}
-
-		if (actualValue !== expectedValue) {
-			messages.push({
-				type: 'warning',
-				text: `"${currentPath}" 값은 ${JSON.stringify(expectedValue)}이어야 합니다.`
-			});
-			continue;
-		}
-
-		messages.push({
-			type: 'success',
-			text: `"${currentPath}" 값이 맞습니다.`
-		});
+function validateObjectPath({ parsed, path, messages }) {
+	if (!hasPath(parsed, path)) {
+		pushMissing(messages, path);
+		return false;
 	}
+
+	const value = getValueByPath(parsed, path);
+
+	if (!isPlainObject(value)) {
+		messages.push({
+			type: 'error',
+			text: `"${path}" 값은 { } 객체 형태여야 합니다.`
+		});
+		return false;
+	}
+
+	messages.push({
+		type: 'success',
+		text: `"${path}" 객체가 확인되었습니다.`
+	});
+
+	return true;
 }
 
-function validateObjectByAnswer(parsed, answer) {
+function validateStringPath({ parsed, path, messages }) {
+	if (!hasPath(parsed, path)) {
+		pushMissing(messages, path);
+		return '';
+	}
+
+	const value = getValueByPath(parsed, path);
+
+	if (typeof value !== 'string') {
+		pushTypeError(messages, path, '문자열');
+		return '';
+	}
+
+	if (!value.trim()) {
+		messages.push({
+			type: 'error',
+			text: `"${path}" 값은 빈 문자열이면 안 됩니다.`
+		});
+		return '';
+	}
+
+	messages.push({
+		type: 'success',
+		text: `"${path}" 값이 확인되었습니다.`
+	});
+
+	return value;
+}
+
+function validateBooleanPath({ parsed, path, messages }) {
+	if (!hasPath(parsed, path)) {
+		pushMissing(messages, path);
+		return false;
+	}
+
+	const value = getValueByPath(parsed, path);
+
+	if (typeof value !== 'boolean') {
+		pushTypeError(messages, path, 'true/false');
+		return false;
+	}
+
+	messages.push({
+		type: 'success',
+		text: `"${path}" 값이 확인되었습니다.`
+	});
+
+	return value;
+}
+
+function isOk(messages) {
+	return messages.length > 0 && messages.every((message) => message.type === 'success');
+}
+
+function makeStructureResult(messages, successText = 'JSON 구조가 확인되었습니다.') {
+	const ok = isOk(messages);
+
+	if (!ok) {
+		return makeResult(false, 'condition', messages);
+	}
+
+	return makeResult(true, 'success', [
+		{
+			type: 'success',
+			text: successText
+		}
+	]);
+}
+
+function validateScoutMission(parsed, roleId) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
-	if (!isPlainObject(answer)) {
-		return makeResult(false, 'condition', [
-			{
-				type: 'error',
-				text: '이 미션의 정답 데이터가 올바르지 않습니다.'
-			}
-		]);
-	}
-
 	const messages = [];
 
-	compareObject({
+	validateObjectPath({
 		parsed,
-		answer,
+		path: '정찰',
 		messages
 	});
 
-	const ok = messages.length > 0 && messages.every((message) => message.type === 'success');
+	if (roleId === 'wall') {
+		validateStringPath({
+			parsed,
+			path: '정찰.예상방향',
+			messages
+		});
 
-	return makeResult(ok, ok ? 'success' : 'condition', messages);
-}
+		validateStringPath({
+			parsed,
+			path: '정찰.근거단서',
+			messages
+		});
 
-function getMissionAnswer({ mission, roleId }) {
-	if (mission?.type === 'team-final') {
-		return mission?.finalAnswer;
+		return makeStructureResult(messages, '정찰 기록 JSON이 확인되었습니다.');
 	}
 
-	return mission?.roleMissions?.[roleId]?.answer;
-}
+	if (roleId === 'scout') {
+		validateStringPath({
+			parsed,
+			path: '정찰.괴물이름',
+			messages
+		});
 
-function getSuccessMessage({ mission }) {
-	if (mission?.type === 'team-final') {
-		return '최종 방어 작전이 완성되었습니다.';
+		validateStringPath({
+			parsed,
+			path: '정찰.침입방향',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '정찰.몸색',
+			messages
+		});
+
+		return makeStructureResult(messages, '정찰 기록 JSON이 확인되었습니다.');
 	}
 
-	return '정답입니다. 역할 미션을 완료했습니다.';
+	if (roleId === 'trap') {
+		validateStringPath({
+			parsed,
+			path: '정찰.트랩종류',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '정찰.효과',
+			messages
+		});
+
+		return makeStructureResult(messages, '트랩 정찰 JSON이 확인되었습니다.');
+	}
+
+	if (roleId === 'attack') {
+		validateStringPath({
+			parsed,
+			path: '정찰.대포종류',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '정찰.효과',
+			messages
+		});
+
+		return makeStructureResult(messages, '대포 정찰 JSON이 확인되었습니다.');
+	}
+
+	return makeResult(false, 'condition', [
+		{
+			type: 'error',
+			text: '현재 역할의 정찰 미션 정보를 찾을 수 없습니다.'
+		}
+	]);
 }
 
-/* -------------------------------------------------------------------------- */
-/* 외부 호출 함수                                                               */
-/* -------------------------------------------------------------------------- */
+function validatePrepareToolsMission(parsed, roleId) {
+	const rootError = validateRootObject(parsed);
+	if (rootError) return rootError;
+
+	const messages = [];
+
+	validateObjectPath({
+		parsed,
+		path: '방어도구',
+		messages
+	});
+
+	if (roleId === 'wall') {
+		validateObjectPath({
+			parsed,
+			path: '방어도구.성벽',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '방어도구.성벽.방향',
+			messages
+		});
+
+		validateBooleanPath({
+			parsed,
+			path: '방어도구.성벽.문닫기',
+			messages
+		});
+
+		return makeStructureResult(messages, '성벽 도구 JSON이 확인되었습니다.');
+	}
+
+	if (roleId === 'scout') {
+		validateStringPath({
+			parsed,
+			path: '방어도구.괴물이름',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '방어도구.침입방향',
+			messages
+		});
+
+		return makeStructureResult(messages, '괴물 정보 JSON이 확인되었습니다.');
+	}
+
+	if (roleId === 'trap') {
+		validateObjectPath({
+			parsed,
+			path: '방어도구.트랩',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '방어도구.트랩.종류',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '방어도구.트랩.설치위치',
+			messages
+		});
+
+		validateBooleanPath({
+			parsed,
+			path: '방어도구.트랩.작동',
+			messages
+		});
+
+		return makeStructureResult(messages, '트랩 도구 JSON이 확인되었습니다.');
+	}
+
+	if (roleId === 'attack') {
+		validateObjectPath({
+			parsed,
+			path: '방어도구.대포',
+			messages
+		});
+
+		validateStringPath({
+			parsed,
+			path: '방어도구.대포.종류',
+			messages
+		});
+
+		validateBooleanPath({
+			parsed,
+			path: '방어도구.대포.작동',
+			messages
+		});
+
+		return makeStructureResult(messages, '대포 도구 JSON이 확인되었습니다.');
+	}
+
+	return makeResult(false, 'condition', [
+		{
+			type: 'error',
+			text: '현재 역할의 방어 도구 미션 정보를 찾을 수 없습니다.'
+		}
+	]);
+}
+
+function isFinalPlanCorrect(plan, answerPlan) {
+	return JSON.stringify(plan) === JSON.stringify(answerPlan);
+}
+
+function validateFinalDefenseMission({ parsed, jsonText, mission }) {
+	const rootError = validateRootObject(parsed);
+	if (rootError) return rootError;
+
+	const messages = [];
+
+	validateObjectPath({
+		parsed,
+		path: '최종방어작전',
+		messages
+	});
+
+	validateStringPath({
+		parsed,
+		path: '최종방어작전.괴물이름',
+		messages
+	});
+
+	validateObjectPath({
+		parsed,
+		path: '최종방어작전.성벽',
+		messages
+	});
+
+	validateStringPath({
+		parsed,
+		path: '최종방어작전.성벽.방향',
+		messages
+	});
+
+	validateBooleanPath({
+		parsed,
+		path: '최종방어작전.성벽.문닫기',
+		messages
+	});
+
+	validateObjectPath({
+		parsed,
+		path: '최종방어작전.트랩',
+		messages
+	});
+
+	validateStringPath({
+		parsed,
+		path: '최종방어작전.트랩.종류',
+		messages
+	});
+
+	validateStringPath({
+		parsed,
+		path: '최종방어작전.트랩.설치위치',
+		messages
+	});
+
+	validateBooleanPath({
+		parsed,
+		path: '최종방어작전.트랩.작동',
+		messages
+	});
+
+	validateObjectPath({
+		parsed,
+		path: '최종방어작전.대포',
+		messages
+	});
+
+	validateStringPath({
+		parsed,
+		path: '최종방어작전.대포.종류',
+		messages
+	});
+
+	validateBooleanPath({
+		parsed,
+		path: '최종방어작전.대포.작동',
+		messages
+	});
+
+	validateBooleanPath({
+		parsed,
+		path: '최종방어작전.작전실행',
+		messages
+	});
+
+	if (!isOk(messages)) {
+		return makeResult(false, 'condition', messages);
+	}
+
+	const submittedPlan = parsed.최종방어작전;
+	const answerPlan = mission?.finalAnswer?.최종방어작전 ?? null;
+	const finalCorrect = isFinalPlanCorrect(submittedPlan, answerPlan);
+
+	const simulationState = mapMonsterDefenseFinalJsonToSimulationState({
+		jsonText,
+		answerPlan
+	});
+
+	return makeResult(
+		true,
+		'success',
+		[
+			{
+				type: finalCorrect ? 'success' : 'warning',
+				text: finalCorrect
+					? '방어 계획이 정확합니다. 방어를 실행합니다.'
+					: '방어 계획이 실행되었습니다. 결과를 공용화면에서 확인하세요.'
+			}
+		],
+		{
+			finalCorrect,
+			simulationState,
+			finalPiece: {
+				key: '최종방어작전',
+				value: submittedPlan
+			}
+		}
+	);
+}
 
 export function validateMonsterDefenseMissionJson({ jsonText, course, missionIndex, roleId }) {
 	const parsedResult = parseJsonWithFriendlyError(jsonText);
@@ -201,43 +491,26 @@ export function validateMonsterDefenseMissionJson({ jsonText, course, missionInd
 		]);
 	}
 
-	const answer = getMissionAnswer({
-		mission,
-		roleId
-	});
-
-	if (!answer) {
-		return makeResult(false, 'condition', [
-			{
-				type: 'error',
-				text:
-					mission?.type === 'team-final'
-						? '최종 미션의 정답 정보를 찾을 수 없습니다.'
-						: '현재 역할의 정답 정보를 찾을 수 없습니다.'
-			}
-		]);
+	if (mission.id === 'scout') {
+		return validateScoutMission(parsedResult.data, roleId);
 	}
 
-	const result = validateObjectByAnswer(parsedResult.data, answer);
-
-	if (!result.ok) {
-		return result;
+	if (mission.id === 'prepare-tools') {
+		return validatePrepareToolsMission(parsedResult.data, roleId);
 	}
 
-	const roleMission = mission?.roleMissions?.[roleId];
+	if (mission.id === 'final-defense' || mission.type === 'team-final') {
+		return validateFinalDefenseMission({
+			parsed: parsedResult.data,
+			jsonText,
+			mission
+		});
+	}
 
-	return makeResult(
-		true,
-		'success',
-		[
-			{
-				type: 'success',
-				text: getSuccessMessage({ mission })
-			}
-		],
+	return makeResult(false, 'condition', [
 		{
-			themePatch: mission?.type === 'team-final' ? {} : roleMission?.themePatch ?? {},
-			finalPlan: mission?.type === 'team-final' ? parsedResult.data : null
+			type: 'error',
+			text: '몬스터 디펜스 미션 검증 정보를 찾을 수 없습니다.'
 		}
-	);
+	]);
 }

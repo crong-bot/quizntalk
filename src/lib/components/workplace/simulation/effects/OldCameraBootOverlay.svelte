@@ -1,3 +1,4 @@
+<!-- C:\Users\user\quizntalk\src\lib\components\workplace\simulation\effects\OldCameraBootOverlay.svelte -->
 <script>
 	import { onMount, tick } from 'svelte';
 
