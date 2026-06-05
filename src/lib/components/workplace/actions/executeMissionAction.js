@@ -247,63 +247,6 @@ export async function executeMissionAction({ context, actions }) {
 
 		await wait(450);
 
-		const finalMapResult =
-			themeId === 'monsterDefense'
-				? {
-						ok: true,
-						state:
-							validateResult?.simulationState ??
-							validateResult?.extra?.simulationState ??
-							validateResult?.data?.simulationState ??
-							currentMission?.successState ?? {
-								layers: {},
-								sprites: {},
-								camera: {},
-								flags: {}
-							}
-				}
-				: mapJsonToSimulationState(themeId, jsonText);
-
-		if (!finalMapResult.ok) {
-			await recordCurrentAttempt({
-				ok: false,
-				type: 'condition',
-				messages: [
-					{
-						type: 'error',
-						concept: 'final_sync',
-						text: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.'
-					}
-				]
-			});
-
-			const energyResult = await consumeEnergyOnWrongAnswer();
-
-			setStatus('editing');
-			setHasExecuted(false);
-
-			setTransmissionState({
-				visible: true,
-				phase: 'error',
-				roleName: currentPlayer?.roleName ?? '',
-				message: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.',
-				progress: 100
-			});
-
-			setConsoleLogs([
-				{
-					type: 'error',
-					text: finalMapResult.message ?? '최종 JSON 값이 맞지 않습니다.'
-				},
-				{
-					type: energyResult.nextEnergy <= 0 ? 'error' : 'warning',
-					text: energyResult.message
-				}
-			]);
-
-			return;
-		}
-
 		await recordCurrentAttempt(validateResult);
 
 		setTransmissionState({
@@ -316,24 +259,15 @@ export async function executeMissionAction({ context, actions }) {
 
 		await wait(500);
 
-		const finalRoomPatch =
-			validateResult?.themePatch ??
-			validateResult?.extra?.themePatch ??
-			validateResult?.data?.themePatch ??
-			{};
-
 		const nextMissionProgress = getNextProgressForCurrentPlayer('submitted');
 
 		await syncMissionSuccessToFirestore({
 			nextMissionProgress,
-			nextSimulationState: finalMapResult.state,
+			nextSimulationState: null,
 			nextMissionIndex: currentMissionIndex,
 			nextRoomStatus: 'final',
-			shouldSyncSimulationState: true,
-			roomPatch: finalRoomPatch
+			shouldSyncSimulationState: false
 		});
-
-		setSimulationState(mergeSimulationState(simulationState, finalMapResult.state));
 
 		await handleFinalMissionSubmit(validateResult.finalPiece);
 
@@ -347,7 +281,6 @@ export async function executeMissionAction({ context, actions }) {
 
 		return;
 	}
-
 	await recordCurrentAttempt(validateResult);
 
 	setTransmissionState({
@@ -359,18 +292,20 @@ export async function executeMissionAction({ context, actions }) {
 	});
 
 	await wait(450);
+	const simulationScope = currentMission?.simulationScope ?? 'room';
+
 
 	const mapResult =
-		themeId === 'monsterDefense'
+		simulationScope === 'none'
 			? {
 					ok: true,
-					state: currentMission?.successState ?? {
+					state: {
 						layers: {},
 						sprites: {},
 						camera: {},
 						flags: {}
 					}
-			  }
+			}
 			: mapJsonToSimulationState(themeId, jsonText);
 
 	if (!mapResult.ok) {
@@ -404,7 +339,6 @@ export async function executeMissionAction({ context, actions }) {
 
 	await wait(500);
 
-	const simulationScope = currentMission?.simulationScope ?? 'room';
 
 	const nextLocalSimulationState = mergeSimulationState(simulationState, mapResult.state);
 
@@ -412,19 +346,14 @@ export async function executeMissionAction({ context, actions }) {
 	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
 	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
-	const roomPatch =
-		validateResult?.themePatch ??
-		validateResult?.extra?.themePatch ??
-		validateResult?.data?.themePatch ??
-		{};
-
+	
 	await syncMissionSuccessToFirestore({
 		nextMissionProgress,
 		nextSimulationState: simulationScope === 'room' ? mapResult.state : null,
 		nextMissionIndex,
 		nextRoomStatus,
 		shouldSyncSimulationState: simulationScope === 'room',
-		roomPatch
+		
 	});
 
 	setSimulationState(nextLocalSimulationState);

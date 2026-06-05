@@ -98,7 +98,7 @@ export const monsterDefenseCourse = {
 			effectKey: 'scout',
 			roleSuccessState: monsterDefenseRoleSuccessStates,
 			successState: monsterDefenseMissionSuccessStates.scout,
-			simulationScope: 'local',
+			simulationScope: 'none',
 
 			roleMissions: {
 				wall: {
@@ -218,7 +218,7 @@ export const monsterDefenseCourse = {
 			effectKey: 'prepareTools',
 			roleSuccessState: monsterDefenseRoleSuccessStates,
 			successState: monsterDefenseMissionSuccessStates.prepare,
-			simulationScope: 'local',
+			simulationScope: 'none',
 
 			roleMissions: {
 				wall: {
@@ -342,6 +342,7 @@ export const monsterDefenseCourse = {
 			roleSuccessState: monsterDefenseRoleSuccessStates,
 			successState: monsterDefenseMissionSuccessStates.finalDefense,
 			simulationScope: 'room',
+			waitForFinalResultCallback: true,
 			initialJson: `{
   "최종방어작전": {
     "괴물이름": "",

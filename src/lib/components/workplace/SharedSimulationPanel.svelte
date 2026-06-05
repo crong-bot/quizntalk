@@ -16,6 +16,8 @@
 		camera: {}
 	};
 
+	export let onFinalResultShown = () => {};
+
 	const pixiThemeById = {
 		spaceBase: spaceBaseTheme,
 		animalRescue: animalRescueTheme,
@@ -34,12 +36,12 @@
 	{#if isSpaceBase}
 		<OldCameraBootOverlay {screenOn}>
 			<div class="absolute inset-0 h-full w-full overflow-hidden">
-				<PixiSimulationCanvas theme={pixiTheme} {simulationState} />
+				<PixiSimulationCanvas theme={pixiTheme} {simulationState} {onFinalResultShown} />
 			</div>
 		</OldCameraBootOverlay>
 	{:else}
 		<div class="absolute inset-0 h-full w-full overflow-hidden">
-			<PixiSimulationCanvas theme={pixiTheme} {simulationState} />
+			<PixiSimulationCanvas theme={pixiTheme} {simulationState} {onFinalResultShown} />
 		</div>
 	{/if}
 </div>

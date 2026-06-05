@@ -30,7 +30,7 @@ const MONSTER_WALK_SPEED = 0.4;
 const MONSTER_BREAKTHROUGH_SPEED = 0.9;
 
 const TRAP_HIT_FLASH_TIME = 18;
-
+const FINAL_RESULT_DELAY_TIME = 35;
 // 불덩어리탄 시작 위치
 // 물대포 입구에 맞게 여기만 조정하면 됨
 const FIREBALL_START = {
@@ -270,9 +270,81 @@ function createHpBar({ app, PIXI }) {
 		destroy
 	};
 }
+function createResultText({ app, PIXI }) {
+	if (!app || !PIXI) return null;
 
-export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
+	const text = new PIXI.Text({
+		text: '',
+		style: {
+			fontFamily: 'Arial',
+			fontSize: 72,
+			fontWeight: '900',
+			fill: 0xffffff,
+			stroke: {
+				color: 0x111827,
+				width: 8
+			},
+			dropShadow: {
+				color: 0x000000,
+				blur: 8,
+				angle: Math.PI / 4,
+				distance: 5,
+				alpha: 0.45
+			}
+		}
+	});
+
+	text.anchor.set(0.5);
+	text.x = 705;
+	text.y = 285;
+	text.visible = false;
+	text.alpha = 0;
+	text.scale.set(0.8);
+
+	app.stage.addChild(text);
+
+	function show(message, color = 0x22c55e) {
+		text.text = message;
+		text.style.fill = color;
+		text.visible = true;
+		text.alpha = 1;
+		text.scale.set(1);
+	}
+
+	function hide() {
+		text.visible = false;
+		text.alpha = 0;
+		text.scale.set(0.8);
+	}
+
+	function pulse(time) {
+		if (!text.visible) return;
+
+		text.scale.set(1 + Math.sin(time * 0.18) * 0.04);
+		text.alpha = 0.9 + Math.sin(time * 0.16) * 0.1;
+	}
+
+	function destroy() {
+		text.destroy();
+	}
+
+	return {
+		show,
+		hide,
+		pulse,
+		destroy
+	};
+}
+export function createMonsterDefenseRuntime({ app,
+	PIXI,
+	sprites,
+	getState,
+	onFinalResultShown = () => {}}) {
 	const hpBar = createHpBar({
+		app,
+		PIXI
+	});
+	const resultText = createResultText({
 		app,
 		PIXI
 	});
@@ -294,7 +366,12 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		fireballTimer: 0,
 
 		fireballBaseScaleX: null,
-		fireballBaseScaleY: null
+		fireballBaseScaleY: null,
+
+		finalResultShown: false,
+		finalResultPending: false,
+		finalResultTimer: 0,
+		finalResultType: ''
 	};
 
 	function resetFireballState({ resetCount = true } = {}) {
@@ -327,6 +404,12 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		monster.trapHitFlashTimer = 0;
 
 		resetFireballState();
+		resultText?.hide();
+
+		monster.finalResultShown = false;
+		monster.finalResultPending = false;
+		monster.finalResultTimer = 0;
+		monster.finalResultType = '';
 
 		hpBar?.show(monster.hp);
 	}
@@ -335,10 +418,58 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		monster.hp = Math.max(monster.hp - amount, 0);
 		hpBar?.draw(monster.hp);
 	}
+	function queueFinalResult(result) {
+		if (monster.finalResultShown || monster.finalResultPending) return;
+
+		monster.finalResultPending = true;
+		monster.finalResultTimer = 0;
+		monster.finalResultType = result;
+	}
+
+	function showFinalResult(result) {
+		if (monster.finalResultShown) return;
+
+		monster.finalResultShown = true;
+		monster.finalResultPending = false;
+
+		if (result === 'success') {
+			console.log('방어 성공 표시');
+			resultText?.show('방어 성공!', 0x22c55e);
+		} else {
+			console.log('방어 실패 표시');
+			resultText?.show('방어 실패!', 0xef4444);
+		}
+
+		//모달 콜백 연결
+		onFinalResultShown?.({
+			themeId: 'monsterDefense',
+			result
+		});
+	}
+
+	function updateFinalResultQueue(delta) {
+		if (!monster.finalResultPending || monster.finalResultShown) return;
+
+		monster.finalResultTimer += delta;
+
+		if (monster.finalResultTimer >= FINAL_RESULT_DELAY_TIME) {
+			showFinalResult(monster.finalResultType);
+		}
+	}
 
 	function tick({ delta, time }) {
 		const state = getState?.() ?? {};
 		const flags = state.flags ?? {};
+		if (flags.finalStarted) {
+			console.log('RUNTIME FINAL FLAGS', {
+				finalStarted: flags.finalStarted,
+				finalSuccess: flags.finalSuccess,
+				finalFail: flags.finalFail,
+				wallDirection: flags.wallDirection,
+				trapPosition: flags.trapPosition,
+				cannonType: flags.cannonType
+			});
+		}
 
 		hideMonsterFrames(sprites);
 		resetTemporaryEffects(sprites);
@@ -351,9 +482,15 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 			monster.hp = MONSTER_MAX_HP;
 			monster.waterShotIndex = 0;
 			monster.trapDamageApplied = false;
+			resultText?.hide();
 			monster.trapHitFlashTimer = 0;
 
 			resetFireballState();
+
+			monster.finalResultShown = false;
+			monster.finalResultPending = false;
+			monster.finalResultTimer = 0;
+			monster.finalResultType = '';
 
 			hpBar?.hide();
 
@@ -386,6 +523,8 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 		});
 
 		const result = getDefenseResult(flags);
+		updateFinalResultQueue(delta);
+		resultText?.pulse(time);
 
 		if (monster.state === 'walking') {
 			monster.y = Math.min(MONSTER_WALL_POINT.y, monster.y + MONSTER_WALK_SPEED * delta);
@@ -533,6 +672,11 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 				if (progress >= 1) {
 					damageMonster(1);
 					monster.fireballIndex += 1;
+
+					if (monster.hp <= 0 && flags.finalSuccess) {
+						queueFinalResult('success');
+					}
+
 					monster.fireballPhase = 'hitFlash';
 					monster.fireballTimer = 0;
 				}
@@ -597,12 +741,18 @@ export function createMonsterDefenseRuntime({ app, PIXI, sprites, getState }) {
 				showOnly(sprites.failEffect, 0.8 + Math.sin(time * 0.25) * 0.18);
 			}
 
+			if (monster.y >= MONSTER_END.y || monster.timer > 110) {
+				showFinalResult('fail');
+				resultText?.pulse(time);
+			}
+
 			return;
 		}
 	}
 
 	function destroy() {
 		hpBar?.destroy?.();
+		resultText?.destroy?.();
 	}
 
 	return {

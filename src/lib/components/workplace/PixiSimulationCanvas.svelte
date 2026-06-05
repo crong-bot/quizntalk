@@ -9,6 +9,7 @@
 		sprites: {},
 		camera: {}
 	};
+	export let onFinalResultShown = () => {};
 
 	let containerEl;
 	let app;
@@ -72,7 +73,8 @@
 				app,
 				PIXI,
 				sprites,
-				getState: () => simulationState
+				getState: () => simulationState,
+				onFinalResultShown
 			});
 		}
 

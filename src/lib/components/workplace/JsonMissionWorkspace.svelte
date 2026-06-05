@@ -575,6 +575,7 @@
 	}
 
 	function resetMission() {
+		finalResultHandled = false;
 		localCurrentPlayerId = 'player_1';
 		currentMissionIndex = 0;
 		localVerificationEnergy = maxVerificationEnergy;
@@ -1134,35 +1135,37 @@
 		unlockNextMissionIfReady();
 	}
 
-	async function syncFinalSequenceToFirestore({ nextMissionProgress, nextSimulationState }) {
-		if (!canSyncToFirestore()) {
-			return;
-		}
+	async function syncFinalSequenceToFirestore({
+	nextMissionProgress,
+	nextSimulationState,
+	waitForFinalResultCallback = false
+}) {
+	if (!canSyncToFirestore()) {
+		return;
+	}
 
-		const themeResult =
-			typeof course?.finalizeThemeResult === 'function'
-				? course.finalizeThemeResult({
-						room,
-						course,
-						currentMission,
-						finalSubmissions
-				  })
-				: null;
+	const finalMessage =
+		currentMission?.finalSuccessMessage ??
+		course?.completion?.summary ??
+		course?.completion?.subtitle ??
+		'최종 결과가 완성되었습니다.';
 
-		const roomPatch = themeResult
-			? {
-					themeResult
-			  }
-			: {};
+	try {
+			if (waitForFinalResultCallback) {
+				// 몬스터디펜스처럼 공용화면 결과 표시 후 모달을 띄울 테마
+				await updateRoomState({
+					lessonId,
+					roomId,
+					patch: {
+						simulationState: nextSimulationState,
+						status: 'finalRunning'
+					}
+				});
 
-		const finalMessage =
-			themeResult?.status === 'success'
-				? '방어 성공! 팀의 작전으로 도시를 지켰습니다.'
-				: themeResult?.status === 'fail'
-				  ? '방어 실패! 장치 방향이나 무기를 다시 확인해야 합니다.'
-				  : '최종 결과가 완성되었습니다.';
+				return;
+			}
 
-		try {
+			// 기존 테마: 바로 completed 이벤트까지 저장
 			await applyMissionSuccess({
 				lessonId,
 				roomId,
@@ -1171,7 +1174,6 @@
 				simulationState: nextSimulationState,
 				currentMissionIndex,
 				status: 'completed',
-				roomPatch,
 				lastMissionEvent: {
 					type: 'final_completed',
 					missionId: currentMission?.id ?? '',
@@ -1232,6 +1234,8 @@
 	}
 
 	async function runFinalSequence() {
+
+		finalResultHandled = false;
 		showMissionCompleteModal = false;
 		showFinalReadyModal = false;
 		showFinalSuccessModal = false;
@@ -1283,6 +1287,7 @@
 		});
 	}
 	function resetWorkspaceFromRestartEvent(event) {
+		finalResultHandled = false;
 		currentMissionIndex = 0;
 		localVerificationEnergy = maxVerificationEnergy;
 		finalSubmissions = {};
@@ -1332,6 +1337,62 @@
 				text: '미션 1의 JSON을 다시 작성해 주세요.'
 			}
 		];
+	}
+	async function completeFinalSequenceToFirestore(payload = {}) {
+		if (!canSyncToFirestore()) {
+			return;
+		}
+
+		const finalMessage =
+			currentMission?.finalSuccessMessage ??
+			course?.completion?.summary ??
+			course?.completion?.subtitle ??
+			'최종 결과가 완성되었습니다.';
+
+		try {
+			await applyMissionSuccess({
+				lessonId,
+				roomId,
+				participantId: activeParticipantId,
+				missionProgress: getNextProgressForCurrentPlayer('cleared'),
+				currentMissionIndex,
+				status: 'completed',
+				lastMissionEvent: {
+					type: 'final_completed',
+					missionId: currentMission?.id ?? '',
+					missionTitle: currentMission?.title ?? `미션 ${currentMissionIndex + 1}`,
+					missionIndex: currentMissionIndex,
+					nextMissionIndex: currentMissionIndex,
+					status: 'completed',
+					message: finalMessage,
+					result: payload?.result ?? '',
+					version: Date.now(),
+					createdAt: new Date().toISOString()
+				}
+			});
+		} catch (error) {
+			console.error('최종 완료 동기화 실패:', error);
+		}
+	}
+	let finalResultHandled = false;
+
+	async function handleFinalResultShown(payload) {
+		if (finalResultHandled) return;
+
+		finalResultHandled = true;
+
+		showFinalAnalyzingModal = false;
+		showFinalReadyModal = false;
+		showMissionCompleteModal = false;
+		showFinalSuccessModal = true;
+
+		isFinalSequencePlaying = false;
+		status = 'cleared';
+		hasExecuted = true;
+
+		if (shouldUseFirebase && activeParticipantId === players[0]?.id) {
+			await completeFinalSequenceToFirestore(payload);
+		}
 	}
 </script>
 
@@ -1535,7 +1596,7 @@
 					</div>
 
 					<div class="h-[400px] z-0 shrink-0">
-						<SharedSimulationPanel {themeId} {simulationState} />
+						<SharedSimulationPanel {themeId} {simulationState} 	onFinalResultShown={handleFinalResultShown} />
 					</div>
 					<div class="shrink-0">
 						<TeamExecutionBoard

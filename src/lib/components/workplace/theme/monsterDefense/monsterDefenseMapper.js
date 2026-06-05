@@ -141,16 +141,17 @@ export function mapMonsterDefenseFinalJsonToSimulationState({ jsonText, answerPl
 }
 
 export function mapMonsterDefenseRoomToSimulationState(room) {
-	const themeResult = room?.themeResult ?? null;
-	const finalPlan = room?.themeState?.defenseSetup?.finalDefensePlan ?? null;
-	const answerPlan = room?.themeState?.monsterTruth?.finalDefensePlan ?? null;
-
-	const forcedResult =
-		themeResult?.status === 'success' ? 'success' : themeResult?.status === 'fail' ? 'fail' : null;
-
-	return mapFinalPlanToState({
-		plan: finalPlan,
-		answerPlan,
-		forcedResult
-	});
+	return (
+		room?.simulationState ?? {
+			layers: createBaseLayers(),
+			sprites: {},
+			camera: {},
+			flags: {
+				finalStarted: false,
+				finalSuccess: false,
+				finalFail: false,
+				monsterDirection: MONSTER_DIRECTION
+			}
+		}
+	);
 }

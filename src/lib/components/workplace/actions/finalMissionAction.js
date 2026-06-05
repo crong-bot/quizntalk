@@ -260,12 +260,11 @@ export async function submitFinalMissionPieceAction({ context, actions }) {
 	]);
 }
 
-function createFinalSequenceState({ currentMission, finalValidateResult }) {
+function createFinalSequenceState({ finalValidateResult }) {
 	return (
 		finalValidateResult?.simulationState ??
 		finalValidateResult?.extra?.simulationState ??
-		finalValidateResult?.data?.simulationState ??
-		currentMission?.successState ?? {
+		finalValidateResult?.data?.simulationState ?? {
 			layers: {},
 			sprites: {},
 			camera: {},
@@ -309,6 +308,8 @@ export async function runFinalSequenceAction({ context, actions }) {
 	});
 
 	const finalJsonText = JSON.stringify(finalJson, null, 2);
+	console.log('FINAL JSON TEXT', finalJsonText);
+	console.log('FINAL SUBMISSIONS', finalSubmissions);
 
 	const finalValidateResult = validateMissionJson({
 		jsonText: finalJsonText,
@@ -316,6 +317,7 @@ export async function runFinalSequenceAction({ context, actions }) {
 		missionIndex: currentMissionIndex,
 		roleId: 'team'
 	});
+	console.log('FINAL VALIDATE RESULT', finalValidateResult);
 
 	if (!finalValidateResult.ok) {
 		setShowFinalReadyModal(false);
@@ -338,20 +340,23 @@ export async function runFinalSequenceAction({ context, actions }) {
 	}
 
 	const finalSequenceState = createFinalSequenceState({
-		currentMission,
+	
 		finalValidateResult
 	});
 
 	const nextSimulationState = mergeLayerState(simulationState, finalSequenceState);
 
+	const waitForFinalResultCallback = currentMission?.waitForFinalResultCallback === true;
+
 	setShowFinalReadyModal(false);
-	setIsFinalSequencePlaying(false);
-	setShowFinalSuccessModal(true);
+	setIsFinalSequencePlaying(waitForFinalResultCallback);
+	setShowFinalSuccessModal(!waitForFinalResultCallback);
 	setSimulationState(nextSimulationState);
 
 	await syncFinalSequenceToFirestore({
 		nextMissionProgress: getNextProgressForCurrentPlayer('cleared'),
-		nextSimulationState
+		nextSimulationState,
+		waitForFinalResultCallback: currentMission?.waitForFinalResultCallback === true
 	});
 
 	setPlayers(
