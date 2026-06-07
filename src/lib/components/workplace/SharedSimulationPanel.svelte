@@ -6,7 +6,9 @@
 	import { animalRescueTheme } from './theme/animalRescue/animalRescueTheme';
 	import { hackerTraceTheme } from './theme/hackerTrace/hackerTraceTheme';
 	import { monsterDefenseTheme } from './theme/monsterDefense/monsterDefenseTheme';
+	import { robotCockpitTheme } from './theme/robotCockpit/robotCockpitTheme';
 	import { spaceBaseTheme } from './theme/spaceBase/spaceBaseTheme';
+	import { weatherAppTheme } from './theme/weatherApp/weatherAppTheme';
 
 	export let themeId = 'spaceBase';
 
@@ -22,7 +24,9 @@
 		spaceBase: spaceBaseTheme,
 		animalRescue: animalRescueTheme,
 		hackerTrace: hackerTraceTheme,
-		monsterDefense: monsterDefenseTheme
+		monsterDefense: monsterDefenseTheme,
+		robotCockpit: robotCockpitTheme,
+		weatherApp: weatherAppTheme
 	};
 
 	$: pixiTheme = pixiThemeById[themeId] ?? spaceBaseTheme;

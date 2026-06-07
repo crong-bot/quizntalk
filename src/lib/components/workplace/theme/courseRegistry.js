@@ -5,7 +5,9 @@ import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
 import { marketBasketCourse } from './market/marketBasketCourse.js';
 import { monsterDefenseCourse } from './monsterDefense/monsterDefenseCourse.js';
 import { owlBusCourse } from './owlBus/owlBusCourse.js';
+import { robotCockpitCourse } from './robotCockpit/robotCockpitCourse.js';
 import { moonBaseCourse } from './spaceBase/spaceBaseCourse';
+import { weatherAppCourse } from './weatherApp/weatherAppCourse.js';
 
 export const courses = [
 	moonBaseCourse,
@@ -15,7 +17,9 @@ export const courses = [
 	bikeRebalanceCourse,
 	disasterSafetyCourse,
 	owlBusCourse,
-	monsterDefenseCourse
+	monsterDefenseCourse,
+	robotCockpitCourse,
+	weatherAppCourse
 ];
 
 // const courseByThemeId = {

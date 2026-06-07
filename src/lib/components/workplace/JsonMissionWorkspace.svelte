@@ -18,7 +18,7 @@
 
 	import { isReadMissionCourse } from '$lib/firebase/missionRoom/missionRoomService.js';
 	import {
-		buildFinalJsonFromSubmissions,
+		buildFinalJsonBySubmitMode,
 		createDebugFinalSubmissions,
 		runFinalSequenceAction,
 		submitFinalMissionPieceAction
@@ -35,9 +35,11 @@
 		setAllPlayersMissionState
 	} from './state/workspaceState.js';
 
+	import { tick as svelteTick } from 'svelte';
 	import LeaveRoomModal from './modals/LeaveRoomModal.svelte';
 	import RoomIntroModal from './modals/RoomIntroModal.svelte';
 	import RoomWaitingModal from './modals/RoomWaitingModal.svelte';
+	import { validateMissionJson } from './validator/missionValidator.js';
 
 	export let roomCode = '';
 	export let lessonId = '';
@@ -1049,16 +1051,34 @@
 		});
 
 		if (currentMission?.type === 'team-final') {
-			finalSubmissions = createDebugFinalSubmissions({
-				currentMission
-			});
+			const isFullSubmitMode = currentMission?.finalSubmitMode === 'full';
 
-			const finalJson = buildFinalJsonFromSubmissions({
-				course,
-				currentMission,
-				finalSubmissions,
-				autoClearedRoles: shouldUseFirebase ? room?.autoClearedRoles ?? [] : []
-			});
+			let finalJson = {};
+
+			if (isFullSubmitMode) {
+				// full 제출 방식은 finalPiece를 쓰지 않으므로
+				// 디버그 정답 처리에서는 finalAnswer를 직접 넣는다.
+				finalJson = currentMission?.finalAnswer ?? {};
+
+				finalSubmissions = {
+					debug: {
+						mode: 'full',
+						value: finalJson
+					}
+				};
+			} else {
+				// 기존 조각 제출 방식
+				finalSubmissions = createDebugFinalSubmissions({
+					currentMission
+				});
+
+				finalJson = buildFinalJsonBySubmitMode({
+					course,
+					currentMission,
+					finalSubmissions,
+					autoClearedRoles: shouldUseFirebase ? room?.autoClearedRoles ?? [] : []
+				});
+			}
 
 			jsonText = JSON.stringify(finalJson, null, 2);
 
@@ -1076,13 +1096,12 @@
 			showFinalSuccessModal = false;
 			isFinalSequencePlaying = false;
 
-			//canExecute = false;
 			status = 'finalReady';
 
 			consoleLogs = [
 				{
 					type: 'success',
-					text: '테스트: 모든 최종 값이 모였습니다. 최종 JSON이 완성되었습니다.'
+					text: '테스트: 모든 최종 값을 정답으로 처리했습니다.'
 				},
 				{
 					type: 'info',
@@ -1134,23 +1153,136 @@
 
 		unlockNextMissionIfReady();
 	}
+	async function debugSubmitCurrentJsonForAll() {
+		if (currentMission?.type !== 'team-final') {
+			consoleLogs = [
+				{
+					type: 'warning',
+					text: '입력창 JSON 제출 테스트는 최종 미션에서만 사용할 수 있습니다.'
+				}
+			];
+			return;
+		}
 
-	async function syncFinalSequenceToFirestore({
-	nextMissionProgress,
-	nextSimulationState,
-	waitForFinalResultCallback = false
-}) {
-	if (!canSyncToFirestore()) {
-		return;
+		let parsed;
+
+		try {
+			parsed = JSON.parse(jsonText);
+		} catch {
+			consoleLogs = [
+				{
+					type: 'error',
+					text: '입력창의 JSON 문법이 올바르지 않습니다.'
+				}
+			];
+			return;
+		}
+
+		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+			consoleLogs = [
+				{
+					type: 'error',
+					text: '입력창의 JSON은 { } 객체 형태여야 합니다.'
+				}
+			];
+			return;
+		}
+
+		const validateResult = validateMissionJson({
+			jsonText,
+			course,
+			missionIndex: currentMissionIndex,
+			roleId: 'team'
+		});
+
+		if (!validateResult.ok) {
+			consoleLogs = [
+				{
+					type: 'error',
+					text: '입력창 JSON이 최종 미션 조건에 맞지 않습니다.'
+				},
+				...(validateResult.messages ?? [])
+			];
+
+			status = 'editing';
+			showFinalReadyModal = false;
+			showFinalAnalyzingModal = false;
+			showMissionCompleteModal = false;
+			showFinalSuccessModal = false;
+			isFinalSequencePlaying = false;
+			return;
+		}
+
+		jsonText = JSON.stringify(parsed, null, 2);
+
+		finalSubmissions = {
+			debug: {
+				mode: 'full',
+				value: parsed
+			}
+		};
+
+		players = setAllPlayersMissionState({
+			players,
+			missionIndex: currentMissionIndex,
+			nextState: 'submitted'
+		});
+
+		completedMissionIndex = currentMissionIndex;
+		pendingNextMissionIndex = null;
+
+		showMissionCompleteModal = false;
+		showFinalSuccessModal = false;
+		showFinalAnalyzingModal = false;
+		isFinalSequencePlaying = false;
+
+		autoFinalExecutionStarted = false;
+		finalResultHandled = false;
+
+		status = 'finalReady';
+		hasExecuted = false;
+
+		consoleLogs = [
+			{
+				type: 'success',
+				text: '디버그: 입력창 JSON으로 모든 요원이 최종 제출한 것으로 처리했습니다.'
+			},
+			{
+				type: validateResult.finalCorrect === false ? 'warning' : 'success',
+				text:
+					validateResult.finalCorrect === false
+						? '구조는 맞지만 정답은 아닙니다. 실패 연출을 확인합니다.'
+						: '정답 JSON입니다. 성공 연출을 확인합니다.'
+			}
+		];
+
+		showFinalReadyModal = false;
+		await svelteTick();
+		showFinalReadyModal = true;
+
+		console.log('DEBUG FINAL READY TRIGGERED', {
+			finalSubmissions,
+			players: players.map((player) => player.missionProgress[currentMissionIndex]),
+			status,
+			showFinalReadyModal
+		});
 	}
+	async function syncFinalSequenceToFirestore({
+		nextMissionProgress,
+		nextSimulationState,
+		waitForFinalResultCallback = false
+	}) {
+		if (!canSyncToFirestore()) {
+			return;
+		}
 
-	const finalMessage =
-		currentMission?.finalSuccessMessage ??
-		course?.completion?.summary ??
-		course?.completion?.subtitle ??
-		'최종 결과가 완성되었습니다.';
+		const finalMessage =
+			currentMission?.finalSuccessMessage ??
+			course?.completion?.summary ??
+			course?.completion?.subtitle ??
+			'최종 결과가 완성되었습니다.';
 
-	try {
+		try {
 			if (waitForFinalResultCallback) {
 				// 몬스터디펜스처럼 공용화면 결과 표시 후 모달을 띄울 테마
 				await updateRoomState({
@@ -1234,7 +1366,6 @@
 	}
 
 	async function runFinalSequence() {
-
 		finalResultHandled = false;
 		showMissionCompleteModal = false;
 		showFinalReadyModal = false;
@@ -1305,7 +1436,7 @@
 		currentMissionIndex = 0;
 		lastInitialJsonKey = '';
 		jsonText = getInitialJsonForMission(0, currentPlayer);
-		
+
 		status = 'editing';
 		hasExecuted = false;
 
@@ -1442,6 +1573,15 @@
 					>
 						현재 미션 전원 성공
 					</button>
+					{#if currentMission?.type === 'team-final'}
+						<button
+							type="button"
+							on:click={debugSubmitCurrentJsonForAll}
+							class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-extrabold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100"
+						>
+							입력창 JSON으로 제출
+						</button>
+					{/if}
 					<button
 						type="button"
 						on:click={resetMission}
@@ -1464,6 +1604,7 @@
 							keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
 							panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
 							onInsertKey={insertKey}
+							missionNumber={currentMissionIndex + 1}
 						/>
 					{/key}
 					{#if shouldShowSupportGuide}
@@ -1596,7 +1737,11 @@
 					</div>
 
 					<div class="h-[400px] z-0 shrink-0">
-						<SharedSimulationPanel {themeId} {simulationState} 	onFinalResultShown={handleFinalResultShown} />
+						<SharedSimulationPanel
+							{themeId}
+							{simulationState}
+							onFinalResultShown={handleFinalResultShown}
+						/>
 					</div>
 					<div class="shrink-0">
 						<TeamExecutionBoard

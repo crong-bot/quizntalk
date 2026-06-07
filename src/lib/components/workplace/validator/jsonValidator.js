@@ -238,9 +238,7 @@ function findBracketMismatch(text) {
 				};
 			}
 
-			const isMatched =
-				(last.char === '{' && char === '}') ||
-				(last.char === '[' && char === ']');
+			const isMatched = (last.char === '{' && char === '}') || (last.char === '[' && char === ']');
 
 			if (!isMatched) {
 				return {
@@ -296,7 +294,9 @@ function makeBracketMismatchMessage({ jsonText, mismatch }) {
 			return {
 				concept: 'arrayStructure',
 				message: `${targetLineNumber}번째 줄에서 배열을 닫는 기호가 빠졌어요.
-${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(expectedCloseChar)}로 닫아야 해요.
+${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(
+					expectedCloseChar
+				)}로 닫아야 해요.
 
 ${markLineEnd(targetLineText)}`
 			};
@@ -319,7 +319,9 @@ ${markLineEnd(targetLineText)}`
 			return {
 				concept: 'objectStructure',
 				message: `${targetLineNumber}번째 줄에서 객체를 닫는 기호가 빠졌어요.
-${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(expectedCloseChar)}로 닫아야 해요.
+${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(
+					expectedCloseChar
+				)}로 닫아야 해요.
 
 ${markLineEnd(targetLineText)}`
 			};
@@ -330,7 +332,9 @@ ${markLineEnd(targetLineText)}`
 		return {
 			concept: mismatch.openChar === '[' ? 'arrayStructure' : 'objectStructure',
 			message: `${position.line}번째 줄에서 닫는 기호가 잘못되었어요.
-${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(expectedCloseChar)}로 닫아야 해요.
+${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(
+				expectedCloseChar
+			)}로 닫아야 해요.
 지금은 ${getBracketName(mismatch.closeChar)}로 닫았어요.
 
 ${markedLineText}`
@@ -344,7 +348,9 @@ ${markedLineText}`
 		return {
 			concept: mismatch.openChar === '[' ? 'arrayStructure' : 'objectStructure',
 			message: `${lastLine.line}번째 줄 끝에서 닫는 기호가 빠졌어요.
-${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(expectedCloseChar)}로 닫아야 해요.
+${getBracketName(mismatch.openChar)}로 시작했으면 ${getBracketName(
+				expectedCloseChar
+			)}로 닫아야 해요.
 
 ${markLineEnd(lastLine.text)}`
 		};
@@ -885,7 +891,7 @@ JSON에서는 // 또는 /* */ 주석을 쓰지 않아요.
 ${markedLine.text}`
 		};
 	}
-		const unclosedDoubleQuoteIssue = findUnclosedDoubleQuoteIssue(jsonText);
+	const unclosedDoubleQuoteIssue = findUnclosedDoubleQuoteIssue(jsonText);
 
 	if (!unclosedDoubleQuoteIssue.ok) {
 		const position = getLineColumn(jsonText, unclosedDoubleQuoteIssue.offset);
@@ -947,100 +953,124 @@ ${markedLine.text}`
 	}
 	const missingObjectBraceInArrayIssue = findMissingObjectBraceInArrayIssue(jsonText);
 
-if (!missingObjectBraceInArrayIssue.ok) {
-	const arrayPosition = getLineColumn(
-		jsonText,
-		missingObjectBraceInArrayIssue.arrayStartOffset
-	);
+	if (!missingObjectBraceInArrayIssue.ok) {
+		const arrayPosition = getLineColumn(jsonText, missingObjectBraceInArrayIssue.arrayStartOffset);
 
-	const targetLineNumber = arrayPosition.line + 1;
-	const arrayLineText = getLineText(jsonText, arrayPosition.line);
-	const indentText = ' '.repeat(arrayPosition.column + 1);
+		const targetLineNumber = arrayPosition.line + 1;
+		const arrayLineText = getLineText(jsonText, arrayPosition.line);
+		const indentText = ' '.repeat(arrayPosition.column + 1);
 
-	return {
-		ok: false,
-		concept: 'objectStructure',
-		message: `${targetLineNumber}번째 줄에 중괄호({)를 넣어야 해요.
+		return {
+			ok: false,
+			concept: 'objectStructure',
+			message: `${targetLineNumber}번째 줄에 중괄호({)를 넣어야 해요.
 책 정보 하나는 { }로 묶어야 해요.
 
 ${arrayLineText}
 ${indentText}❌`
-	};
-}
+		};
+	}
 
-const missingCommaIssue = findMissingCommaBetweenValuesIssue(jsonText);
+	const missingCommaIssue = findMissingCommaBetweenValuesIssue(jsonText);
 
-if (!missingCommaIssue.ok) {
-	const markedLine = markMissingCommaPosition(
-		jsonText,
-		missingCommaIssue.missingCommaAfterOffset,
-		missingCommaIssue.offset
-	);
+	if (!missingCommaIssue.ok) {
+		const markedLine = markMissingCommaPosition(
+			jsonText,
+			missingCommaIssue.missingCommaAfterOffset,
+			missingCommaIssue.offset
+		);
 
-	const lineMessage = markedLine.isSameLine
-		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
-		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+		const lineMessage = markedLine.isSameLine
+			? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+			: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
 
-	return {
-		ok: false,
-		concept: 'comma',
-		message: `${lineMessage}
+		return {
+			ok: false,
+			concept: 'comma',
+			message: `${lineMessage}
 항목과 항목 사이에는 쉼표를 넣어야 해요.
 
 ${markedLine.text}`
-	};
-}
+		};
+	}
 
-const missingCommaAfterPrimitiveValueIssue =
-	findMissingCommaAfterPrimitiveValueIssue(jsonText);
+	const missingCommaAfterPrimitiveValueIssue = findMissingCommaAfterPrimitiveValueIssue(jsonText);
 
-if (!missingCommaAfterPrimitiveValueIssue.ok) {
-	const markedLine = markMissingCommaPosition(
-		jsonText,
-		missingCommaAfterPrimitiveValueIssue.missingCommaAfterOffset,
-		missingCommaAfterPrimitiveValueIssue.offset
-	);
+	if (!missingCommaAfterPrimitiveValueIssue.ok) {
+		const markedLine = markMissingCommaPosition(
+			jsonText,
+			missingCommaAfterPrimitiveValueIssue.missingCommaAfterOffset,
+			missingCommaAfterPrimitiveValueIssue.offset
+		);
 
-	const lineMessage = markedLine.isSameLine
-		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
-		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+		const lineMessage = markedLine.isSameLine
+			? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+			: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
 
-	return {
-		ok: false,
-		concept: 'comma',
-		message: `${lineMessage}
+		return {
+			ok: false,
+			concept: 'comma',
+			message: `${lineMessage}
 항목과 항목 사이에는 쉼표를 넣어야 해요.
 
 ${markedLine.text}`
-	};
-}
+		};
+	}
 
-const missingCommaAfterClosedValueIssue = findMissingCommaAfterClosedValueIssue(jsonText);
+	const missingCommaAfterClosedValueIssue = findMissingCommaAfterClosedValueIssue(jsonText);
 
-if (!missingCommaAfterClosedValueIssue.ok) {
-	const markedLine = markMissingCommaPosition(
-		jsonText,
-		missingCommaAfterClosedValueIssue.missingCommaAfterOffset,
-		missingCommaAfterClosedValueIssue.offset
-	);
+	if (!missingCommaAfterClosedValueIssue.ok) {
+		const markedLine = markMissingCommaPosition(
+			jsonText,
+			missingCommaAfterClosedValueIssue.missingCommaAfterOffset,
+			missingCommaAfterClosedValueIssue.offset
+		);
 
-	const lineMessage = markedLine.isSameLine
-		? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
-		: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
+		const lineMessage = markedLine.isSameLine
+			? `${markedLine.line}번째 줄에서 쉼표(,)가 빠진 것 같아요.`
+			: `${markedLine.line}번째 줄 끝에서 쉼표(,)가 빠진 것 같아요.`;
 
-	return {
-		ok: false,
-		concept: 'comma',
-		message: `${lineMessage}
+		return {
+			ok: false,
+			concept: 'comma',
+			message: `${lineMessage}
 정보가 하나 끝난 뒤 다음 정보가 이어질 때는 쉼표를 넣어야 해요.
 
 ${markedLine.text}`
+		};
+	}
+
+	return {
+		ok: true
 	};
 }
+function makeRootStartError(jsonText) {
+	if (jsonText.trim().length === 0) {
+		return {
+			ok: true
+		};
+	}
 
-return {
-	ok: true
-};
+	const firstNonSpaceIndex = jsonText.search(/\S/);
+	const firstChar = jsonText[firstNonSpaceIndex];
+
+	if (firstChar === '{' || firstChar === '[') {
+		return {
+			ok: true
+		};
+	}
+
+	const position = getLineColumn(jsonText, firstNonSpaceIndex);
+	const lineText = getLineText(jsonText, position.line);
+
+	return {
+		ok: false,
+		concept: 'objectStructure',
+		message: `${position.line}번째 줄 앞에 여는 중괄호 { 가 필요해요.
+JSON 전체는 보통 { }로 감싼 객체 형태로 작성해야 해요.
+
+${markErrorCharacter(lineText, position.column)}`
+	};
 }
 function findMissingObjectBraceInArrayIssue(text) {
 	let inString = false;
@@ -1119,6 +1149,11 @@ function findStringStartOffset(text, stringEndOffset) {
 }
 
 export function parseJsonWithFriendlyError(jsonText) {
+	const rootStartError = makeRootStartError(jsonText);
+
+	if (!rootStartError.ok) {
+		return rootStartError;
+	}
 	const preCheckError = makePreCheckError(jsonText);
 
 	if (!preCheckError.ok) {

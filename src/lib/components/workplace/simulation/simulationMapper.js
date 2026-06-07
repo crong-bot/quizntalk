@@ -6,7 +6,9 @@ import { mapHackerTraceJsonToSimulationState } from '../theme/hackerTrace/hacker
 import { mapMarketBasketJsonToSimulationState } from '../theme/market/marketBasketMapper';
 import { mapMonsterDefenseRoomToSimulationState } from '../theme/monsterDefense/monsterDefenseMapper';
 import { mapOwlBusRoomToSimulationState } from '../theme/owlBus/owlBusMapper';
+import { mapRobotCockpitJsonToSimulationState } from '../theme/robotCockpit/robotCockpitMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
+import { mapWeatherAppRoomToSimulationState } from '../theme/weatherApp/weatherAppMapper';
 
 const mapperByThemeId = {
 	spaceBase: mapSpaceBaseJsonToSimulationState,
@@ -16,7 +18,9 @@ const mapperByThemeId = {
 	bikeRebalance: mapBikeRebalanceRoomToSimulationState,
 	disasterSafety: mapDisasterSafetyRoomToSimulationState,
 	owlBus: mapOwlBusRoomToSimulationState,
-	monsterDefense: mapMonsterDefenseRoomToSimulationState
+	monsterDefense: mapMonsterDefenseRoomToSimulationState,
+	robotCockpit: mapRobotCockpitJsonToSimulationState,
+	weatherApp: mapWeatherAppRoomToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {
@@ -39,9 +43,26 @@ export function mapJsonToSimulationState(themeId, jsonText) {
 export function mergeSimulationState(prev, patch) {
 	return {
 		...prev,
+		...patch,
+
 		layers: {
 			...(prev?.layers ?? {}),
 			...(patch?.layers ?? {})
+		},
+
+		sprites: {
+			...(prev?.sprites ?? {}),
+			...(patch?.sprites ?? {})
+		},
+
+		camera: {
+			...(prev?.camera ?? {}),
+			...(patch?.camera ?? {})
+		},
+
+		flags: {
+			...(prev?.flags ?? {}),
+			...(patch?.flags ?? {})
 		}
 	};
 }

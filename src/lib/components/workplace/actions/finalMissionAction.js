@@ -1,5 +1,6 @@
 // src/lib/components/workplace/actions/finalMissionAction.js
 
+import { mergeSimulationState } from '../simulation/simulationMapper.js';
 import { setAllPlayersMissionState } from '../state/workspaceState.js';
 import { validateMissionJson } from '../validator/missionValidator.js';
 
@@ -39,6 +40,73 @@ export function buildFinalJsonFromSubmissions({
 		acc[item.key] = item.value;
 		return acc;
 	}, {});
+}
+function normalizeFinalFullValue(item) {
+	if (!item?.value) return null;
+
+	// value가 이미 { 최종방어작전: {...} } 전체 형태면 그대로 비교
+	if (item.value?.최종방어작전) {
+		return item.value;
+	}
+
+	// value가 내부 계획 {...}이고 key가 있으면 감싸서 비교
+	if (item.key) {
+		return {
+			[item.key]: item.value
+		};
+	}
+
+	return item.value;
+}
+
+function stableStringify(value) {
+	if (Array.isArray(value)) {
+		return `[${value.map(stableStringify).join(',')}]`;
+	}
+
+	if (value && typeof value === 'object') {
+		return `{${Object.keys(value)
+			.sort()
+			.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+			.join(',')}}`;
+	}
+
+	return JSON.stringify(value);
+}
+
+function normalizeFullSubmissionValue(item) {
+	if (!item?.value) return null;
+
+	if (item.value && typeof item.value === 'object' && !Array.isArray(item.value)) {
+		return item.value;
+	}
+
+	if (item.key) {
+		return {
+			[item.key]: item.value
+		};
+	}
+
+	return item.value;
+}
+
+function getFullSubmissionMismatch({ finalSubmissions = {}, autoClearedRoles = [] }) {
+	const submissions = Object.entries(finalSubmissions)
+		.filter(([roleId]) => !autoClearedRoles.includes(roleId))
+		.map(([roleId, item]) => ({
+			roleId,
+			value: normalizeFullSubmissionValue(item)
+		}))
+		.filter((item) => item.value !== null);
+
+	if (submissions.length <= 1) {
+		return null;
+	}
+
+	const firstKey = stableStringify(submissions[0].value);
+	const mismatch = submissions.find((item) => stableStringify(item.value) !== firstKey);
+
+	return mismatch ?? null;
 }
 export function buildFinalJsonBySubmitMode({
 	course,
@@ -193,6 +261,43 @@ export async function submitFinalMissionPieceAction({ context, actions }) {
 		return;
 	}
 
+	if (
+		currentMission?.finalSubmitMode === 'full' &&
+		currentMission?.requireSameFinalSubmissions === true
+	) {
+		const mismatch = getFullSubmissionMismatch({
+			finalSubmissions: nextFinalSubmissions,
+			autoClearedRoles
+		});
+
+		if (mismatch) {
+			const message =
+				currentMission?.finalMismatchMessage ??
+				'팀원들의 최종 JSON 값이 서로 다릅니다. 회의 후 같은 결론을 다시 제출하세요.';
+
+			setStatus('editing');
+
+			setConsoleLogs([
+				...consoleLogs,
+				submittedLog,
+				{
+					type: 'error',
+					text: message
+				}
+			]);
+
+			setTransmissionState({
+				visible: true,
+				phase: 'error',
+				roleName: '팀 전체',
+				message,
+				progress: 100
+			});
+
+			return;
+		}
+	}
+
 	const finalJson = buildFinalJsonBySubmitMode({
 		course,
 		currentMission,
@@ -340,11 +445,13 @@ export async function runFinalSequenceAction({ context, actions }) {
 	}
 
 	const finalSequenceState = createFinalSequenceState({
-	
 		finalValidateResult
 	});
 
-	const nextSimulationState = mergeLayerState(simulationState, finalSequenceState);
+	const nextSimulationState =
+		course?.themeId === 'weatherApp'
+			? mergeSimulationState(simulationState, finalSequenceState)
+			: mergeLayerState(simulationState, finalSequenceState);
 
 	const waitForFinalResultCallback = currentMission?.waitForFinalResultCallback === true;
 

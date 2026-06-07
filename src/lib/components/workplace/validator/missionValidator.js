@@ -1,11 +1,15 @@
 import { validateAnimalRescueMissionJson } from './animalRescueValidator.js';
 import { validateMonsterDefenseMissionJson } from './monsterDefenseValidator.js';
+import { validateRobotCockpitMissionJson } from './robotCockpitValidator.js';
 import { validateSpaceBaseMissionJson } from './spaceBaseValidator.js';
+import { validateWeatherAppMissionJson } from './weatherAppValidator.js';
 
 const validatorByThemeId = {
 	spaceBase: validateSpaceBaseMissionJson,
 	animalRescue: validateAnimalRescueMissionJson,
-	monsterDefense: validateMonsterDefenseMissionJson
+	monsterDefense: validateMonsterDefenseMissionJson,
+	robotCockpit: validateRobotCockpitMissionJson,
+	weatherApp: validateWeatherAppMissionJson
 };
 
 export function validateMissionJson({ jsonText, course, missionIndex, roleId }) {

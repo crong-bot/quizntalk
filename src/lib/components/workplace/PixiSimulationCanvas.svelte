@@ -2,6 +2,8 @@
 <script>
 	import { onDestroy, onMount, tick as svelteTick } from 'svelte';
 	import { createMonsterDefenseRuntime } from './theme/monsterDefense/monsterDefenseRuntime';
+	import { createRobotCockpitRuntime } from './theme/robotCockpit/robotCockpitRuntime';
+	import { createWeatherAppRuntime } from './theme/weatherApp/weatherAppRuntime';
 
 	export let theme;
 	export let simulationState = {
@@ -77,6 +79,22 @@
 				onFinalResultShown
 			});
 		}
+		if (theme?.id === 'robotCockpit') {
+			themeRuntime = createRobotCockpitRuntime({
+				app,
+				PIXI,
+				sprites,
+				getState: () => simulationState,
+				onFinalResultShown
+			});
+		}
+		if (theme?.id === 'weatherApp') {
+			themeRuntime = createWeatherAppRuntime({
+				app,
+				PIXI,
+				getState: () => simulationState
+			});
+		}
 
 		await svelteTick();
 		resizeCanvas();
@@ -124,43 +142,43 @@
 	}
 
 	function applyAssetLayout(sprite, asset) {
-	sprite.x = asset.x ?? 0;
-	sprite.y = asset.y ?? 0;
+		sprite.x = asset.x ?? 0;
+		sprite.y = asset.y ?? 0;
 
-	if (asset.anchor) {
-		sprite.anchor.set(asset.anchor);
-	}
+		if (asset.anchor) {
+			sprite.anchor.set(asset.anchor);
+		}
 
-	if (asset.width && asset.height) {
-		sprite.width = asset.width;
-		sprite.height = asset.height;
-	}
+		if (asset.width && asset.height) {
+			sprite.width = asset.width;
+			sprite.height = asset.height;
+		}
 
-	if (asset.scale) {
-		sprite.scale.set(asset.scale);
-	}
+		if (asset.scale) {
+			sprite.scale.set(asset.scale);
+		}
 
-	if (!asset.width && !asset.height && !asset.scale && asset.fullCanvas !== false) {
-		sprite.width = theme.width;
-		sprite.height = theme.height;
-	}
+		if (!asset.width && !asset.height && !asset.scale && asset.fullCanvas !== false) {
+			sprite.width = theme.width;
+			sprite.height = theme.height;
+		}
 
-	if (asset.flipX) {
-		sprite.scale.x *= -1;
+		if (asset.flipX) {
+			sprite.scale.x *= -1;
 
-		if (!asset.anchor) {
-			sprite.x += sprite.width;
+			if (!asset.anchor) {
+				sprite.x += sprite.width;
+			}
+		}
+
+		if (asset.flipY) {
+			sprite.scale.y *= -1;
+
+			if (!asset.anchor) {
+				sprite.y += sprite.height;
+			}
 		}
 	}
-
-	if (asset.flipY) {
-		sprite.scale.y *= -1;
-
-		if (!asset.anchor) {
-			sprite.y += sprite.height;
-		}
-	}
-}
 
 	function tick(ticker) {
 		time += ticker.deltaTime * 0.055;
@@ -176,19 +194,19 @@
 	}
 
 	function resetSpritesToBaseLayout() {
-	for (const asset of theme.assets) {
-		const sprite = sprites[asset.id];
-		if (!sprite) continue;
+		for (const asset of theme.assets) {
+			const sprite = sprites[asset.id];
+			if (!sprite) continue;
 
-		applyAssetLayout(sprite, asset);
+			applyAssetLayout(sprite, asset);
 
-		if (asset.rotation) {
-			sprite.rotation = asset.rotation;
-		} else {
-			sprite.rotation = 0;
+			if (asset.rotation) {
+				sprite.rotation = asset.rotation;
+			} else {
+				sprite.rotation = 0;
+			}
 		}
 	}
-}
 
 	function applyLayers() {
 		for (const asset of theme.assets) {

@@ -43,6 +43,7 @@ function createBaseLayers() {
 
 		[monsterDefenseLayers.trap]: false,
 		[monsterDefenseLayers.waterCannon]: false,
+		[monsterDefenseLayers.fireCannon]: false,
 		[monsterDefenseLayers.waterShot]: false,
 
 		[monsterDefenseLayers.monsterWalk1]: false,
@@ -60,7 +61,11 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 	const hasPlan = Boolean(plan);
 
 	const finalSuccess =
-		forcedResult === 'success' ? true : forcedResult === 'fail' ? false : isFinalPlanCorrect(plan, answerPlan);
+		forcedResult === 'success'
+			? true
+			: forcedResult === 'fail'
+			  ? false
+			  : isFinalPlanCorrect(plan, answerPlan);
 
 	const finalFail =
 		forcedResult === 'fail' ? true : forcedResult === 'success' ? false : hasPlan && !finalSuccess;
@@ -75,6 +80,7 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 	const trapActive = plan?.트랩?.작동 === true;
 
 	const cannonType = plan?.대포?.종류 ?? '';
+	const cannonPosition = plan?.대포?.설치위치 ?? '';
 	const cannonActive = plan?.대포?.작동 === true;
 
 	const operationStarted = plan?.작전실행 === true || finalSuccess || finalFail;
@@ -91,10 +97,6 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 		layers[monsterDefenseLayers.trap] = true;
 	}
 
-	if (operationStarted && cannonActive && cannonType) {
-		layers[monsterDefenseLayers.waterCannon] = true;
-	}
-
 	return {
 		layers,
 
@@ -102,8 +104,8 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 
 		camera: {
 			shake: finalFail,
-			shakeAmount: finalFail ? 5 : 0,
-			shakeSpeed: 1.2
+			shakeAmount: finalFail ? 1 : 0,
+			shakeSpeed: 1.01
 		},
 
 		flags: {
@@ -126,6 +128,7 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 
 			// 물대포도 공통 이미지
 			cannonType,
+			cannonPosition,
 			cannonActive
 		}
 	};

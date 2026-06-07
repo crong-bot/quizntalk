@@ -91,6 +91,26 @@ export const monsterDefenseTheme = {
 			width: 520,
 			height: 325
 		},
+		{
+			id: monsterDefenseLayers.wallEast,
+			src: '/images/themes/monster-defense/wall-east.png',
+			type: 'effect',
+			layer: true,
+			x: 455,
+			y: 275,
+			width: 310,
+			height: 232
+		},
+		{
+			id: monsterDefenseLayers.wallWest,
+			src: '/images/themes/monster-defense/wall-west.png',
+			type: 'effect',
+			layer: true,
+			x: 455,
+			y: 275,
+			width: 310,
+			height: 232
+		},
 
 		{
 			id: monsterDefenseLayers.city,
@@ -105,6 +125,17 @@ export const monsterDefenseTheme = {
 		{
 			id: monsterDefenseLayers.waterCannon,
 			src: '/images/themes/monster-defense/water-cannon.png',
+			type: 'effect',
+			layer: true,
+			x: 905,
+			y: 400,
+			width: 275,
+			height: 245
+		},
+
+		{
+			id: monsterDefenseLayers.fireCannon,
+			src: '/images/themes/monster-defense/cannon.png',
 			type: 'effect',
 			layer: true,
 			x: 905,

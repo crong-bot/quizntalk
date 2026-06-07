@@ -1,10 +1,6 @@
 // src/lib/components/workplace/validator/monsterDefenseValidator.js
 
-import {
-	isPlainObject,
-	makeResult,
-	parseJsonWithFriendlyError
-} from './jsonValidator.js';
+import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
 import { mapMonsterDefenseFinalJsonToSimulationState } from '../theme/monsterDefense/monsterDefenseMapper.js';
 
@@ -328,6 +324,11 @@ function validatePrepareToolsMission(parsed, roleId) {
 			messages
 		});
 
+		validateStringPath({
+			parsed,
+			path: '방어도구.대포.설치위치',
+			messages
+		});
 		validateBooleanPath({
 			parsed,
 			path: '방어도구.대포.작동',
@@ -358,12 +359,6 @@ function validateFinalDefenseMission({ parsed, jsonText, mission }) {
 	validateObjectPath({
 		parsed,
 		path: '최종방어작전',
-		messages
-	});
-
-	validateStringPath({
-		parsed,
-		path: '최종방어작전.괴물이름',
 		messages
 	});
 
@@ -421,15 +416,15 @@ function validateFinalDefenseMission({ parsed, jsonText, mission }) {
 		messages
 	});
 
-	validateBooleanPath({
+	validateStringPath({
 		parsed,
-		path: '최종방어작전.대포.작동',
+		path: '최종방어작전.대포.설치위치',
 		messages
 	});
 
 	validateBooleanPath({
 		parsed,
-		path: '최종방어작전.작전실행',
+		path: '최종방어작전.대포.작동',
 		messages
 	});
 
@@ -467,7 +462,6 @@ function validateFinalDefenseMission({ parsed, jsonText, mission }) {
 		}
 	);
 }
-
 export function validateMonsterDefenseMissionJson({ jsonText, course, missionIndex, roleId }) {
 	const parsedResult = parseJsonWithFriendlyError(jsonText);
 

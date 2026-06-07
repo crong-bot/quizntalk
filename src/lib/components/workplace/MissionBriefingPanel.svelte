@@ -12,6 +12,7 @@
 
 	export let panelLabel = 'MISSION PANEL';
 	export let backgroundImage = '/images/themes/space-base/missionpanel_back_space.png';
+	export let missionNumber = null;
 
 	let showMissionModal = false;
 
@@ -43,6 +44,9 @@
 	$: textClues = safeClues.filter((clue) => typeof clue === 'string');
 	$: jsonClues = safeClues.filter(
 		(clue) => clue && typeof clue === 'object' && clue.type === 'json'
+	);
+	$: structureClues = safeClues.filter(
+		(clue) => clue && typeof clue === 'object' && clue.type === 'structure'
 	);
 	$: shouldShowKeyChips = !isRead && Array.isArray(keyChips) && keyChips.length > 0;
 
@@ -423,13 +427,151 @@
 						isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
 					}`}
 				>
-					{isRead ? 'READ ONLY' : `단서 ${textClues.length}`}
+					{isRead ? 'READ ONLY' : missionNumber ? `미션 ${missionNumber}` : 'MISSION'}
 				</div>
 			</div>
 
 			<div class="thin-scroll h-[calc(100%-36px)] overflow-auto pr-1 pb-2">
-				{#if jsonClues.length > 0}
+				{#if jsonClues.length > 0 || structureClues.length > 0 || textClues.length > 0}
 					<div class="space-y-3">
+						{#each structureClues as clue}
+							<div
+								class="overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm"
+							>
+								<div class="flex items-center justify-between border-b border-blue-100 px-3 py-2">
+									<div class="flex items-center gap-2">
+										<div
+											class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-[13px] text-white"
+										>
+											🧩
+										</div>
+										<div>
+											<div class="text-[13px] font-black text-slate-900">
+												{clue.title ?? 'JSON 구조도'}
+											</div>
+											<div class="text-[10px] font-black tracking-[0.12em] text-blue-500">
+												OBJECT MAP
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="p-3">
+									<div class="rounded-2xl border border-blue-100 bg-white p-3 shadow-sm">
+										<div class="flex items-center gap-2">
+											<div>
+												<div class="text-[10px] font-black tracking-[0.14em] text-blue-500">키</div>
+												<div class="truncate text-[15px] font-black text-slate-950">
+													{clue.rootLabel ?? clue.title ?? '구조도'}
+												</div>
+											</div>
+										</div>
+
+										<div class="relative mt-4 border-l-2 border-blue-200 pl-4">
+											{#each clue.items ?? [] as item}
+												<div class="relative mb-3 last:mb-0">
+													<div class="absolute -left-[18px] top-4 h-0.5 w-4 bg-blue-200"></div>
+
+													<div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+														<div class="grid grid-cols-[minmax(92px,0.8fr)_minmax(0,1.2fr)] gap-2">
+															<div>
+																<div
+																	class="mb-1 text-[9px] font-black tracking-[0.16em] text-blue-500/80"
+																>
+																	키
+																</div>
+
+																<div
+																	class="rounded-xl border border-blue-100 bg-white px-1 py-1 text-[12px] font-black text-slate-950 shadow-sm"
+																>
+																	{item.label}
+																</div>
+															</div>
+
+															<div>
+																<div class="mb-1 flex items-center gap-1">
+																	<span
+																		class="text-[10px] font-black tracking-[0.14em] text-blue-500"
+																	>
+																		값
+																	</span>
+
+																	<span class="text-[10px] font-black text-slate-600">
+																		({item.valueType ?? '값'})
+																	</span>
+																</div>
+
+																<div
+																	class="min-h-[36px] rounded-xl border border-slate-100 bg-slate-50 px-1 py-0 text-[11px] font-bold leading-5 text-slate-600"
+																>
+																	{item.description ?? '값을 입력합니다.'}
+																</div>
+															</div>
+														</div>
+
+														{#if item.children?.length}
+															<div class="relative mt-3 border-l-2 border-slate-300 pl-4">
+																{#each item.children as child}
+																	<div class="relative mb-2 last:mb-0">
+																		<div
+																			class="absolute -left-[18px] top-3 h-0.5 w-4 bg-slate-300"
+																		></div>
+
+																		<div
+																			class="rounded-xl border border-slate-100 bg-white px-3 py-2"
+																		>
+																			<div
+																				class="grid grid-cols-[minmax(80px,0.8fr)_minmax(0,1.2fr)] gap-2"
+																			>
+																				<div>
+																					<div
+																						class="mb-1 flex items-center gap-1 text-[8px] font-black tracking-[0.14em] text-blue-400/80"
+																					>
+																						<!-- <span class="h-2 w-2 rounded-full bg-blue-500"></span> -->
+																						<span>키</span>
+																					</div>
+
+																					<div
+																						class="rounded-lg border border-blue-50 bg-blue-50/60 px-2 py-1 text-[11px] font-black text-slate-800"
+																					>
+																						{child.label}
+																					</div>
+																				</div>
+
+																				<div>
+																					<div class="mb-1 flex items-center gap-1">
+																						<span
+																							class="text-[8px] font-black tracking-[0.14em] text-blue-500"
+																						>
+																							값
+																						</span>
+
+																						<span class="text-[8px] font-black text-slate-500">
+																							({child.valueType ?? '값'})
+																						</span>
+																					</div>
+
+																					<div
+																						class="min-h-[28px] rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-[10px] font-bold leading-4 text-slate-500"
+																					>
+																						{child.description ?? '값을 입력합니다.'}
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																{/each}
+															</div>
+														{/if}
+													</div>
+												</div>
+											{/each}
+										</div>
+									</div>
+								</div>
+							</div>
+						{/each}
+
 						{#each jsonClues as clue}
 							<div
 								class="w-max min-w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950"
@@ -469,9 +611,7 @@
 								</div>
 							</div>
 						{/each}
-					</div>
-				{:else if textClues.length > 0}
-					<div class="space-y-2">
+
 						{#each textClues as clue, index}
 							<div
 								class="flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2"
@@ -482,7 +622,9 @@
 									{String(index + 1).padStart(2, '0')}
 								</div>
 
-								<div class="min-w-0 flex-1 text-xs font-bold leading-5 text-slate-700">
+								<div
+									class="min-w-0 flex-1 whitespace-pre-line text-xs font-bold leading-5 text-slate-700"
+								>
 									{clue}
 								</div>
 

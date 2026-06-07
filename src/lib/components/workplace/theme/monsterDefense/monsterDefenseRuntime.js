@@ -1,5 +1,7 @@
 // src/lib/components/workplace/theme/monsterDefense/monsterDefenseRuntime.js
 
+import { GlowFilter } from 'pixi-filters';
+
 const MONSTER_START = {
 	x: 595,
 	y: -30
@@ -56,6 +58,78 @@ const HP_BAR = {
 	height: 22,
 	radius: 11
 };
+const TRAP_POSITIONS = {
+	북쪽: { x: 595, y: 55 },
+	동쪽: { x: 1190, y: 550 },
+	남쪽: { x: 550, y: 920 },
+	서쪽: { x: 0, y: 560 }
+};
+
+const CANNON_POSITIONS = {
+	북쪽: { x: 905, y: 400 },
+	동쪽: { x: 890, y: 720 },
+	남쪽: { x: 820, y: 680 },
+	서쪽: { x: 290, y: 720 }
+};
+const WALL_POSITIONS = {
+	북쪽: { x: 450, y: 240 },
+	동쪽: { x: 960, y: 580 },
+	남쪽: { x: 450, y: 810 },
+	서쪽: { x: 160, y: 581 }
+};
+
+function getDirectionFromText(value = '', fallback = '북쪽') {
+	const text = normalizeText(value);
+
+	if (text === '북' || text.includes('북쪽') || text.includes('북문') || text.includes('북쪽길')) {
+		return '북쪽';
+	}
+
+	if (text === '동' || text.includes('동쪽') || text.includes('동문') || text.includes('동쪽길')) {
+		return '동쪽';
+	}
+
+	if (text === '남' || text.includes('남쪽') || text.includes('남문') || text.includes('남쪽길')) {
+		return '남쪽';
+	}
+
+	if (text === '서' || text.includes('서쪽') || text.includes('서문') || text.includes('서쪽길')) {
+		return '서쪽';
+	}
+
+	return fallback;
+}
+
+function applyInstallGlow(sprite, color = 0xdfe4ea) {
+	if (!sprite) return;
+
+	if (!sprite.__installGlowFilter) {
+		sprite.__installGlowFilter = new GlowFilter({
+			distance: 8,
+			outerStrength: 2.8,
+			innerStrength: 0,
+			color,
+			quality: 0.4
+		});
+	}
+
+	sprite.__installGlowFilter.color = color;
+	sprite.__installGlowFilter.outerStrength = 2.8;
+	sprite.filters = [sprite.__installGlowFilter];
+}
+
+function clearInstallGlow(sprite) {
+	if (!sprite) return;
+	sprite.filters = null;
+}
+const INSTALL_GLOW_COLOR = 0xdfe4ea;
+
+function moveSpriteTo(sprite, position) {
+	if (!sprite || !position) return;
+
+	sprite.x = position.x;
+	sprite.y = position.y;
+}
 
 function hide(sprite) {
 	if (!sprite) return;
@@ -91,6 +165,27 @@ function easeOutCubic(t) {
 function normalizeText(value = '') {
 	return String(value).replaceAll(' ', '').trim();
 }
+function getCannonSpriteByType(sprites, cannonType = '') {
+	const type = normalizeText(cannonType);
+
+	if (type.includes('불대포') || type.includes('불')) {
+		return sprites.fireCannon;
+	}
+
+	if (type.includes('물대포') || type.includes('물')) {
+		return sprites.waterCannon;
+	}
+
+	return null;
+}
+
+function hideCannonSprites(sprites) {
+	clearInstallGlow(sprites.waterCannon);
+	clearInstallGlow(sprites.fireCannon);
+
+	hide(sprites.waterCannon);
+	hide(sprites.fireCannon);
+}
 
 function hideMonsterFrames(sprites) {
 	hide(sprites.monsterWalk1);
@@ -101,6 +196,11 @@ function hideMonsterFrames(sprites) {
 }
 
 function hideWallSprites(sprites) {
+	clearInstallGlow(sprites.wallNorth);
+	clearInstallGlow(sprites.wallEast);
+	clearInstallGlow(sprites.wallSouth);
+	clearInstallGlow(sprites.wallWest);
+
 	hide(sprites.wallNorth);
 	hide(sprites.wallEast);
 	hide(sprites.wallSouth);
@@ -108,10 +208,12 @@ function hideWallSprites(sprites) {
 }
 
 function getWallSpriteByDirection(sprites, direction = '') {
-	if (direction.includes('북쪽')) return sprites.wallNorth;
-	if (direction.includes('동쪽')) return sprites.wallEast;
-	if (direction.includes('남쪽')) return sprites.wallSouth ?? sprites.wallNorth;
-	if (direction.includes('서쪽')) return sprites.wallWest ?? sprites.wallEast;
+	const normalizedDirection = getDirectionFromText(direction, '');
+
+	if (normalizedDirection === '북쪽') return sprites.wallNorth;
+	if (normalizedDirection === '동쪽') return sprites.wallEast;
+	if (normalizedDirection === '남쪽') return sprites.wallNorth;
+	if (normalizedDirection === '서쪽') return sprites.wallWest;
 
 	return null;
 }
@@ -136,32 +238,47 @@ function resetTemporaryEffects(sprites) {
 function resetDefenseTools(sprites) {
 	hideWallSprites(sprites);
 	hide(sprites.trap);
-	hide(sprites.waterCannon);
+	hideCannonSprites(sprites);
 	hide(sprites.waterShot);
 }
 
 function placeDefenseTools({ sprites, flags, time }) {
 	hideWallSprites(sprites);
 
-	const wallSprite = getWallSpriteByDirection(sprites, flags.wallDirection);
+	const wallDirection = getDirectionFromText(flags.wallDirection, '북쪽');
+	const wallSprite = getWallSpriteByDirection(sprites, wallDirection);
 
 	if (wallSprite && flags.wallDoorClosed === true) {
-		showOnly(wallSprite, 0.82 + Math.sin(time * 0.15) * 0.18);
+		moveSpriteTo(wallSprite, WALL_POSITIONS[wallDirection]);
+
+		showOnly(wallSprite, 1);
+		applyInstallGlow(wallSprite, INSTALL_GLOW_COLOR);
 	}
 
 	if (sprites.trap) {
 		if (flags.trapActive === true && flags.trapName) {
-			showOnly(sprites.trap, 0.78 + Math.sin(time * 0.15) * 0.22);
+			const trapDirection = getDirectionFromText(flags.trapPosition);
+			moveSpriteTo(sprites.trap, TRAP_POSITIONS[trapDirection]);
+
+			showOnly(sprites.trap, 1);
+			applyInstallGlow(sprites.trap, INSTALL_GLOW_COLOR);
 		} else {
+			clearInstallGlow(sprites.trap);
 			hide(sprites.trap);
 		}
 	}
 
-	if (sprites.waterCannon) {
-		if (flags.cannonActive === true && flags.cannonType) {
-			showOnly(sprites.waterCannon, 0.78 + Math.sin(time * 0.15) * 0.22);
-		} else {
-			hide(sprites.waterCannon);
+	hideCannonSprites(sprites);
+
+	if (flags.cannonActive === true && flags.cannonType) {
+		const cannonDirection = getDirectionFromText(flags.cannonPosition, '북쪽');
+		const cannonSprite = getCannonSpriteByType(sprites, flags.cannonType);
+
+		if (cannonSprite) {
+			moveSpriteTo(cannonSprite, CANNON_POSITIONS[cannonDirection]);
+
+			showOnly(cannonSprite, 1);
+			applyInstallGlow(cannonSprite, INSTALL_GLOW_COLOR);
 		}
 	}
 }
@@ -170,8 +287,9 @@ function getDefenseResult(flags) {
 	const monsterDirection = normalizeText(flags.monsterDirection);
 	const wallDirection = normalizeText(flags.wallDirection);
 	const trapName = normalizeText(flags.trapName);
-	const trapPosition = normalizeText(flags.trapPosition);
+	const trapPosition = getDirectionFromText(flags.trapPosition, '');
 	const cannonType = normalizeText(flags.cannonType);
+	const cannonPosition = getDirectionFromText(flags.cannonPosition, '');
 
 	const monsterComesFromNorth = monsterDirection === '북쪽';
 
@@ -183,10 +301,11 @@ function getDefenseResult(flags) {
 	const trapOk =
 		monsterComesFromNorth &&
 		trapName === '그물트랩' &&
-		trapPosition === '북쪽길' &&
+		trapPosition === '북쪽' &&
 		flags.trapActive === true;
 
-	const cannonOk = cannonType === '물대포' && flags.cannonActive === true;
+	const cannonOk =
+		cannonType === '불대포' && cannonPosition === '북쪽' && flags.cannonActive === true;
 
 	return {
 		wallOk,
@@ -335,11 +454,13 @@ function createResultText({ app, PIXI }) {
 		destroy
 	};
 }
-export function createMonsterDefenseRuntime({ app,
+export function createMonsterDefenseRuntime({
+	app,
 	PIXI,
 	sprites,
 	getState,
-	onFinalResultShown = () => {}}) {
+	onFinalResultShown = () => {}
+}) {
 	const hpBar = createHpBar({
 		app,
 		PIXI
@@ -508,6 +629,7 @@ export function createMonsterDefenseRuntime({ app,
 			trapPosition: flags.trapPosition,
 			trapActive: flags.trapActive,
 			cannonType: flags.cannonType,
+			cannonPosition: flags.cannonPosition,
 			cannonActive: flags.cannonActive
 		});
 

@@ -5,22 +5,78 @@ import {
 	monsterDefenseRoleSuccessStates
 } from './monsterDefenseLayers.js';
 
+const mission1wallStructureHint = {
+	type: 'structure',
+	title: '미션1 JSON 구조도',
+	rootLabel: '정찰',
+	items: [
+		{
+			label: '예상방향',
+			valueType: '문자',
+			description: '북쪽?동쪽?어느방향인지'
+		},
+		{
+			label: '근거단서',
+			valueType: '문자',
+			description: '그렇게 생각한 이유'
+		}
+	]
+};
+
+const finalDefenseStructureHint = {
+	type: 'structure',
+	title: '최종방어작전 JSON 구조도',
+	rootLabel: '최종방어작전',
+	items: [
+		// {
+		// 	label: '괴물이름',
+		// 	description: '어떤 괴물인가?'
+		// },
+		{
+			label: '성벽',
+			children: [
+				{ label: '방향', description: '어느 쪽 성벽을 막을까?' },
+				{ label: '문닫기', description: 'true / false' }
+			]
+		},
+		{
+			label: '트랩',
+			children: [
+				{ label: '종류', description: '어떤 트랩을 쓸까?' },
+				{ label: '설치위치', description: '어느 방향에 설치할까?' },
+				{ label: '작동', description: 'true / false' }
+			]
+		},
+		{
+			label: '대포',
+			children: [
+				{ label: '종류', description: '어떤 대포를 쓸까?' },
+				{ label: '설치위치', description: '어느 방향에 배치할까?' },
+				{ label: '작동', description: 'true / false' }
+			]
+		}
+		// {
+		// 	label: '작전실행',
+		// 	description: 'true / false'
+		// }
+	]
+};
+
 const finalDefensePlan = {
-	괴물이름: '초록괴물',
 	성벽: {
 		방향: '북쪽',
 		문닫기: true
 	},
 	트랩: {
 		종류: '그물트랩',
-		설치위치: '북쪽길',
+		설치위치: '북쪽',
 		작동: true
 	},
 	대포: {
-		종류: '물대포',
+		종류: '불대포',
+		설치위치: '북쪽',
 		작동: true
-	},
-	작전실행: true
+	}
 };
 
 export const monsterDefenseCourse = {
@@ -60,12 +116,7 @@ export const monsterDefenseCourse = {
 			roleName: '성벽팀',
 			avatarSrc: '/images/avatars/2.png'
 		},
-		{
-			id: 'scout',
-			name: '민서',
-			roleName: '정찰팀',
-			avatarSrc: '/images/avatars/1.png'
-		},
+
 		{
 			id: 'trap',
 			name: '서연',
@@ -77,6 +128,12 @@ export const monsterDefenseCourse = {
 			name: '도윤',
 			roleName: '대포팀',
 			avatarSrc: '/images/avatars/4.png'
+		},
+		{
+			id: 'scout',
+			name: '민서',
+			roleName: '정찰팀',
+			avatarSrc: '/images/avatars/1.png'
 		}
 	],
 
@@ -113,45 +170,26 @@ export const monsterDefenseCourse = {
 						description: '성벽 주변 흔적을 보고 위험 방향을 판단하는 역할'
 					},
 					clues: [
+						mission1wallStructureHint,
 						'북쪽 입구 근처에는 큰 발자국이 있습니다.',
 						'동쪽 입구 근처에는 작은 발자국이 흩어져 있습니다.',
 						'남쪽 입구는 닫혀 있습니다.',
 						'서쪽에는 오래된 긁힌 자국이 있습니다.'
 					],
 					keyChips: ['정찰', '예상방향', '근거단서'],
-					valueChips: ['"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"', '"큰발자국"', '"작은발자국"', '"긁힌자국"'],
+					valueChips: [
+						'"북쪽"',
+						'"동쪽"',
+						'"남쪽"',
+						'"서쪽"',
+						'"큰발자국"',
+						'"작은발자국"',
+						'"긁힌자국"'
+					],
 					initialJson: `{
   "정찰": {
     "예상방향": "",
     "근거단서": ""
-  }
-}`
-				},
-
-				scout: {
-					story: {
-						call: '정찰팀, 괴물 정찰 기록을 만드세요.',
-						summary: '비슷한 괴물 단서를 비교해 예상 괴물을 입력합니다.',
-						mission: '정찰 단서를 보고 괴물 이름, 침입 방향, 몸색을 입력하세요.'
-					},
-					role: {
-						title: '정찰팀',
-						icon: '🔭',
-						description: '괴물의 정체와 침입 방향을 추측하는 역할'
-					},
-					clues: [
-						'정찰 기록에는 초록색 괴물이 보였다고 적혀 있습니다.',
-						'초록괴물은 크기가 크고 도시 쪽으로 걸어옵니다.',
-						'숲괴물도 초록색이지만 크기가 작고 숲에서 잘 나오지 않습니다.',
-						'경보는 북쪽 감시탑에서 가장 먼저 울렸습니다.'
-					],
-					keyChips: ['정찰', '괴물이름', '침입방향', '몸색'],
-					valueChips: ['"초록괴물"', '"숲괴물"', '"북쪽"', '"동쪽"', '"초록"'],
-					initialJson: `{
-  "정찰": {
-    "괴물이름": "",
-    "침입방향": "",
-    "몸색": ""
   }
 }`
 				},
@@ -194,8 +232,8 @@ export const monsterDefenseCourse = {
 						description: '괴물을 약하게 만들 대포를 판단하는 역할'
 					},
 					clues: [
-						'물대포를 맞은 초록괴물은 크게 약해졌습니다.',
-						'불대포는 거의 효과가 없었습니다.',
+						'불대포를 맞은 초록괴물은 크게 약해졌습니다.',
+						'물대포는 거의 효과가 없었습니다.',
 						'바람대포는 조금 밀어냈지만 금방 다시 움직였습니다.'
 					],
 					keyChips: ['정찰', '대포종류', '효과'],
@@ -206,6 +244,33 @@ export const monsterDefenseCourse = {
     "효과": ""
   }
 }`
+				},
+				scout: {
+					story: {
+						call: '정찰팀, 괴물 정찰 기록을 만드세요.',
+						summary: '비슷한 괴물 단서를 비교해 예상 괴물을 입력합니다.',
+						mission: '정찰 단서를 보고 괴물 이름, 침입 방향, 몸색을 입력하세요.'
+					},
+					role: {
+						title: '정찰팀',
+						icon: '🔭',
+						description: '괴물의 정체와 침입 방향을 추측하는 역할'
+					},
+					clues: [
+						'정찰 기록에는 초록색 괴물이 보였다고 적혀 있습니다.',
+						'초록괴물은 크기가 크고 도시 쪽으로 걸어옵니다.',
+						'숲괴물도 초록색이지만 크기가 작고 숲에서 잘 나오지 않습니다.',
+						'경보는 북쪽 감시탑에서 가장 먼저 울렸습니다.'
+					],
+					keyChips: ['정찰', '괴물이름', '침입방향', '몸색'],
+					valueChips: ['"초록괴물"', '"숲괴물"', '"북쪽"', '"동쪽"', '"초록"'],
+					initialJson: `{
+  "정찰": {
+    "괴물이름": "",
+    "침입방향": "",
+    "몸색": ""
+  }
+}`
 				}
 			}
 		},
@@ -213,7 +278,7 @@ export const monsterDefenseCourse = {
 		{
 			id: 'prepare-tools',
 			layerKey: 'prepareTools',
-			title: '미션 2. 방어 도구 생성하기',
+			title: '방어 도구 생성하기',
 			type: 'individual',
 			effectKey: 'prepareTools',
 			roleSuccessState: monsterDefenseRoleSuccessStates,
@@ -249,31 +314,6 @@ export const monsterDefenseCourse = {
 }`
 				},
 
-				scout: {
-					story: {
-						call: '정찰팀, 괴물 정보 JSON을 만드세요.',
-						summary: '최종 계획에 넣을 괴물 정보를 정리합니다.',
-						mission: '괴물 이름과 침입 방향을 입력하세요.'
-					},
-					role: {
-						title: '정찰팀',
-						icon: '🔭',
-						description: '최종 계획에 들어갈 괴물 정보를 정리하는 역할'
-					},
-					clues: [
-						'정찰 기록을 바탕으로 괴물 이름을 입력합니다.',
-						'경보가 울린 방향을 바탕으로 침입 방향을 입력합니다.'
-					],
-					keyChips: ['방어도구', '괴물이름', '침입방향'],
-					valueChips: ['"초록괴물"', '"숲괴물"', '"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"'],
-					initialJson: `{
-  "방어도구": {
-    "괴물이름": "",
-    "침입방향": ""
-  }
-}`
-				},
-
 				trap: {
 					story: {
 						call: '트랩팀, 트랩 도구 JSON을 만드세요.',
@@ -291,7 +331,7 @@ export const monsterDefenseCourse = {
 						'작동 값이 true이면 트랩이 작동합니다.'
 					],
 					keyChips: ['방어도구', '트랩', '종류', '설치위치', '작동'],
-					valueChips: ['"그물트랩"', '"미끄럼기름"', '"북쪽길"', '"동쪽길"', '"남쪽길"', 'true', 'false'],
+					valueChips: ['"그물트랩"', '"미끄럼기름"', '"북쪽"', '"동쪽"', '"남쪽"', 'true', 'false'],
 					initialJson: `{
   "방어도구": {
     "트랩": {
@@ -324,8 +364,33 @@ export const monsterDefenseCourse = {
   "방어도구": {
     "대포": {
       "종류": "",
+	  "설치위치": "",
       "작동": false
     }
+  }
+}`
+				},
+				scout: {
+					story: {
+						call: '정찰팀, 괴물 정보 JSON을 만드세요.',
+						summary: '최종 계획에 넣을 괴물 정보를 정리합니다.',
+						mission: '괴물 이름과 침입 방향을 입력하세요.'
+					},
+					role: {
+						title: '정찰팀',
+						icon: '🔭',
+						description: '최종 계획에 들어갈 괴물 정보를 정리하는 역할'
+					},
+					clues: [
+						'정찰 기록을 바탕으로 괴물 이름을 입력합니다.',
+						'경보가 울린 방향을 바탕으로 침입 방향을 입력합니다.'
+					],
+					keyChips: ['방어도구', '괴물이름', '침입방향'],
+					valueChips: ['"초록괴물"', '"숲괴물"', '"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"'],
+					initialJson: `{
+  "방어도구": {
+    "괴물이름": "",
+    "침입방향": ""
   }
 }`
 				}
@@ -335,9 +400,12 @@ export const monsterDefenseCourse = {
 		{
 			id: 'final-defense',
 			layerKey: 'finalDefense',
-			title: '미션 3. 방어 계획 실행하기',
+			title: '방어 계획 실행하기',
 			type: 'team-final',
 			finalSubmitMode: 'full',
+			requireSameFinalSubmissions: true,
+			finalMismatchMessage:
+				'팀원들의 최종방어작전 JSON이 서로 다릅니다. 회의 후 같은 작전을 다시 제출하세요.',
 			effectKey: 'finalDefense',
 			roleSuccessState: monsterDefenseRoleSuccessStates,
 			successState: monsterDefenseMissionSuccessStates.finalDefense,
@@ -345,7 +413,6 @@ export const monsterDefenseCourse = {
 			waitForFinalResultCallback: true,
 			initialJson: `{
   "최종방어작전": {
-    "괴물이름": "",
     "성벽": {
       "방향": "",
       "문닫기": false
@@ -357,9 +424,9 @@ export const monsterDefenseCourse = {
     },
     "대포": {
       "종류": "",
+      "설치위치": "",
       "작동": false
-    },
-    "작전실행": false
+    }
   }
 }`,
 
@@ -379,33 +446,9 @@ export const monsterDefenseCourse = {
 						icon: '🧱',
 						description: '최종 계획에 성벽 정보를 제공하는 역할'
 					},
-					clues: ['성벽은 괴물이 실제로 오는 방향에 있어야 합니다.', '성벽 문은 닫혀 있어야 합니다.'],
+					clues: [finalDefenseStructureHint],
 					keyChips: ['최종방어작전', '성벽', '방향', '문닫기'],
-					valueChips: ['"북쪽"', 'true'],
-					finalPiece: {
-						key: '최종방어작전',
-						value: finalDefensePlan
-					}
-				},
-
-				scout: {
-					story: {
-						call: '정찰팀, 최종 방어 계획의 괴물 정보를 공유하세요.',
-						summary: '최종 계획에는 괴물 이름이 필요합니다.',
-						mission: '팀원들과 함께 같은 최종방어작전 JSON을 완성하세요.'
-					},
-					role: {
-						title: '정찰팀',
-						icon: '🔭',
-						description: '최종 계획에 괴물 정보를 제공하는 역할'
-					},
-					clues: ['괴물은 초록괴물로 판단하는 것이 가장 안전합니다.', '괴물은 북쪽에서 접근합니다.'],
-					keyChips: ['최종방어작전', '괴물이름'],
-					valueChips: ['"초록괴물"'],
-					finalPiece: {
-						key: '최종방어작전',
-						value: finalDefensePlan
-					}
+					valueChips: ['"북쪽"', 'true']
 				},
 
 				trap: {
@@ -425,11 +468,7 @@ export const monsterDefenseCourse = {
 						'트랩은 작동 true 상태여야 합니다.'
 					],
 					keyChips: ['최종방어작전', '트랩', '종류', '설치위치', '작동'],
-					valueChips: ['"그물트랩"', '"북쪽길"', 'true'],
-					finalPiece: {
-						key: '최종방어작전',
-						value: finalDefensePlan
-					}
+					valueChips: ['"그물트랩"', '"북쪽"', 'true']
 				},
 
 				attack: {
@@ -443,14 +482,26 @@ export const monsterDefenseCourse = {
 						icon: '💧',
 						description: '최종 계획에 대포 정보를 제공하는 역할'
 					},
-					clues: ['물대포는 초록괴물에게 효과적입니다.', '대포는 작동 true 상태여야 합니다.'],
+					clues: ['불대포는 초록괴물에게 효과적입니다.', '대포는 작동 true 상태여야 합니다.'],
 					keyChips: ['최종방어작전', '대포', '종류', '작동'],
-					valueChips: ['"물대포"', 'true'],
-					finalPiece: {
-						key: '최종방어작전',
-						value: finalDefensePlan
-					}
+					valueChips: ['true']
 				}
+			},
+
+			scout: {
+				story: {
+					call: '정찰팀, 최종 방어 계획의 괴물 정보를 공유하세요.',
+					summary: '최종 계획에는 괴물 이름이 필요합니다.',
+					mission: '팀원들과 함께 같은 최종방어작전 JSON을 완성하세요.'
+				},
+				role: {
+					title: '정찰팀',
+					icon: '🔭',
+					description: '최종 계획에 괴물 정보를 제공하는 역할'
+				},
+				clues: ['괴물은 초록괴물로 판단하는 것이 가장 안전합니다.', '괴물은 북쪽에서 접근합니다.'],
+				keyChips: ['최종방어작전', '괴물이름'],
+				valueChips: ['"초록괴물"']
 			},
 
 			finalSuccessMessage: '최종 방어 계획이 실행되었습니다. 공용화면에서 결과를 확인하세요.'

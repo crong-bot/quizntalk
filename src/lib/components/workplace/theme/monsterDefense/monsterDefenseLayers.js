@@ -13,6 +13,7 @@ export const monsterDefenseLayers = {
 	// 트랩/물대포/물줄기는 공통 이미지 사용
 	trap: 'trap',
 	waterCannon: 'waterCannon',
+	fireCannon: 'fireCannon',
 	waterShot: 'waterShot',
 
 	monsterWalk1: 'monsterWalk1',
@@ -65,6 +66,7 @@ export function createMonsterDefenseInitialState() {
 
 			[monsterDefenseLayers.trap]: false,
 			[monsterDefenseLayers.waterCannon]: false,
+			[monsterDefenseLayers.fireCannon]: false,
 			[monsterDefenseLayers.waterShot]: false,
 
 			[monsterDefenseLayers.monsterWalk1]: false,

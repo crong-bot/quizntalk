@@ -294,7 +294,6 @@ export async function executeMissionAction({ context, actions }) {
 	await wait(450);
 	const simulationScope = currentMission?.simulationScope ?? 'room';
 
-
 	const mapResult =
 		simulationScope === 'none'
 			? {
@@ -305,8 +304,13 @@ export async function executeMissionAction({ context, actions }) {
 						camera: {},
 						flags: {}
 					}
-			}
-			: mapJsonToSimulationState(themeId, jsonText);
+			  }
+			: validateResult.simulationState
+			  ? {
+						ok: true,
+						state: validateResult.simulationState
+			    }
+			  : mapJsonToSimulationState(themeId, jsonText);
 
 	if (!mapResult.ok) {
 		setStatus('editing');
@@ -339,21 +343,18 @@ export async function executeMissionAction({ context, actions }) {
 
 	await wait(500);
 
-
 	const nextLocalSimulationState = mergeSimulationState(simulationState, mapResult.state);
 
 	const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
 	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
 	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
-	
 	await syncMissionSuccessToFirestore({
 		nextMissionProgress,
 		nextSimulationState: simulationScope === 'room' ? mapResult.state : null,
 		nextMissionIndex,
 		nextRoomStatus,
-		shouldSyncSimulationState: simulationScope === 'room',
-		
+		shouldSyncSimulationState: simulationScope === 'room'
 	});
 
 	setSimulationState(nextLocalSimulationState);
