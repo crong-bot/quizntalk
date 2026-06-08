@@ -4,406 +4,321 @@ import { weatherAppMissionSuccessStates, weatherAppRoleSuccessStates } from './w
 
 export const weatherAppCourse = {
 	id: 'weather-app',
-	title: '날씨 API 앱 만들기',
-	subtitle: '날씨 API 데이터를 해석하고 앱 화면에 맞는 JSON으로 정리하세요.',
-	icon: '🌦️',
+	title: '분실물찾기 앱 만들기',
+	subtitle: '분실물 분류 기준을 만들고, 실제 분실물을 앱에 등록하세요.',
+	icon: '🔎',
 	themeId: 'weatherApp',
 
 	intro: {
-		badge: 'WEATHER API',
-		title: '날씨 API 앱 만들기',
-		subtitle: 'API 데이터를 받아 해석하고, 날씨앱 화면에 표시할 JSON을 완성합니다.',
+		badge: 'LOST ITEM APP',
+		title: '분실물찾기 앱 만들기',
+		subtitle: '관리자 모드에 접속하고, 분류 기준을 만든 뒤 실제 분실물을 등록합니다.',
 		image: '/images/themes/weather-app/phone-mockup.png',
-		imageAlt: '날씨앱 목업',
+		imageAlt: '분실물찾기 앱 목업',
 		summaryTitle: '현재 상황',
 		summary:
-			'날씨앱을 만들려면 먼저 API에 연결하고, 받은 데이터를 해석한 뒤 앱 화면에 맞는 구조로 정리해야 합니다.',
+			'학교에 여러 분실물이 생겼습니다. 분실물찾기 앱에 물건 정보를 등록하면 친구들이 잃어버린 물건을 더 쉽게 찾을 수 있습니다.',
 		goalTitle: '우리의 임무',
-		missionGoal: '4명이 역할을 나누어 날씨 API 데이터를 분석하고, 최종 날씨앱 JSON을 완성하세요.',
+		missionGoal:
+			'4명이 협동하여 분실물 등록 시스템을 준비하고, 각자 실제 분실물 1개씩 등록해 앱 목록을 완성하세요.',
 		steps: [
-			'미션 1에서 날씨 API에 연결합니다.',
-			'미션 2에서 역할별 API 데이터를 해석합니다.',
-			'미션 3에서 앱 화면에 들어갈 최종 JSON을 완성합니다.'
+			'미션 1에서 분실물찾기 앱 관리자 모드에 접속합니다.',
+			'미션 2에서 분실물을 나눌 분류 기준을 만듭니다.',
+			'미션 3에서 각자 실제 분실물 1개를 등록합니다.'
 		],
-		tip: '힌트: 숫자는 따옴표 없이, true/false도 따옴표 없이 입력합니다.',
-		buttonText: '앱 제작 시작하기'
+		tip: '힌트: true/false는 따옴표 없이 입력하고, 여러 특징은 [ ] 배열에 넣습니다.',
+		buttonText: '앱 만들기 시작하기'
 	},
 
 	roles: [
 		{
-			id: 'location',
+			id: 'item1',
 			name: '민서',
-			roleName: '지역 담당',
+			roleName: '1번 등록 담당',
 			avatarSrc: '/images/avatars/1.png'
 		},
 		{
-			id: 'current',
+			id: 'item2',
 			name: '준호',
-			roleName: '현재 날씨 담당',
+			roleName: '2번 등록 담당',
 			avatarSrc: '/images/avatars/2.png'
 		},
 		{
-			id: 'forecast',
+			id: 'item3',
 			name: '서연',
-			roleName: '예보 담당',
+			roleName: '3번 등록 담당',
 			avatarSrc: '/images/avatars/3.png'
 		},
 		{
-			id: 'alert',
+			id: 'item4',
 			name: '도윤',
-			roleName: '알림 담당',
+			roleName: '4번 등록 담당',
 			avatarSrc: '/images/avatars/4.png'
 		}
 	],
 
 	missions: [
 		{
-			id: 'api-connect',
-			title: '날씨 API 연결',
+			id: 'admin-login',
+			title: '관리자 접속',
 			type: 'individual',
-			roleSuccessState: weatherAppRoleSuccessStates.apiConnect,
-			successState: weatherAppMissionSuccessStates.apiConnect,
+			roleSuccessState: weatherAppRoleSuccessStates.adminLogin,
+			successState: weatherAppMissionSuccessStates.adminLogin,
 			simulationScope: 'room',
 			initialJson: `{
-  "API연결": {
-    "서비스": "날씨API",
-    "도시": "전주",
-    "연결": false
+  "관리자접속": {
+    "앱이름": "분실물찾기",
+    "관리자": "선생님",
+    "학교": "미래초등학교",
+    "접속": false
   }
 }`,
 			roleMissions: {
-				location: {
+				item1: createAdminLoginRoleMission('1번 등록 담당'),
+				item2: createAdminLoginRoleMission('2번 등록 담당'),
+				item3: createAdminLoginRoleMission('3번 등록 담당'),
+				item4: createAdminLoginRoleMission('4번 등록 담당')
+			}
+		},
+
+		{
+			id: 'category-rule',
+			title: '분류기준 만들기',
+			type: 'individual',
+			roleSuccessState: weatherAppRoleSuccessStates.categoryRule,
+			successState: weatherAppMissionSuccessStates.categoryRule,
+			simulationScope: 'room',
+			initialJson: `{
+  "분류기준": {
+    "종류": ["학용품", "의류", "생활용품", "우산", "기타"],
+    "보관장소": ["교무실", "교실", "도서관", "분실물보관함"],
+    "기준사용": false
+  }
+}`,
+			roleMissions: {
+				item1: {
 					story: {
-						call: '지역 담당, 날씨 API 연결 정보를 확인하세요.',
-						summary: '앱이 전주 날씨 데이터를 받을 수 있도록 API를 연결해야 합니다.',
-						mission: 'API연결.연결 값을 true로 바꾸세요.'
+						call: '1번 등록 담당, 분실물 종류 기준을 확인하세요.',
+						summary: '분실물을 앱에 등록하려면 먼저 어떤 종류로 나눌지 정해야 합니다.',
+						mission: '분류기준.기준사용 값을 true로 바꾸세요.'
 					},
 					role: {
-						title: '지역 담당',
-						icon: '📍',
-						description: '날씨 API 연결 지역을 확인합니다.'
+						title: '1번 등록 담당',
+						icon: '🗂️',
+						description: '분실물 종류 기준을 확인합니다.'
 					},
-					clues: ['서비스는 "날씨API"입니다.', '도시는 "전주"입니다.', '연결은 true여야 합니다.'],
-					keyChips: ['API연결', '서비스', '도시', '연결'],
-					valueChips: ['날씨API', '전주', 'true', 'false']
+					clues: [
+						'종류 배열에는 학용품, 의류, 생활용품, 우산, 기타가 들어갑니다.',
+						'기준사용 값은 true여야 합니다.'
+					],
+					keyChips: ['분류기준', '종류', '보관장소', '기준사용'],
+					valueChips: createCategoryValueChips()
 				},
-				current: {
+				item2: {
 					story: {
-						call: '현재 날씨 담당, API 연결을 시작하세요.',
-						summary: '현재 날씨를 받기 위해 API 연결이 필요합니다.',
-						mission: 'API연결.연결 값을 true로 바꾸세요.'
+						call: '2번 등록 담당, 보관장소 기준을 확인하세요.',
+						summary: '분실물은 정해진 보관장소에 보관되어야 앱에서 찾기 쉽습니다.',
+						mission: '분류기준.기준사용 값을 true로 바꾸세요.'
 					},
 					role: {
-						title: '현재 날씨 담당',
-						icon: '🌡️',
-						description: '현재 날씨 데이터 수신을 준비합니다.'
+						title: '2번 등록 담당',
+						icon: '📦',
+						description: '보관장소 기준을 확인합니다.'
 					},
-					clues: ['서비스는 "날씨API"입니다.', '도시는 "전주"입니다.', '연결은 true여야 합니다.'],
-					keyChips: ['API연결', '서비스', '도시', '연결'],
-					valueChips: ['날씨API', '전주', 'true', 'false']
+					clues: [
+						'보관장소 배열에는 교무실, 교실, 도서관, 분실물보관함이 들어갑니다.',
+						'기준사용 값은 true여야 합니다.'
+					],
+					keyChips: ['분류기준', '종류', '보관장소', '기준사용'],
+					valueChips: createCategoryValueChips()
 				},
-				forecast: {
+				item3: {
 					story: {
-						call: '예보 담당, 예보 데이터를 받을 API를 연결하세요.',
-						summary: '예보 배열 데이터를 받으려면 API 연결이 필요합니다.',
-						mission: 'API연결.연결 값을 true로 바꾸세요.'
+						call: '3번 등록 담당, 분류 기준을 점검하세요.',
+						summary: '분실물을 종류와 보관장소로 나누면 목록을 더 쉽게 볼 수 있습니다.',
+						mission: '분류기준.기준사용 값을 true로 바꾸세요.'
 					},
 					role: {
-						title: '예보 담당',
-						icon: '📅',
-						description: '예보 데이터 수신을 준비합니다.'
+						title: '3번 등록 담당',
+						icon: '✅',
+						description: '분류 기준을 점검합니다.'
 					},
-					clues: ['서비스는 "날씨API"입니다.', '도시는 "전주"입니다.', '연결은 true여야 합니다.'],
-					keyChips: ['API연결', '서비스', '도시', '연결'],
-					valueChips: ['날씨API', '전주', 'true', 'false']
+					clues: [
+						'종류는 3개 이상 있어야 합니다.',
+						'보관장소는 2개 이상 있어야 합니다.',
+						'기준사용 값은 true여야 합니다.'
+					],
+					keyChips: ['분류기준', '종류', '보관장소', '기준사용'],
+					valueChips: createCategoryValueChips()
 				},
-				alert: {
+				item4: {
 					story: {
-						call: '알림 담당, 안전 알림 데이터를 받을 API를 연결하세요.',
-						summary: '날씨 알림을 받기 위해 API 연결이 필요합니다.',
-						mission: 'API연결.연결 값을 true로 바꾸세요.'
+						call: '4번 등록 담당, 분실물 등록 기준을 활성화하세요.',
+						summary: '기준을 사용해야 실제 분실물 카드가 올바르게 등록됩니다.',
+						mission: '분류기준.기준사용 값을 true로 바꾸세요.'
 					},
 					role: {
-						title: '알림 담당',
-						icon: '⚠️',
-						description: '날씨 안전 알림 수신을 준비합니다.'
+						title: '4번 등록 담당',
+						icon: '⚙️',
+						description: '분류 기준을 활성화합니다.'
 					},
-					clues: ['서비스는 "날씨API"입니다.', '도시는 "전주"입니다.', '연결은 true여야 합니다.'],
-					keyChips: ['API연결', '서비스', '도시', '연결'],
-					valueChips: ['날씨API', '전주', 'true', 'false']
+					clues: [
+						'분류 기준은 종류와 보관장소를 포함해야 합니다.',
+						'기준사용 값은 true여야 합니다.'
+					],
+					keyChips: ['분류기준', '종류', '보관장소', '기준사용'],
+					valueChips: createCategoryValueChips()
 				}
 			}
 		},
 
 		{
-			id: 'api-analyze',
-			title: 'API 데이터 해석',
+			id: 'register-lost-item',
+			title: '실제 분실물 등록하기',
 			type: 'individual',
-			roleSuccessState: weatherAppRoleSuccessStates.apiAnalyze,
-			successState: weatherAppMissionSuccessStates.apiAnalyze,
+			roleSuccessState: weatherAppRoleSuccessStates.registerLostItem,
+			successState: weatherAppMissionSuccessStates.registerLostItem,
 			simulationScope: 'room',
 			initialJson: `{
-  "API해석": {
-    "담당": "",
-    "도시": ""
-  }
-}`,
-			roleMissions: {
-				location: {
-					story: {
-						call: '지역 담당, location 데이터를 해석하세요.',
-						summary: 'API의 location.city는 "전주", location.country는 "KR"입니다.',
-						mission: '지역 정보를 API해석 JSON으로 정리하세요.'
-					},
-					role: {
-						title: '지역 담당',
-						icon: '📍',
-						description: '도시와 국가 코드를 해석합니다.'
-					},
-					clues: [
-						'location.city는 "전주"입니다.',
-						'location.country는 "KR"입니다.',
-						'담당 값은 "지역"입니다.'
-					],
-					keyChips: ['API해석', '담당', '도시', '국가'],
-					valueChips: ['지역', '전주', 'KR'],
-					initialJson: `{
-  "API해석": {
-    "담당": "지역",
-    "도시": "",
-    "국가": ""
-  }
-}`
-				},
-				current: {
-					story: {
-						call: '현재 날씨 담당, current 데이터를 해석하세요.',
-						summary: 'API의 current에는 기온, 상태, 습도, 바람 정보가 있습니다.',
-						mission: '현재 날씨 정보를 API해석 JSON으로 정리하세요.'
-					},
-					role: {
-						title: '현재 날씨 담당',
-						icon: '🌡️',
-						description: '현재 기온과 상태를 해석합니다.'
-					},
-					clues: [
-						'current.temp는 28입니다.',
-						'current.condition은 "맑음"입니다.',
-						'current.humidity는 68입니다.',
-						'current.windSpeed는 3.4입니다.',
-						'담당 값은 "현재날씨"입니다.'
-					],
-					keyChips: ['API해석', '담당', '기온', '상태', '습도', '바람'],
-					valueChips: ['현재날씨', '맑음', '흐림', '비옴', '28', '68', '3.4'],
-					initialJson: `{
-  "API해석": {
-    "담당": "현재날씨",
-    "기온": 0,
-    "상태": "",
-    "습도": 0,
-    "바람": 0
-  }
-}`
-				},
-				forecast: {
-					story: {
-						call: '예보 담당, forecast 배열을 해석하세요.',
-						summary: 'API의 forecast는 여러 날의 예보가 배열로 들어 있습니다.',
-						mission: '예보 배열을 API해석 JSON으로 정리하세요.'
-					},
-					role: {
-						title: '예보 담당',
-						icon: '📅',
-						description: '요일별 예보 배열을 해석합니다.'
-					},
-					clues: [
-						'첫 번째 예보는 월요일, 최저 22, 최고 30, 강수확률 10입니다.',
-						'두 번째 예보는 화요일, 최저 23, 최고 29, 강수확률 60입니다.',
-						'담당 값은 "예보"입니다.'
-					],
-					keyChips: ['API해석', '담당', '예보', '요일', '최저', '최고', '강수확률'],
-					valueChips: ['예보', '월', '화', '22', '30', '23', '29', '10', '60'],
-					initialJson: `{
-  "API해석": {
-    "담당": "예보",
-    "예보": [
-      {
-        "요일": "",
-        "최저": 0,
-        "최고": 0,
-        "강수확률": 0
-      }
-    ]
-  }
-}`
-				},
-				alert: {
-					story: {
-						call: '알림 담당, alerts 데이터를 해석하세요.',
-						summary: 'API의 alerts에는 날씨 안전 알림이 들어 있습니다.',
-						mission: '알림 정보를 API해석 JSON으로 정리하세요.'
-					},
-					role: {
-						title: '알림 담당',
-						icon: '⚠️',
-						description: '날씨 안전 알림을 해석합니다.'
-					},
-					clues: [
-						'alerts.type은 "폭염주의보"입니다.',
-						'alerts.message는 "낮 시간 야외 활동을 줄이세요."입니다.',
-						'담당 값은 "알림"입니다.'
-					],
-					keyChips: ['API해석', '담당', '종류', '안내문'],
-					valueChips: ['알림', '폭염주의보', '낮 시간 야외 활동을 줄이세요.'],
-					initialJson: `{
-  "API해석": {
-    "담당": "알림",
+  "분실물등록": {
+    "카드번호": 1,
+    "물건이름": "",
     "종류": "",
-    "안내문": ""
-  }
-}`
-				}
-			}
-		},
-
-		{
-			id: 'app-build',
-			title: '날씨앱 데이터 완성',
-			type: 'team-final',
-			roleSuccessState: weatherAppRoleSuccessStates.appBuild,
-			successState: weatherAppMissionSuccessStates.appBuild,
-			simulationScope: 'room',
-			finalSubmitMode: 'full',
-			waitForFinalResultCallback: false,
-			requireSameFinalSubmissions: true,
-			finalMismatchMessage:
-				'팀원들의 최종 날씨앱 JSON이 서로 다릅니다. 회의 후 같은 앱 데이터를 다시 제출하세요.',
-			initialJson: `{
-  "날씨앱": {
-    "지역": "",
-    "현재날씨": {
-      "기온": 0,
-      "상태": "",
-      "습도": 0,
-      "바람": 0
-    },
-    "예보": [],
-    "알림": {
-      "종류": "",
-      "안내문": ""
-    },
-    "앱실행": false
+    "색깔": "",
+    "발견장소": "",
+    "보관장소": "",
+    "특징": [],
+    "사진있음": false,
+    "주인찾음": false
   }
 }`,
-			finalAnswer: {
-				날씨앱: {
-					지역: '전주',
-					현재날씨: {
-						기온: 28,
-						상태: '맑음',
-						습도: 68,
-						바람: 3.4
-					},
-					예보: [
-						{
-							요일: '월',
-							최저: 22,
-							최고: 30,
-							강수확률: 10
-						},
-						{
-							요일: '화',
-							최저: 23,
-							최고: 29,
-							강수확률: 60
-						}
-					],
-					알림: {
-						종류: '폭염주의보',
-						안내문: '낮 시간 야외 활동을 줄이세요.'
-					},
-					앱실행: true
-				}
-			},
 			roleMissions: {
-				location: {
-					story: {
-						call: '지역 담당, 최종 앱 데이터에 지역 정보를 넣으세요.',
-						summary: '팀원이 해석한 데이터를 합쳐 날씨앱 JSON을 완성해야 합니다.',
-						mission: '날씨앱 JSON에 지역 정보를 포함하세요.'
-					},
-					role: {
-						title: '지역 담당',
-						icon: '📍',
-						description: '최종 앱 데이터의 지역 정보를 확인합니다.'
-					},
-					clues: ['지역은 "전주"입니다.', '앱실행은 true여야 합니다.'],
-					keyChips: ['날씨앱', '지역', '앱실행'],
-					valueChips: ['전주', 'true', 'false']
-				},
-				current: {
-					story: {
-						call: '현재 날씨 담당, 현재날씨 객체를 완성하세요.',
-						summary: '기온, 상태, 습도, 바람 정보를 최종 JSON에 넣어야 합니다.',
-						mission: '현재날씨 객체를 완성하세요.'
-					},
-					role: {
-						title: '현재 날씨 담당',
-						icon: '🌡️',
-						description: '최종 앱 데이터의 현재 날씨를 확인합니다.'
-					},
-					clues: [
-						'기온은 28입니다.',
-						'상태는 "맑음"입니다.',
-						'습도는 68입니다.',
-						'바람은 3.4입니다.'
-					],
-					keyChips: ['현재날씨', '기온', '상태', '습도', '바람'],
-					valueChips: ['28', '맑음', '흐림', '비옴', '68', '3.4']
-				},
-				forecast: {
-					story: {
-						call: '예보 담당, 예보 배열을 완성하세요.',
-						summary: '요일별 예보는 배열 형태로 정리해야 합니다.',
-						mission: '예보 배열을 완성하세요.'
-					},
-					role: {
-						title: '예보 담당',
-						icon: '📅',
-						description: '최종 앱 데이터의 예보 배열을 확인합니다.'
-					},
-					clues: [
-						'월요일 예보는 최저 22, 최고 30, 강수확률 10입니다.',
-						'화요일 예보는 최저 23, 최고 29, 강수확률 60입니다.'
-					],
-					keyChips: ['예보', '요일', '최저', '최고', '강수확률'],
-					valueChips: ['월', '화', '22', '30', '23', '29', '10', '60']
-				},
-				alert: {
-					story: {
-						call: '알림 담당, 알림 객체를 완성하세요.',
-						summary: '날씨앱 하단에 표시될 안전 알림을 넣어야 합니다.',
-						mission: '알림 객체를 완성하세요.'
-					},
-					role: {
-						title: '알림 담당',
-						icon: '⚠️',
-						description: '최종 앱 데이터의 알림 정보를 확인합니다.'
-					},
-					clues: ['종류는 "폭염주의보"입니다.', '안내문은 "낮 시간 야외 활동을 줄이세요."입니다.'],
-					keyChips: ['알림', '종류', '안내문'],
-					valueChips: ['폭염주의보', '낮 시간 야외 활동을 줄이세요.']
-				}
+				item1: createRegisterRoleMission({
+					roleTitle: '1번 등록 담당',
+					cardNumber: 1
+				}),
+				item2: createRegisterRoleMission({
+					roleTitle: '2번 등록 담당',
+					cardNumber: 2
+				}),
+				item3: createRegisterRoleMission({
+					roleTitle: '3번 등록 담당',
+					cardNumber: 3
+				}),
+				item4: createRegisterRoleMission({
+					roleTitle: '4번 등록 담당',
+					cardNumber: 4
+				})
 			}
 		}
 	],
 
 	completion: {
-		badge: 'WEATHER APP COMPLETE',
-		title: '날씨앱 완성!',
-		subtitle: 'API 데이터를 해석해 앱 화면에 표시할 JSON을 완성했습니다.',
+		badge: 'LOST ITEM APP COMPLETE',
+		title: '분실물찾기 앱 완성!',
+		subtitle: '4개의 분실물 카드가 등록되었습니다.',
 		summaryTitle: '최종 결과',
-		summary: '날씨 API 연결, 데이터 해석, 앱 데이터 정리가 모두 완료되었습니다.',
+		summary:
+			'관리자 접속, 분류 기준 만들기, 실제 분실물 등록이 모두 완료되었습니다. 이제 앱에서 분실물 목록을 확인할 수 있습니다.',
 		primaryButtonText: '홈으로'
 	}
 };
+
+function createAdminLoginRoleMission(roleTitle) {
+	return {
+		story: {
+			call: `${roleTitle}, 관리자 접속 정보를 확인하세요.`,
+			summary: '분실물 등록을 시작하려면 먼저 관리자 모드에 접속해야 합니다.',
+			mission: '관리자접속.접속 값을 true로 바꾸세요.'
+		},
+		role: {
+			title: roleTitle,
+			icon: '🔐',
+			description: '관리자 접속을 준비합니다.'
+		},
+		clues: [
+			'앱이름은 "분실물찾기"입니다.',
+			'관리자는 "선생님"입니다.',
+			'학교는 "미래초등학교"입니다.',
+			'접속 값은 true여야 합니다.'
+		],
+		keyChips: ['관리자접속', '앱이름', '관리자', '학교', '접속'],
+		valueChips: ['분실물찾기', '선생님', '미래초등학교', 'true', 'false']
+	};
+}
+
+function createCategoryValueChips() {
+	return [
+		'학용품',
+		'의류',
+		'생활용품',
+		'우산',
+		'기타',
+		'교무실',
+		'교실',
+		'도서관',
+		'분실물보관함',
+		'true',
+		'false'
+	];
+}
+
+function createRegisterRoleMission({ roleTitle, cardNumber }) {
+	return {
+		story: {
+			call: `${roleTitle}, 실제 조사한 분실물 1개를 등록하세요.`,
+			summary: `카드번호 ${cardNumber}번에 실제 분실물 정보를 입력하면 앱 목록에 ${cardNumber}번째 카드가 생깁니다.`,
+			mission: '물건이름, 종류, 색깔, 발견장소, 보관장소, 특징을 입력하세요.'
+		},
+		role: {
+			title: roleTitle,
+			icon: '📝',
+			description: `${cardNumber}번 분실물 카드를 등록합니다.`
+		},
+		clues: [
+			`카드번호는 ${cardNumber}입니다.`,
+			'특징은 [ ] 배열에 1개 이상 입력하세요.',
+			'사진이 있으면 사진있음은 true, 없으면 false입니다.',
+			'주인찾음은 처음에는 false가 좋습니다.'
+		],
+		keyChips: [
+			'분실물등록',
+			'카드번호',
+			'물건이름',
+			'종류',
+			'색깔',
+			'발견장소',
+			'보관장소',
+			'특징',
+			'사진있음',
+			'주인찾음'
+		],
+		valueChips: [
+			String(cardNumber),
+			'학용품',
+			'의류',
+			'생활용품',
+			'우산',
+			'기타',
+			'교무실',
+			'교실',
+			'도서관',
+			'분실물보관함',
+			'true',
+			'false'
+		],
+		initialJson: `{
+  "분실물등록": {
+    "카드번호": ${cardNumber},
+    "물건이름": "",
+    "종류": "",
+    "색깔": "",
+    "발견장소": "",
+    "보관장소": "",
+    "특징": [""],
+    "사진있음": false,
+    "주인찾음": false
+  }
+}`
+	};
+}

@@ -3,8 +3,33 @@
 import { mapWeatherAppJsonToSimulationState } from '../theme/weatherApp/weatherAppMapper.js';
 import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
+function isIndexKey(key) {
+	return /^\d+$/.test(key);
+}
+
+function canAccessKey(current, key) {
+	if (Array.isArray(current)) {
+		const index = Number(key);
+		return isIndexKey(key) && index >= 0 && index < current.length;
+	}
+
+	if (isPlainObject(current)) {
+		return key in current;
+	}
+
+	return false;
+}
+
 function getValueByPath(obj, path) {
-	return path.split('.').reduce((current, key) => current?.[key], obj);
+	const keys = path.split('.');
+	let current = obj;
+
+	for (const key of keys) {
+		if (!canAccessKey(current, key)) return undefined;
+		current = current[key];
+	}
+
+	return current;
 }
 
 function hasPath(obj, path) {
@@ -12,11 +37,10 @@ function hasPath(obj, path) {
 	let current = obj;
 
 	for (const key of keys) {
-		if (!isPlainObject(current) || !(key in current)) {
-			return false;
-		}
+		if (!canAccessKey(current, key)) return false;
 		current = current[key];
 	}
+
 	return true;
 }
 
@@ -43,6 +67,7 @@ function validateRootObject(parsed) {
 			}
 		]);
 	}
+
 	return null;
 }
 
@@ -67,7 +92,7 @@ function validateObjectPath({ parsed, path, messages }) {
 	return value;
 }
 
-function validateStringPath({ parsed, path, messages, allowed = null }) {
+function validateStringPath({ parsed, path, messages, allowEmpty = false }) {
 	if (!hasPath(parsed, path)) {
 		pushMissing(messages, path);
 		return '';
@@ -80,18 +105,10 @@ function validateStringPath({ parsed, path, messages, allowed = null }) {
 		return '';
 	}
 
-	if (!value.trim()) {
+	if (!allowEmpty && !value.trim()) {
 		messages.push({
 			type: 'error',
 			text: `"${path}" 값은 빈 문자열이면 안 됩니다.`
-		});
-		return '';
-	}
-
-	if (Array.isArray(allowed) && !allowed.includes(value)) {
-		messages.push({
-			type: 'error',
-			text: `"${path}" 값은 ${allowed.join(', ')} 중 하나여야 합니다.`
 		});
 		return '';
 	}
@@ -104,7 +121,7 @@ function validateStringPath({ parsed, path, messages, allowed = null }) {
 	return value;
 }
 
-function validateNumberPath({ parsed, path, messages }) {
+function validateNumberPath({ parsed, path, messages, allowed = null }) {
 	if (!hasPath(parsed, path)) {
 		pushMissing(messages, path);
 		return null;
@@ -114,6 +131,14 @@ function validateNumberPath({ parsed, path, messages }) {
 
 	if (typeof value !== 'number') {
 		pushTypeError(messages, path, '숫자');
+		return null;
+	}
+
+	if (Array.isArray(allowed) && !allowed.includes(value)) {
+		messages.push({
+			type: 'error',
+			text: `"${path}" 값은 ${allowed.join(', ')} 중 하나여야 합니다.`
+		});
 		return null;
 	}
 
@@ -146,7 +171,7 @@ function validateBooleanPath({ parsed, path, messages }) {
 	return value;
 }
 
-function validateArrayPath({ parsed, path, messages }) {
+function validateArrayPath({ parsed, path, messages, minLength = 1 }) {
 	if (!hasPath(parsed, path)) {
 		pushMissing(messages, path);
 		return null;
@@ -159,10 +184,10 @@ function validateArrayPath({ parsed, path, messages }) {
 		return null;
 	}
 
-	if (value.length === 0) {
+	if (value.length < minLength) {
 		messages.push({
 			type: 'error',
-			text: `"${path}" 배열에는 예보가 1개 이상 있어야 합니다.`
+			text: `"${path}" 배열에는 ${minLength}개 이상 입력해야 합니다.`
 		});
 		return null;
 	}
@@ -186,26 +211,44 @@ function makeState({ jsonText, mission }) {
 	});
 }
 
-function validateApiConnectMission({ parsed, jsonText, mission }) {
+function successResult({ text, jsonText, mission, extra = {} }) {
+	return makeResult(
+		true,
+		'success',
+		[
+			{
+				type: 'success',
+				text
+			}
+		],
+		{
+			correct: true,
+			simulationState: makeState({ jsonText, mission }),
+			...extra
+		}
+	);
+}
+
+function validateAdminLoginMission({ parsed, jsonText, mission }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
 	const messages = [];
 
-	validateObjectPath({ parsed, path: 'API연결', messages });
-	validateStringPath({ parsed, path: 'API연결.서비스', messages });
-	validateStringPath({ parsed, path: 'API연결.도시', messages });
+	validateObjectPath({ parsed, path: '관리자접속', messages });
+	validateStringPath({ parsed, path: '관리자접속.앱이름', messages });
+	validateStringPath({ parsed, path: '관리자접속.관리자', messages });
 
 	const connected = validateBooleanPath({
 		parsed,
-		path: 'API연결.연결',
+		path: '관리자접속.접속',
 		messages
 	});
 
 	if (connected !== true) {
 		messages.push({
 			type: 'error',
-			text: '"API연결.연결" 값은 true여야 합니다.'
+			text: '"관리자접속.접속" 값은 true여야 합니다.'
 		});
 	}
 
@@ -213,142 +256,33 @@ function validateApiConnectMission({ parsed, jsonText, mission }) {
 		return makeResult(false, 'condition', messages);
 	}
 
-	return makeResult(
-		true,
-		'success',
-		[
-			{
-				type: 'success',
-				text: '날씨 API 연결 정보가 확인되었습니다.'
-			}
-		],
-		{
-			correct: true,
-			simulationState: makeState({ jsonText, mission })
-		}
-	);
+	return successResult({
+		text: '분실물찾기 관리자 접속 JSON이 확인되었습니다.',
+		jsonText,
+		mission
+	});
 }
 
-function validateApiAnalyzeMission({ parsed, jsonText, mission, roleId }) {
+function validateCategoryRuleMission({ parsed, jsonText, mission }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
 	const messages = [];
 
-	validateObjectPath({ parsed, path: 'API해석', messages });
+	validateObjectPath({ parsed, path: '분류기준', messages });
+	validateArrayPath({ parsed, path: '분류기준.종류', messages, minLength: 3 });
+	validateArrayPath({ parsed, path: '분류기준.보관장소', messages, minLength: 2 });
 
-	const part = validateStringPath({
+	const useRule = validateBooleanPath({
 		parsed,
-		path: 'API해석.담당',
-		messages,
-		allowed: ['지역', '현재날씨', '예보', '알림']
-	});
-
-	if (part === '지역') {
-		validateStringPath({ parsed, path: 'API해석.도시', messages });
-		validateStringPath({ parsed, path: 'API해석.국가', messages });
-	}
-
-	if (part === '현재날씨') {
-		validateNumberPath({ parsed, path: 'API해석.기온', messages });
-		validateStringPath({
-			parsed,
-			path: 'API해석.상태',
-			messages,
-			allowed: ['맑음', '흐림', '비옴']
-		});
-		validateNumberPath({ parsed, path: 'API해석.습도', messages });
-		validateNumberPath({ parsed, path: 'API해석.바람', messages });
-	}
-
-	if (part === '예보') {
-		const forecast = validateArrayPath({
-			parsed,
-			path: 'API해석.예보',
-			messages
-		});
-
-		if (forecast) {
-			forecast.forEach((_, index) => {
-				validateStringPath({ parsed, path: `API해석.예보.${index}.요일`, messages });
-				validateNumberPath({ parsed, path: `API해석.예보.${index}.최저`, messages });
-				validateNumberPath({ parsed, path: `API해석.예보.${index}.최고`, messages });
-				validateNumberPath({ parsed, path: `API해석.예보.${index}.강수확률`, messages });
-			});
-		}
-	}
-
-	if (part === '알림') {
-		validateStringPath({ parsed, path: 'API해석.종류', messages });
-		validateStringPath({ parsed, path: 'API해석.안내문', messages });
-	}
-
-	if (!isOk(messages)) {
-		return makeResult(false, 'condition', messages);
-	}
-
-	return makeResult(
-		true,
-		'success',
-		[
-			{
-				type: 'success',
-				text: 'API 해석 JSON이 확인되었습니다.'
-			}
-		],
-		{
-			correct: true,
-			simulationState: makeState({ jsonText, mission })
-		}
-	);
-}
-
-function validateAppBuildMission({ parsed, jsonText, mission }) {
-	const rootError = validateRootObject(parsed);
-	if (rootError) return rootError;
-
-	const messages = [];
-
-	validateObjectPath({ parsed, path: '날씨앱', messages });
-
-	validateStringPath({ parsed, path: '날씨앱.지역', messages });
-
-	validateObjectPath({ parsed, path: '날씨앱.현재날씨', messages });
-	validateNumberPath({ parsed, path: '날씨앱.현재날씨.기온', messages });
-	validateStringPath({
-		parsed,
-		path: '날씨앱.현재날씨.상태',
-		messages,
-		allowed: ['맑음', '흐림', '비옴']
-	});
-	validateNumberPath({ parsed, path: '날씨앱.현재날씨.습도', messages });
-	validateNumberPath({ parsed, path: '날씨앱.현재날씨.바람', messages });
-
-	const forecast = validateArrayPath({
-		parsed,
-		path: '날씨앱.예보',
+		path: '분류기준.기준사용',
 		messages
 	});
 
-	if (forecast) {
-		forecast.forEach((_, index) => {
-			validateStringPath({ parsed, path: `날씨앱.예보.${index}.요일`, messages });
-			validateNumberPath({ parsed, path: `날씨앱.예보.${index}.최저`, messages });
-			validateNumberPath({ parsed, path: `날씨앱.예보.${index}.최고`, messages });
-			validateNumberPath({ parsed, path: `날씨앱.예보.${index}.강수확률`, messages });
-		});
-	}
-
-	validateObjectPath({ parsed, path: '날씨앱.알림', messages });
-	validateStringPath({ parsed, path: '날씨앱.알림.종류', messages });
-	validateStringPath({ parsed, path: '날씨앱.알림.안내문', messages });
-
-	const appRun = validateBooleanPath({ parsed, path: '날씨앱.앱실행', messages });
-
-	if (appRun !== true) {
+	if (useRule !== true) {
 		messages.push({
 			type: 'error',
-			text: '"날씨앱.앱실행" 값은 true여야 합니다.'
+			text: '"분류기준.기준사용" 값은 true여야 합니다.'
 		});
 	}
 
@@ -356,24 +290,63 @@ function validateAppBuildMission({ parsed, jsonText, mission }) {
 		return makeResult(false, 'condition', messages);
 	}
 
-	return makeResult(
-		true,
-		'success',
-		[
-			{
-				type: 'success',
-				text: '날씨앱 실행 JSON이 확인되었습니다.'
-			}
-		],
-		{
-			finalCorrect: true,
-			simulationState: makeState({ jsonText, mission }),
-			finalPiece: {
-				mode: 'full',
-				value: parsed
-			}
-		}
-	);
+	return successResult({
+		text: '분실물 분류 기준이 준비되었습니다.',
+		jsonText,
+		mission
+	});
+}
+
+function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
+	const rootError = validateRootObject(parsed);
+	if (rootError) return rootError;
+
+	const messages = [];
+
+	validateObjectPath({ parsed, path: '분실물등록', messages });
+
+	validateNumberPath({
+		parsed,
+		path: '분실물등록.카드번호',
+		messages,
+		allowed: [1, 2, 3, 4]
+	});
+
+	validateStringPath({ parsed, path: '분실물등록.물건이름', messages });
+	validateStringPath({ parsed, path: '분실물등록.종류', messages });
+	validateStringPath({ parsed, path: '분실물등록.색깔', messages });
+	validateStringPath({ parsed, path: '분실물등록.발견장소', messages });
+	validateStringPath({ parsed, path: '분실물등록.보관장소', messages });
+
+	const features = validateArrayPath({
+		parsed,
+		path: '분실물등록.특징',
+		messages,
+		minLength: 1
+	});
+
+	if (features) {
+		features.forEach((_, index) => {
+			validateStringPath({
+				parsed,
+				path: `분실물등록.특징.${index}`,
+				messages
+			});
+		});
+	}
+
+	validateBooleanPath({ parsed, path: '분실물등록.사진있음', messages });
+	validateBooleanPath({ parsed, path: '분실물등록.주인찾음', messages });
+
+	if (!isOk(messages)) {
+		return makeResult(false, 'condition', messages);
+	}
+
+	return successResult({
+		text: '분실물 카드 등록 JSON이 확인되었습니다.',
+		jsonText,
+		mission
+	});
 }
 
 export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, roleId }) {
@@ -399,25 +372,24 @@ export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, 
 		]);
 	}
 
-	if (mission.id === 'api-connect') {
-		return validateApiConnectMission({
+	if (mission.id === 'admin-login') {
+		return validateAdminLoginMission({
 			parsed: parsedResult.data,
 			jsonText,
 			mission
 		});
 	}
 
-	if (mission.id === 'api-analyze') {
-		return validateApiAnalyzeMission({
+	if (mission.id === 'category-rule') {
+		return validateCategoryRuleMission({
 			parsed: parsedResult.data,
 			jsonText,
-			mission,
-			roleId
+			mission
 		});
 	}
 
-	if (mission.id === 'app-build' || mission.type === 'team-final') {
-		return validateAppBuildMission({
+	if (mission.id === 'register-lost-item') {
+		return validateRegisterLostItemMission({
 			parsed: parsedResult.data,
 			jsonText,
 			mission
@@ -427,7 +399,7 @@ export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, 
 	return makeResult(false, 'condition', [
 		{
 			type: 'error',
-			text: '날씨앱 미션 검증 정보를 찾을 수 없습니다.'
+			text: '분실물찾기 미션 검증 정보를 찾을 수 없습니다.'
 		}
 	]);
 }

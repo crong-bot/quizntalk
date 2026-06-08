@@ -6,45 +6,43 @@ export const weatherAppLayers = {
 };
 
 export const weatherAppRoleSuccessStates = {
-	apiConnect: {
+	adminLogin: {
 		layers: {},
 		flags: {}
 	},
-	apiAnalyze: {
+	categoryRule: {
 		layers: {},
 		flags: {}
 	},
-	appBuild: {
+	registerLostItem: {
 		layers: {},
 		flags: {}
 	}
 };
 
 export const weatherAppMissionSuccessStates = {
-	apiConnect: {
+	adminLogin: {
 		layers: {},
 		flags: {
-			apiConnected: true,
-			apiAnalyzed: false,
-			appReady: false
+			managerConnected: true,
+			categoryReady: false
 		}
 	},
 
-	apiAnalyze: {
+	categoryRule: {
 		layers: {},
 		flags: {
-			apiConnected: true,
-			apiAnalyzed: true,
-			appReady: false
+			managerConnected: true,
+			categoryReady: true
 		}
 	},
 
-	appBuild: {
+	registerLostItem: {
 		layers: {},
 		flags: {
-			apiConnected: true,
-			apiAnalyzed: true,
-			appReady: true
+			managerConnected: true,
+			categoryReady: true,
+			registerMode: true
 		}
 	}
 };
@@ -66,18 +64,21 @@ export function createWeatherAppInitialState() {
 		},
 
 		flags: {
-			apiConnected: false,
-			apiAnalyzed: false,
-			appReady: false,
+			managerConnected: false,
+			categoryReady: false,
+			registerMode: false,
 
-			city: '',
-			country: '',
-			condition: '',
-			temp: null,
-			humidity: null,
-			wind: null,
-			forecast: [],
-			alert: null
+			appName: '분실물찾기',
+			managerName: '',
+			schoolName: '',
+
+			categories: [],
+			storagePlaces: [],
+
+			item1: null,
+			item2: null,
+			item3: null,
+			item4: null
 		}
 	};
 }

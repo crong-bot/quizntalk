@@ -17,126 +17,118 @@ function createBaseLayers() {
 	};
 }
 
+// 중요: patch만 반환해야 함.
+// item1~item4: null 같은 초기값을 매번 넣으면 이전 카드가 지워질 수 있음.
 function createBaseState() {
 	return {
 		layers: createBaseLayers(),
 		sprites: {},
-		camera: {
-			x: 0,
-			y: 0,
-			zoom: 1,
-			shake: false
-		},
-		flags: {
-			apiConnected: false,
-			apiAnalyzed: false,
-			appReady: false,
-
-			city: '',
-			country: '',
-			condition: '',
-			temp: null,
-			humidity: null,
-			wind: null,
-			forecast: [],
-			alert: null
-		}
+		camera: {},
+		flags: {}
 	};
 }
 
-function normalizeCondition(condition = '') {
-	if (condition.includes('맑')) return '맑음';
-	if (condition.includes('흐')) return '흐림';
-	if (condition.includes('비')) return '비옴';
-
-	return condition;
+function normalizeText(value) {
+	return typeof value === 'string' ? value.trim() : '';
 }
 
-function mapApiConnect(parsed, state) {
-	const api = parsed?.API연결 ?? {};
+function mapAdminLogin(parsed, state) {
+	const data = parsed?.관리자접속 ?? {};
 
-	state.flags.apiConnected = api?.연결 === true;
-	state.flags.city = api?.도시 ?? '';
-	state.flags.country = api?.국가 ?? '';
+	state.flags.managerConnected = data?.접속 === true;
+	state.flags.appName = normalizeText(data?.앱이름) || '분실물찾기';
+	state.flags.managerName = normalizeText(data?.관리자) || '관리자';
+	state.flags.schoolName = normalizeText(data?.학교) || '';
 
 	return state;
 }
 
-function mapApiAnalyze(parsed, state) {
-	const data = parsed?.API해석 ?? {};
+function mapCategoryRule(parsed, state) {
+	const data = parsed?.분류기준 ?? {};
 
-	state.flags.apiConnected = true;
-	state.flags.apiAnalyzed = true;
+	state.flags.managerConnected = true;
+	state.flags.categoryReady = data?.기준사용 === true;
 
-	if (data?.담당 === '지역') {
-		state.flags.city = data?.도시 ?? '';
-		state.flags.country = data?.국가 ?? '';
+	state.flags.categories = Array.isArray(data?.종류) ? data.종류 : [];
+	state.flags.storagePlaces = Array.isArray(data?.보관장소) ? data.보관장소 : [];
+
+	return state;
+}
+
+function mapLostItemRegister(parsed, state) {
+	const data = parsed?.분실물등록 ?? {};
+	const cardNumber = Number(data?.카드번호);
+
+	if (![1, 2, 3, 4].includes(cardNumber)) {
+		return state;
 	}
 
-	if (data?.담당 === '현재날씨') {
-		state.flags.temp = data?.기온 ?? null;
-		state.flags.condition = normalizeCondition(data?.상태 ?? '');
-		state.flags.humidity = data?.습도 ?? null;
-		state.flags.wind = data?.바람 ?? null;
-	}
+	state.flags.managerConnected = true;
+	state.flags.categoryReady = true;
+	state.flags.registerMode = true;
 
-	if (data?.담당 === '예보') {
-		state.flags.forecast = Array.isArray(data?.예보) ? data.예보 : [];
-	}
+	state.flags[`item${cardNumber}`] = {
+		cardNumber,
+		name: normalizeText(data?.물건이름),
+		category: normalizeText(data?.종류),
+		color: normalizeText(data?.색깔),
+		foundPlace: normalizeText(data?.발견장소),
+		storagePlace: normalizeText(data?.보관장소),
+		features: Array.isArray(data?.특징) ? data.특징.filter((value) => normalizeText(value)) : [],
+		hasPhoto: data?.사진있음 === true,
+		ownerFound: data?.주인찾음 === true
+	};
 
-	if (data?.담당 === '알림') {
-		state.flags.alert = {
-			type: data?.종류 ?? '',
-			message: data?.안내문 ?? ''
+	return state;
+}
+
+function normalizeMapperInput(input) {
+	// executeMissionAction에서 mapper(jsonText)로 호출하는 기존 방식 대응
+	if (typeof input === 'string') {
+		return {
+			jsonText: input,
+			missionId: null
 		};
 	}
 
-	return state;
+	// 혹시 mapJsonToSimulationState에서 mapper({ jsonText, missionId })로 넘기는 방식도 대응
+	return {
+		jsonText: input?.jsonText ?? '',
+		missionId: input?.missionId ?? null
+	};
 }
 
-function mapWeatherApp(parsed, state) {
-	const app = parsed?.날씨앱 ?? {};
-
-	state.flags.apiConnected = true;
-	state.flags.apiAnalyzed = true;
-	state.flags.appReady = app?.앱실행 === true;
-
-	state.flags.city = app?.지역 ?? '';
-	state.flags.country = app?.국가 ?? '';
-
-	state.flags.temp = app?.현재날씨?.기온 ?? null;
-	state.flags.condition = normalizeCondition(app?.현재날씨?.상태 ?? '');
-	state.flags.humidity = app?.현재날씨?.습도 ?? null;
-	state.flags.wind = app?.현재날씨?.바람 ?? null;
-
-	state.flags.forecast = Array.isArray(app?.예보) ? app.예보 : [];
-
-	if (app?.알림) {
-		state.flags.alert = {
-			type: app.알림?.종류 ?? '',
-			message: app.알림?.안내문 ?? ''
-		};
-	}
-
-	return state;
-}
-
-export function mapWeatherAppJsonToSimulationState({ jsonText, missionId }) {
+export function mapWeatherAppJsonToSimulationState(input) {
+	const { jsonText, missionId } = normalizeMapperInput(input);
 	const parsed = parseJson(jsonText);
 	const state = createBaseState();
 
 	if (!parsed) return state;
 
-	if (missionId === 'api-connect') {
-		return mapApiConnect(parsed, state);
+	// missionId가 있으면 우선 사용
+	if (missionId === 'admin-login') {
+		return mapAdminLogin(parsed, state);
 	}
 
-	if (missionId === 'api-analyze') {
-		return mapApiAnalyze(parsed, state);
+	if (missionId === 'category-rule') {
+		return mapCategoryRule(parsed, state);
 	}
 
-	if (missionId === 'app-build') {
-		return mapWeatherApp(parsed, state);
+	if (missionId === 'register-lost-item') {
+		return mapLostItemRegister(parsed, state);
+	}
+
+	// missionId가 안 넘어와도 JSON 루트키로 자동 판별
+	if (parsed?.관리자접속) {
+		return mapAdminLogin(parsed, state);
+	}
+
+	if (parsed?.분류기준) {
+		return mapCategoryRule(parsed, state);
+	}
+
+	if (parsed?.분실물등록) {
+		return mapLostItemRegister(parsed, state);
 	}
 
 	return state;
@@ -149,9 +141,20 @@ export function mapWeatherAppRoomToSimulationState(room) {
 			sprites: {},
 			camera: {},
 			flags: {
-				apiConnected: false,
-				apiAnalyzed: false,
-				appReady: false
+				managerConnected: false,
+				categoryReady: false,
+
+				appName: '분실물찾기',
+				managerName: '',
+				schoolName: '',
+
+				categories: [],
+				storagePlaces: [],
+
+				item1: null,
+				item2: null,
+				item3: null,
+				item4: null
 			}
 		}
 	);

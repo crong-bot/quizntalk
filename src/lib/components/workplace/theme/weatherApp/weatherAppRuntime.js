@@ -1,9 +1,9 @@
 // src/lib/components/workplace/theme/weatherApp/weatherAppRuntime.js
 
 const PHONE_SCREEN = {
-	x: 340,
+	x: 324,
 	y: 200,
-	width: 820,
+	width: 816,
 	height: 1800
 };
 
@@ -19,12 +19,12 @@ const COLORS = {
 	blue: 0x2563eb,
 	blueSoft: 0xdbeafe,
 	blueText: 0x1d4ed8,
-	sky: 0x38bdf8,
-	yellow: 0xfacc15,
-	orange: 0xfb923c,
-	warningBg: 0xfff7ed,
-	warningText: 0xc2410c,
-	green: 0x16a34a
+	green: 0x16a34a,
+	greenSoft: 0xdcfce7,
+	yellowSoft: 0xfef3c7,
+	yellowText: 0xa16207,
+	orangeSoft: 0xffedd5,
+	orangeText: 0xc2410c
 };
 
 function clearContainer(container) {
@@ -83,84 +83,6 @@ function addLeftText(container, textObject, x, y) {
 	container.addChild(textObject);
 }
 
-function drawSun(PIXI, container, x, y, size = 150) {
-	const g = new PIXI.Graphics();
-
-	g.circle(x, y, size * 0.28);
-	g.fill({ color: COLORS.yellow, alpha: 1 });
-
-	for (let i = 0; i < 12; i += 1) {
-		const angle = (Math.PI * 2 * i) / 12;
-		const inner = size * 0.4;
-		const outer = size * 0.62;
-
-		g.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner);
-		g.lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer);
-		g.stroke({ width: 8, color: 0xfbbf24, alpha: 1 });
-	}
-
-	container.addChild(g);
-}
-
-function drawCloudShape(graphics, x, y, size, color = 0xe2e8f0) {
-	graphics.circle(x - size * 0.22, y + size * 0.08, size * 0.22);
-	graphics.circle(x, y - size * 0.02, size * 0.28);
-	graphics.circle(x + size * 0.26, y + size * 0.08, size * 0.23);
-	graphics.roundRect(x - size * 0.46, y + size * 0.06, size * 0.92, size * 0.28, size * 0.14);
-	graphics.fill({ color, alpha: 1 });
-}
-
-function drawCloud(PIXI, container, x, y, size = 160) {
-	const shadow = new PIXI.Graphics();
-	drawCloudShape(shadow, x + 8, y + 10, size, 0xcbd5e1);
-	shadow.alpha = 0.35;
-	container.addChild(shadow);
-
-	const g = new PIXI.Graphics();
-	drawCloudShape(g, x, y, size, 0xe2e8f0);
-	container.addChild(g);
-}
-
-function drawRain(PIXI, container, x, y, size = 160) {
-	const g = new PIXI.Graphics();
-
-	drawCloudShape(g, x, y, size, 0xdbeafe);
-
-	for (let i = 0; i < 5; i += 1) {
-		const rx = x - size * 0.32 + i * size * 0.16;
-		const ry = y + size * 0.42;
-
-		g.moveTo(rx, ry);
-		g.lineTo(rx - size * 0.04, ry + size * 0.24);
-		g.stroke({ width: 7, color: COLORS.sky, alpha: 1 });
-	}
-
-	container.addChild(g);
-}
-
-function drawWeatherIcon(PIXI, container, condition, x, y) {
-	if (condition === '맑음') {
-		drawSun(PIXI, container, x, y, 170);
-		return;
-	}
-
-	if (condition === '흐림') {
-		drawCloud(PIXI, container, x, y, 180);
-		return;
-	}
-
-	if (condition === '비옴') {
-		drawRain(PIXI, container, x, y, 180);
-		return;
-	}
-
-	const unknown = makeText(PIXI, '?', {
-		fontSize: 120,
-		fill: COLORS.muted
-	});
-	addCenteredText(container, unknown, x, y);
-}
-
 function drawPhoneWhiteBackground(PIXI, container) {
 	const bg = new PIXI.Graphics();
 	drawRoundRect(
@@ -182,6 +104,7 @@ function drawTopBar(PIXI, container, title, subtitle = '') {
 		fill: COLORS.text,
 		fontWeight: '900'
 	});
+
 	addCenteredText(
 		container,
 		titleText,
@@ -195,6 +118,7 @@ function drawTopBar(PIXI, container, title, subtitle = '') {
 			fill: COLORS.muted,
 			fontWeight: '700'
 		});
+
 		addCenteredText(
 			container,
 			subText,
@@ -204,75 +128,99 @@ function drawTopBar(PIXI, container, title, subtitle = '') {
 	}
 }
 
-function drawStatusBadge(
+function drawPill(
 	PIXI,
 	container,
 	text,
 	x,
 	y,
-	color = COLORS.blue,
-	bgColor = COLORS.blueSoft
+	width,
+	color = COLORS.blueText,
+	bg = COLORS.blueSoft
 ) {
-	const badge = new PIXI.Graphics();
-	drawRoundRect(badge, x, y, 320, 76, 38, bgColor, 1);
-	container.addChild(badge);
+	const pill = new PIXI.Graphics();
+	drawRoundRect(pill, x, y, width, 62, 31, bg, 1);
+	container.addChild(pill);
 
-	const badgeText = makeText(PIXI, text, {
-		fontSize: 30,
+	const t = makeText(PIXI, text, {
+		fontSize: 26,
 		fill: color,
-		fontWeight: '900'
+		fontWeight: '900',
+		align: 'center'
 	});
-	addCenteredText(container, badgeText, x + 160, y + 38);
+
+	addCenteredText(container, t, x + width / 2, y + 31);
 }
 
-function drawLoadingScreen(PIXI, container, flags, time) {
+function getItems(flags) {
+	return [flags.item1, flags.item2, flags.item3, flags.item4].filter(Boolean);
+}
+
+function drawAdminScreen(PIXI, container, flags, time) {
 	drawPhoneWhiteBackground(PIXI, container);
-	drawTopBar(PIXI, container, '날씨 API 앱', '데이터 연결 준비');
+	drawTopBar(PIXI, container, '분실물찾기', '관리자 접속');
 
 	const circle = new PIXI.Graphics();
-	circle.circle(PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 480, 155);
-	circle.fill({ color: flags.apiConnected ? 0xdcfce7 : COLORS.blueSoft, alpha: 1 });
+	circle.circle(PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 500, 165);
+	circle.fill({
+		color: flags.managerConnected ? COLORS.greenSoft : COLORS.blueSoft,
+		alpha: 1
+	});
 	container.addChild(circle);
 
-	const iconText = makeText(PIXI, flags.apiConnected ? '✓' : 'API', {
-		fontSize: flags.apiConnected ? 120 : 70,
-		fill: flags.apiConnected ? COLORS.green : COLORS.blue,
+	const iconText = makeText(PIXI, flags.managerConnected ? '✓' : '관리', {
+		fontSize: flags.managerConnected ? 130 : 70,
+		fill: flags.managerConnected ? COLORS.green : COLORS.blueText,
 		fontWeight: '900'
 	});
+
 	addCenteredText(
 		container,
 		iconText,
 		PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
-		PHONE_SCREEN.y + 485
+		PHONE_SCREEN.y + 510
 	);
 
-	const message = flags.apiConnected ? 'API 연결 완료' : 'API 연결 대기 중';
-	const msg = makeText(PIXI, message, {
-		fontSize: 46,
-		fill: COLORS.text,
-		fontWeight: '900'
-	});
-	addCenteredText(container, msg, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 720);
+	const message = makeText(
+		PIXI,
+		flags.managerConnected ? '관리자 모드 접속 완료' : '관리자 접속 대기 중',
+		{
+			fontSize: 46,
+			fill: COLORS.text,
+			fontWeight: '900'
+		}
+	);
+
+	addCenteredText(
+		container,
+		message,
+		PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
+		PHONE_SCREEN.y + 760
+	);
 
 	const dots = '.'.repeat((Math.floor(time / 25) % 3) + 1);
+
 	const sub = makeText(
 		PIXI,
-		flags.apiConnected ? '날씨 데이터를 받을 준비가 끝났습니다.' : `서버 연결 중${dots}`,
+		flags.managerConnected
+			? '분실물 등록 시스템을 사용할 수 있습니다.'
+			: `접속 정보를 확인하는 중${dots}`,
 		{
 			fontSize: 30,
 			fill: COLORS.subText,
 			fontWeight: '700'
 		}
 	);
-	addCenteredText(container, sub, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 785);
+
+	addCenteredText(container, sub, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 825);
 
 	const card = new PIXI.Graphics();
 	drawRoundRect(
 		card,
 		PHONE_SCREEN.x + 80,
-		PHONE_SCREEN.y + 960,
+		PHONE_SCREEN.y + 1010,
 		PHONE_SCREEN.width - 160,
-		250,
+		290,
 		44,
 		COLORS.cardSoft,
 		1
@@ -280,251 +228,271 @@ function drawLoadingScreen(PIXI, container, flags, time) {
 	container.addChild(card);
 
 	const guide = makeText(PIXI, '미션 1', {
-		fontSize: 28,
+		fontSize: 30,
 		fill: COLORS.blueText,
 		fontWeight: '900'
 	});
-	addLeftText(container, guide, PHONE_SCREEN.x + 125, PHONE_SCREEN.y + 1015);
+	addLeftText(container, guide, PHONE_SCREEN.x + 125, PHONE_SCREEN.y + 1065);
 
-	const guide2 = makeText(PIXI, '날씨 API와 연결하면\n앱 화면이 켜집니다.', {
+	const guide2 = makeText(PIXI, '관리자 접속이 완료되면\n분실물 등록 준비를 시작합니다.', {
 		fontSize: 36,
 		fill: COLORS.text,
 		fontWeight: '900',
-		lineHeight: 48
+		lineHeight: 50,
+		align: 'left'
 	});
-	addLeftText(container, guide2, PHONE_SCREEN.x + 125, PHONE_SCREEN.y + 1062);
+	addLeftText(container, guide2, PHONE_SCREEN.x + 125, PHONE_SCREEN.y + 1115);
 }
 
-function drawAnalyzeScreen(PIXI, container, flags) {
+function drawCategoryScreen(PIXI, container, flags) {
 	drawPhoneWhiteBackground(PIXI, container);
-	drawTopBar(PIXI, container, 'API 데이터 해석', '역할별 데이터 확인');
+	drawTopBar(PIXI, container, '분류기준 만들기', '분실물을 종류별로 정리합니다');
 
-	const items = [
-		['지역', flags.city ? `${flags.city} 확인` : '지역 데이터 대기'],
-		['현재', flags.condition ? `${flags.condition} / ${flags.temp ?? '-'}℃` : '현재 날씨 대기'],
-		['예보', flags.forecast?.length ? `${flags.forecast.length}일 예보 확인` : '예보 데이터 대기'],
-		['알림', flags.alert?.message ? '안전 알림 확인' : '알림 데이터 대기']
-	];
-
-	items.forEach(([label, value], index) => {
-		const y = PHONE_SCREEN.y + 330 + index * 230;
-
-		const card = new PIXI.Graphics();
-		drawRoundRect(
-			card,
-			PHONE_SCREEN.x + 70,
-			y,
-			PHONE_SCREEN.width - 140,
-			165,
-			36,
-			COLORS.cardSoft,
-			1
-		);
-		drawStrokeRoundRect(
-			card,
-			PHONE_SCREEN.x + 70,
-			y,
-			PHONE_SCREEN.width - 140,
-			165,
-			36,
-			COLORS.line,
-			2,
-			1
-		);
-		container.addChild(card);
-
-		const badge = new PIXI.Graphics();
-		drawRoundRect(badge, PHONE_SCREEN.x + 105, y + 38, 130, 58, 29, COLORS.blueSoft, 1);
-		container.addChild(badge);
-
-		const labelText = makeText(PIXI, label, {
-			fontSize: 28,
-			fill: COLORS.blueText,
-			fontWeight: '900'
-		});
-		addCenteredText(container, labelText, PHONE_SCREEN.x + 170, y + 67);
-
-		const valueText = makeText(PIXI, value, {
-			fontSize: 34,
-			fill: COLORS.text,
-			fontWeight: '900'
-		});
-		addLeftText(container, valueText, PHONE_SCREEN.x + 265, y + 55);
-
-		const stateText = makeText(PIXI, value.includes('대기') ? '대기' : '완료', {
-			fontSize: 24,
-			fill: value.includes('대기') ? COLORS.muted : COLORS.green,
-			fontWeight: '900'
-		});
-		addLeftText(container, stateText, PHONE_SCREEN.x + 265, y + 103);
-	});
-}
-
-function drawForecastCards(PIXI, container, forecast = []) {
-	const list = forecast.slice(0, 3);
-
-	list.forEach((item, index) => {
-		const cardWidth = 205;
-		const gap = 24;
-		const cardX = PHONE_SCREEN.x + 70 + index * (cardWidth + gap);
-		const cardY = PHONE_SCREEN.y + 1190;
-
-		const card = new PIXI.Graphics();
-		drawRoundRect(card, cardX, cardY, cardWidth, 230, 36, COLORS.white, 1);
-		drawStrokeRoundRect(card, cardX, cardY, cardWidth, 230, 36, COLORS.line, 2, 1);
-		container.addChild(card);
-
-		const day = makeText(PIXI, item?.요일 ?? '-', {
-			fontSize: 36,
-			fill: COLORS.text,
-			fontWeight: '900'
-		});
-		addCenteredText(container, day, cardX + cardWidth / 2, cardY + 48);
-
-		const temp = makeText(PIXI, `${item?.최저 ?? '-'}° / ${item?.최고 ?? '-'}°`, {
-			fontSize: 28,
-			fill: COLORS.blueText,
-			fontWeight: '900'
-		});
-		addCenteredText(container, temp, cardX + cardWidth / 2, cardY + 112);
-
-		const rain = makeText(PIXI, `비 ${item?.강수확률 ?? '-'}%`, {
-			fontSize: 26,
-			fill: COLORS.subText,
-			fontWeight: '800'
-		});
-		addCenteredText(container, rain, cardX + cardWidth / 2, cardY + 170);
-	});
-}
-
-function drawFinalWeatherApp(PIXI, container, flags, time) {
-	drawPhoneWhiteBackground(PIXI, container);
-
-	const topBg = new PIXI.Graphics();
-	drawRoundRect(
-		topBg,
-		PHONE_SCREEN.x + 45,
-		PHONE_SCREEN.y + 45,
-		PHONE_SCREEN.width - 90,
-		760,
-		60,
-		0xeff6ff,
-		1
-	);
-	container.addChild(topBg);
-
-	const header = makeText(PIXI, '오늘의 날씨', {
-		fontSize: 42,
-		fill: COLORS.blueText,
-		fontWeight: '900'
-	});
-	addCenteredText(container, header, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 110);
-
-	const city = makeText(PIXI, flags.city || '우리 동네', {
-		fontSize: 62,
-		fill: COLORS.text,
-		fontWeight: '900'
-	});
-	addCenteredText(container, city, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 190);
-
-	drawWeatherIcon(
-		PIXI,
-		container,
-		flags.condition || '맑음',
-		PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
-		PHONE_SCREEN.y + 410
-	);
-
-	const tempValue = flags.temp ?? '-';
-	const temp = makeText(PIXI, `${tempValue}℃`, {
-		fontSize: 120,
-		fill: COLORS.text,
-		fontWeight: '900'
-	});
-	addCenteredText(container, temp, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 640);
-
-	const condition = makeText(PIXI, flags.condition || '날씨 정보 없음', {
+	const status = makeText(PIXI, flags.categoryReady ? '분류 기준 준비 완료' : '분류 기준 대기 중', {
 		fontSize: 44,
-		fill: COLORS.subText,
+		fill: flags.categoryReady ? COLORS.green : COLORS.text,
 		fontWeight: '900'
 	});
-	addCenteredText(
-		container,
-		condition,
-		PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
-		PHONE_SCREEN.y + 750
-	);
+	addCenteredText(container, status, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 300);
 
-	const detailCard = new PIXI.Graphics();
+	const categoryCard = new PIXI.Graphics();
 	drawRoundRect(
-		detailCard,
+		categoryCard,
 		PHONE_SCREEN.x + 70,
-		PHONE_SCREEN.y + 875,
+		PHONE_SCREEN.y + 430,
 		PHONE_SCREEN.width - 140,
-		175,
-		40,
+		430,
+		42,
 		COLORS.cardSoft,
 		1
 	);
-	container.addChild(detailCard);
+	drawStrokeRoundRect(
+		categoryCard,
+		PHONE_SCREEN.x + 70,
+		PHONE_SCREEN.y + 430,
+		PHONE_SCREEN.width - 140,
+		430,
+		42,
+		COLORS.line,
+		2,
+		1
+	);
+	container.addChild(categoryCard);
 
-	const detail = makeText(PIXI, `습도 ${flags.humidity ?? '-'}%     바람 ${flags.wind ?? '-'}m/s`, {
+	const title1 = makeText(PIXI, '사용 가능한 종류', {
 		fontSize: 36,
 		fill: COLORS.text,
-		fontWeight: '900'
+		fontWeight: '900',
+		align: 'left'
 	});
-	addCenteredText(container, detail, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 962);
+	addLeftText(container, title1, PHONE_SCREEN.x + 115, PHONE_SCREEN.y + 485);
 
-	const forecastTitle = makeText(PIXI, '요일별 예보', {
-		fontSize: 38,
+	const categories = flags.categories?.length
+		? flags.categories
+		: ['학용품', '의류', '생활용품', '우산', '기타'];
+
+	categories.slice(0, 6).forEach((category, index) => {
+		const x = PHONE_SCREEN.x + 115 + (index % 2) * 315;
+		const y = PHONE_SCREEN.y + 575 + Math.floor(index / 2) * 95;
+
+		drawPill(PIXI, container, category, x, y, 270);
+	});
+
+	const placeCard = new PIXI.Graphics();
+	drawRoundRect(
+		placeCard,
+		PHONE_SCREEN.x + 70,
+		PHONE_SCREEN.y + 930,
+		PHONE_SCREEN.width - 140,
+		430,
+		42,
+		0xeff6ff,
+		1
+	);
+	drawStrokeRoundRect(
+		placeCard,
+		PHONE_SCREEN.x + 70,
+		PHONE_SCREEN.y + 930,
+		PHONE_SCREEN.width - 140,
+		430,
+		42,
+		0xbfdbfe,
+		2,
+		1
+	);
+	container.addChild(placeCard);
+
+	const title2 = makeText(PIXI, '보관장소', {
+		fontSize: 36,
 		fill: COLORS.text,
+		fontWeight: '900',
+		align: 'left'
+	});
+	addLeftText(container, title2, PHONE_SCREEN.x + 115, PHONE_SCREEN.y + 985);
+
+	const places = flags.storagePlaces?.length
+		? flags.storagePlaces
+		: ['교무실', '교실', '도서관', '분실물보관함'];
+
+	places.slice(0, 6).forEach((place, index) => {
+		const x = PHONE_SCREEN.x + 115 + (index % 2) * 315;
+		const y = PHONE_SCREEN.y + 1075 + Math.floor(index / 2) * 95;
+
+		drawPill(PIXI, container, place, x, y, 270, COLORS.blueText, COLORS.white);
+	});
+
+	const bottom = makeText(PIXI, '이 기준에 맞춰 실제 분실물을 등록하세요.', {
+		fontSize: 30,
+		fill: COLORS.subText,
+		fontWeight: '800'
+	});
+	addCenteredText(
+		container,
+		bottom,
+		PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
+		PHONE_SCREEN.y + 1510
+	);
+}
+
+function drawItemCard(PIXI, container, item, x, y, width, height) {
+	const card = new PIXI.Graphics();
+	drawRoundRect(card, x, y, width, height, 34, COLORS.white, 1);
+	drawStrokeRoundRect(card, x, y, width, height, 34, COLORS.line, 2, 1);
+	container.addChild(card);
+
+	const number = makeText(PIXI, `#${item.cardNumber}`, {
+		fontSize: 24,
+		fill: COLORS.blueText,
+		fontWeight: '900',
+		align: 'left'
+	});
+	addLeftText(container, number, x + 28, y + 24);
+
+	const statusText = item.ownerFound ? '주인 찾음' : '찾는 중';
+	const statusBg = item.ownerFound ? COLORS.greenSoft : COLORS.yellowSoft;
+	const statusColor = item.ownerFound ? COLORS.green : COLORS.yellowText;
+	drawPill(PIXI, container, statusText, x + width - 176, y + 20, 140, statusColor, statusBg);
+
+	const name = makeText(PIXI, item.name || '이름 없음', {
+		fontSize: 35,
+		fill: COLORS.text,
+		fontWeight: '900',
+		align: 'left'
+	});
+	addLeftText(container, name, x + 28, y + 73);
+
+	const meta = makeText(PIXI, `${item.category || '-'} · ${item.color || '-'}`, {
+		fontSize: 25,
+		fill: COLORS.subText,
+		fontWeight: '800',
+		align: 'left'
+	});
+	addLeftText(container, meta, x + 28, y + 122);
+
+	const place = makeText(
+		PIXI,
+		`발견: ${item.foundPlace || '-'}\n보관: ${item.storagePlace || '-'}`,
+		{
+			fontSize: 23,
+			fill: COLORS.text,
+			fontWeight: '700',
+			lineHeight: 34,
+			align: 'left'
+		}
+	);
+	addLeftText(container, place, x + 28, y + 168);
+
+	const featureText = item.features?.length ? item.features.slice(0, 2).join(', ') : '특징 없음';
+	const features = makeText(PIXI, `특징: ${featureText}`, {
+		fontSize: 22,
+		fill: COLORS.muted,
+		fontWeight: '700',
+		wordWrap: true,
+		wordWrapWidth: width - 56,
+		lineHeight: 32,
+		align: 'left'
+	});
+	addLeftText(container, features, x + 28, y + 250);
+
+	if (item.hasPhoto) {
+		const photo = makeText(PIXI, '사진 있음', {
+			fontSize: 21,
+			fill: COLORS.blueText,
+			fontWeight: '900',
+			align: 'left'
+		});
+		addLeftText(container, photo, x + 28, y + height - 48);
+	}
+}
+
+function drawRegisterScreen(PIXI, container, flags) {
+	drawPhoneWhiteBackground(PIXI, container);
+	// drawTopBar(PIXI, container, '분실물 목록', '각자 등록한 카드가 모입니다');
+
+	const items = getItems(flags);
+
+	const summary = makeText(PIXI, `등록된 분실물 ${items.length} / 4`, {
+		fontSize: 44,
+		fill: items.length >= 4 ? COLORS.green : COLORS.text,
 		fontWeight: '900'
 	});
-	addLeftText(container, forecastTitle, PHONE_SCREEN.x + 70, PHONE_SCREEN.y + 1120);
+	addCenteredText(container, summary, PHONE_SCREEN.x + PHONE_SCREEN.width / 2, PHONE_SCREEN.y + 65);
 
-	drawForecastCards(PIXI, container, flags.forecast ?? []);
-
-	if (flags.alert?.message) {
-		const alertBox = new PIXI.Graphics();
-		drawRoundRect(
-			alertBox,
-			PHONE_SCREEN.x + 70,
-			PHONE_SCREEN.y + 1490,
-			PHONE_SCREEN.width - 140,
-			190,
-			40,
-			COLORS.warningBg,
-			1
+	if (items.length >= 4) {
+		drawPill(
+			PIXI,
+			container,
+			'목록 완성',
+			PHONE_SCREEN.x + PHONE_SCREEN.width / 2 - 150,
+			PHONE_SCREEN.y + 115,
+			300,
+			COLORS.green,
+			COLORS.greenSoft
 		);
-		drawStrokeRoundRect(
-			alertBox,
-			PHONE_SCREEN.x + 70,
-			PHONE_SCREEN.y + 1490,
-			PHONE_SCREEN.width - 140,
-			190,
-			40,
-			0xfdba74,
-			3,
-			1
+	} else {
+		const waiting = makeText(PIXI, '4개의 카드가 모두 모이면 앱 목록이 완성됩니다.', {
+			fontSize: 27,
+			fill: COLORS.muted,
+			fontWeight: '800'
+		});
+		addCenteredText(
+			container,
+			waiting,
+			PHONE_SCREEN.x + PHONE_SCREEN.width / 2,
+			PHONE_SCREEN.y + 135
 		);
-		container.addChild(alertBox);
+	}
 
-		const alertTitle = makeText(PIXI, flags.alert?.type || '날씨 알림', {
-			fontSize: 32,
-			fill: COLORS.warningText,
-			fontWeight: '900'
-		});
-		addLeftText(container, alertTitle, PHONE_SCREEN.x + 115, PHONE_SCREEN.y + 1528);
+	const startX = PHONE_SCREEN.x + 65;
+	const startY = PHONE_SCREEN.y + 200;
+	const cardWidth = 330;
+	const cardHeight = 360;
+	const gapX = 30;
+	const gapY = 35;
 
-		const alertMessage = makeText(PIXI, flags.alert.message, {
-			fontSize: 28,
-			fill: 0x7c2d12,
-			fontWeight: '800',
-			wordWrap: true,
-			wordWrapWidth: PHONE_SCREEN.width - 230,
-			lineHeight: 38
-		});
-		addLeftText(container, alertMessage, PHONE_SCREEN.x + 115, PHONE_SCREEN.y + 1585);
+	for (let i = 0; i < 4; i += 1) {
+		const cardNumber = i + 1;
+		const item = items.find((next) => next.cardNumber === cardNumber);
+		const x = startX + (i % 2) * (cardWidth + gapX);
+		const y = startY + Math.floor(i / 2) * (cardHeight + gapY);
+
+		if (item) {
+			drawItemCard(PIXI, container, item, x, y, cardWidth, cardHeight);
+		} else {
+			const empty = new PIXI.Graphics();
+			drawRoundRect(empty, x, y, cardWidth, cardHeight, 34, COLORS.cardSoft, 1);
+			drawStrokeRoundRect(empty, x, y, cardWidth, cardHeight, 34, COLORS.line, 2, 0.8);
+			container.addChild(empty);
+
+			const text = makeText(PIXI, `#${cardNumber}\n등록 대기`, {
+				fontSize: 32,
+				fill: COLORS.muted,
+				fontWeight: '900',
+				align: 'center',
+				lineHeight: 48
+			});
+			addCenteredText(container, text, x + cardWidth / 2, y + cardHeight / 2);
+		}
 	}
 }
 
@@ -536,17 +504,18 @@ export function createWeatherAppRuntime({ app, PIXI, getState }) {
 
 	function getRenderKey(flags) {
 		return JSON.stringify({
-			apiConnected: flags.apiConnected,
-			apiAnalyzed: flags.apiAnalyzed,
-			appReady: flags.appReady,
-			city: flags.city,
-			country: flags.country,
-			condition: flags.condition,
-			temp: flags.temp,
-			humidity: flags.humidity,
-			wind: flags.wind,
-			forecast: flags.forecast,
-			alert: flags.alert
+			managerConnected: flags.managerConnected,
+			categoryReady: flags.categoryReady,
+			registerMode: flags.registerMode,
+			appName: flags.appName,
+			managerName: flags.managerName,
+			schoolName: flags.schoolName,
+			categories: flags.categories,
+			storagePlaces: flags.storagePlaces,
+			item1: flags.item1,
+			item2: flags.item2,
+			item3: flags.item3,
+			item4: flags.item4
 		});
 	}
 
@@ -554,24 +523,24 @@ export function createWeatherAppRuntime({ app, PIXI, getState }) {
 		const state = getState?.() ?? {};
 		const flags = state.flags ?? {};
 
-		const renderKey = getRenderKey(flags) + `:${Math.floor(time / 20)}`;
+		const renderKey = getRenderKey(flags) + `:${Math.floor(time / 25)}`;
 
 		if (renderKey === lastRenderKey) return;
 		lastRenderKey = renderKey;
 
 		clearContainer(uiLayer);
 
-		if (flags.appReady) {
-			drawFinalWeatherApp(PIXI, uiLayer, flags, time);
+		if (flags.registerMode || flags.item1 || flags.item2 || flags.item3 || flags.item4) {
+			drawRegisterScreen(PIXI, uiLayer, flags);
 			return;
 		}
 
-		if (flags.apiAnalyzed) {
-			drawAnalyzeScreen(PIXI, uiLayer, flags);
+		if (flags.categoryReady) {
+			drawCategoryScreen(PIXI, uiLayer, flags);
 			return;
 		}
 
-		drawLoadingScreen(PIXI, uiLayer, flags, time);
+		drawAdminScreen(PIXI, uiLayer, flags, time);
 	}
 
 	function tick({ time }) {
