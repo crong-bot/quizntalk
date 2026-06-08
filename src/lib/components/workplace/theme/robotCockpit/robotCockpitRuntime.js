@@ -1,6 +1,21 @@
 // src/lib/components/workplace/theme/robotCockpit/robotCockpitRuntime.js
 
-const LOOK_DURATION = 320;
+const LOOK_DURATION = 620;
+
+const HUD_BOOT_END = 0.22;
+const LOOK_END = 0.62;
+
+const STEP_FORWARD = {
+	farScale: 1.01,
+	middleScale: 1.03,
+	nearScale: 1.07,
+
+	farY: 4,
+	middleY: 12,
+	nearY: 30,
+
+	hudShakeY: 10
+};
 
 const MISSILE_FLY_DURATION = 230;
 const EXPLOSION_DURATION = 90;
@@ -63,6 +78,8 @@ function rememberBasePosition(sprite) {
 
 	sprite.__baseX = sprite.x;
 	sprite.__baseY = sprite.y;
+	sprite.__baseScaleX = sprite.scale?.x ?? 1;
+	sprite.__baseScaleY = sprite.scale?.y ?? 1;
 	sprite.__robotCockpitBaseSaved = true;
 }
 
@@ -72,6 +89,19 @@ function getBaseX(sprite) {
 
 function getBaseY(sprite) {
 	return sprite?.__baseY ?? sprite?.y ?? 0;
+}
+function getBaseScaleX(sprite) {
+	return sprite?.__baseScaleX ?? sprite?.scale?.x ?? 1;
+}
+
+function getBaseScaleY(sprite) {
+	return sprite?.__baseScaleY ?? sprite?.scale?.y ?? 1;
+}
+
+function setScaleFromBase(sprite, ratio) {
+	if (!sprite) return;
+
+	sprite.scale.set(getBaseScaleX(sprite) * ratio, getBaseScaleY(sprite) * ratio);
 }
 function setRuntimeSpriteSize(sprite, size) {
 	if (!sprite || !size) return;
@@ -182,67 +212,148 @@ export function createRobotCockpitRuntime({
 	};
 
 	function resetBasePositions() {
-		for (const sprite of [
-			sprites.baseFar,
-			sprites.baseMiddle,
-			sprites.baseNear,
-			sprites.cockpit,
-			sprites.cockpitHud
-		]) {
-			if (!sprite) continue;
+	for (const sprite of [
+		sprites.baseFar,
+		sprites.baseMiddle,
+		sprites.baseNear,
+		sprites.cockpit,
+		sprites.cockpitHud
+	]) {
+		if (!sprite) continue;
 
-			sprite.x = getBaseX(sprite);
-			sprite.y = getBaseY(sprite);
+		sprite.x = getBaseX(sprite);
+		sprite.y = getBaseY(sprite);
+		sprite.scale.set(getBaseScaleX(sprite), getBaseScaleY(sprite));
+		sprite.alpha = 1;
+	}
+}
+
+	function applyParallaxLook(delta) {
+	const progress = clamp(runtime.lookTimer / LOOK_DURATION, 0, 1);
+
+	// 1단계: HUD 부팅 깜빡임
+	const bootProgress = clamp(progress / HUD_BOOT_END, 0, 1);
+
+	if (sprites.cockpitHud) {
+		if (progress < HUD_BOOT_END) {
+			const blink = Math.sin(bootProgress * Math.PI * 10);
+			const alpha = 0.45 + Math.abs(blink) * 0.55;
+
+			sprites.cockpitHud.alpha = alpha;
+			sprites.cockpitHud.x = getBaseX(sprites.cockpitHud);
+			sprites.cockpitHud.y = getBaseY(sprites.cockpitHud);
+		} else {
+			sprites.cockpitHud.alpha = 1;
 		}
 	}
 
-	function applyParallaxLook(delta) {
-		const progress = clamp(runtime.lookTimer / LOOK_DURATION, 0, 1);
+	// 2단계: 좌우 시선 이동
+	const lookProgress =
+		progress < HUD_BOOT_END
+			? 0
+			: clamp((progress - HUD_BOOT_END) / (LOOK_END - HUD_BOOT_END), 0, 1);
 
-		let lookX = 0;
+	let lookX = 0;
 
+	if (lookProgress > 0 && lookProgress < 1) {
 		const leftMoveEnd = 0.22;
 		const backCenterEnd = 0.42;
 		const pauseEnd = 0.52;
 		const rightMoveEnd = 0.74;
 
-		if (progress < leftMoveEnd) {
-			const t = progress / leftMoveEnd;
+		if (lookProgress < leftMoveEnd) {
+			const t = lookProgress / leftMoveEnd;
 			lookX = -easeOutCubic(t);
-		} else if (progress < backCenterEnd) {
-			const t = (progress - leftMoveEnd) / (backCenterEnd - leftMoveEnd);
+		} else if (lookProgress < backCenterEnd) {
+			const t = (lookProgress - leftMoveEnd) / (backCenterEnd - leftMoveEnd);
 			lookX = -(1 - easeOutCubic(t));
-		} else if (progress < pauseEnd) {
+		} else if (lookProgress < pauseEnd) {
 			lookX = 0;
-		} else if (progress < rightMoveEnd) {
-			const t = (progress - pauseEnd) / (rightMoveEnd - pauseEnd);
+		} else if (lookProgress < rightMoveEnd) {
+			const t = (lookProgress - pauseEnd) / (rightMoveEnd - pauseEnd);
 			lookX = easeOutCubic(t);
 		} else {
-			const t = (progress - rightMoveEnd) / (1 - rightMoveEnd);
+			const t = (lookProgress - rightMoveEnd) / (1 - rightMoveEnd);
 			lookX = 1 - easeOutCubic(t);
-		}
-
-		const farX = lookX * 18;
-		const middleX = lookX * 55;
-		const nearX = lookX * 105;
-
-		if (sprites.baseFar) sprites.baseFar.x = getBaseX(sprites.baseFar) + farX;
-		if (sprites.baseMiddle) sprites.baseMiddle.x = getBaseX(sprites.baseMiddle) + middleX;
-		if (sprites.baseNear) sprites.baseNear.x = getBaseX(sprites.baseNear) + nearX;
-
-		if (sprites.cockpitHud) {
-			sprites.cockpitHud.x = getBaseX(sprites.cockpitHud) + lookX * 8;
-			sprites.cockpitHud.y = getBaseY(sprites.cockpitHud) + Math.sin(progress * Math.PI * 6) * 1.5;
-		}
-
-		runtime.lookTimer += delta;
-
-		if (runtime.lookTimer >= LOOK_DURATION) {
-			runtime.lookPlaying = false;
-			resetBasePositions();
 		}
 	}
 
+	// 3단계: 앞으로 쿵 → 뒤로 쿵 → 원위치
+	const stepProgress =
+		progress < LOOK_END ? 0 : clamp((progress - LOOK_END) / (1 - LOOK_END), 0, 1);
+
+	let stepEase = 0;
+	let walkBounce = 0;
+
+	if (stepProgress < 0.45) {
+		// 원위치 -> 앞으로 한 발 쿵
+		const t = stepProgress / 0.45;
+
+		stepEase = easeOutCubic(t);
+		walkBounce = Math.sin(t * Math.PI) * 1.2;
+	} else if (stepProgress < 0.85) {
+		// 앞으로 간 상태 -> 뒤로 한 발 쿵
+		const t = (stepProgress - 0.45) / 0.4;
+
+		stepEase = 1 - easeOutCubic(t) * 1.55;
+		walkBounce = -Math.sin(t * Math.PI) * 1.1;
+	} else {
+		// 뒤쪽에서 원위치로 정리
+		const t = (stepProgress - 0.85) / 0.15;
+
+		stepEase = -0.55 + easeOutCubic(t) * 0.55;
+		walkBounce = Math.sin(t * Math.PI) * 0.35;
+	}
+
+	const farX = lookX * 18;
+	const middleX = lookX * 55;
+	const nearX = lookX * 105;
+
+	const farScale = 1 + (STEP_FORWARD.farScale - 1) * stepEase;
+	const middleScale = 1 + (STEP_FORWARD.middleScale - 1) * stepEase;
+	const nearScale = 1 + (STEP_FORWARD.nearScale - 1) * stepEase;
+
+	if (sprites.baseFar) {
+		sprites.baseFar.x = getBaseX(sprites.baseFar) + farX;
+		sprites.baseFar.y = getBaseY(sprites.baseFar) + STEP_FORWARD.farY * stepEase;
+		setScaleFromBase(sprites.baseFar, farScale);
+	}
+
+	if (sprites.baseMiddle) {
+		sprites.baseMiddle.x = getBaseX(sprites.baseMiddle) + middleX;
+		sprites.baseMiddle.y = getBaseY(sprites.baseMiddle) + STEP_FORWARD.middleY * stepEase;
+		setScaleFromBase(sprites.baseMiddle, middleScale);
+	}
+
+	if (sprites.baseNear) {
+		sprites.baseNear.x = getBaseX(sprites.baseNear) + nearX;
+		sprites.baseNear.y = getBaseY(sprites.baseNear) + STEP_FORWARD.nearY * stepEase;
+		setScaleFromBase(sprites.baseNear, nearScale);
+	}
+
+	if (sprites.cockpitHud && progress >= HUD_BOOT_END) {
+		const stepBump = walkBounce * STEP_FORWARD.hudShakeY;
+
+		sprites.cockpitHud.x = getBaseX(sprites.cockpitHud) + lookX * 8;
+		sprites.cockpitHud.y =
+			getBaseY(sprites.cockpitHud) +
+			Math.sin(lookProgress * Math.PI * 6) * 1.5 +
+			stepBump;
+	}
+
+	runtime.lookTimer += delta;
+
+	if (runtime.lookTimer >= LOOK_DURATION) {
+		runtime.lookPlaying = false;
+
+		// 앞으로 쿵 → 뒤로 쿵 후 원위치로 정리
+		resetBasePositions();
+
+		if (sprites.cockpitHud) {
+			sprites.cockpitHud.alpha = 1;
+		}
+	}
+}
 	function hideWeaponSprites() {
 		hide(targetLock);
 		hide(missile);

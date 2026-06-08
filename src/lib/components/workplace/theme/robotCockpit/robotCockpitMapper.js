@@ -79,7 +79,7 @@ export function mapRobotCockpitJsonToSimulationState({ jsonText, missionId }) {
 		state.flags.enteredCockpit = true;
 
 		if (hudOn) {
-			state.layers[robotCockpitLayers.cockpit] = false;
+			state.layers[robotCockpitLayers.cockpit] = true;
 			state.layers[robotCockpitLayers.cockpitHud] = true;
 			state.flags.hudOn = true;
 		} else {

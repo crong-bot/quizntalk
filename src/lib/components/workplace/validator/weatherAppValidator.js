@@ -3,8 +3,36 @@
 import { mapWeatherAppJsonToSimulationState } from '../theme/weatherApp/weatherAppMapper.js';
 import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
+function isIndexKey(key) {
+	return /^\d+$/.test(key);
+}
+
+function canAccessKey(current, key) {
+	if (Array.isArray(current)) {
+		const index = Number(key);
+		return isIndexKey(key) && index >= 0 && index < current.length;
+	}
+
+	if (isPlainObject(current)) {
+		return key in current;
+	}
+
+	return false;
+}
+
 function getValueByPath(obj, path) {
-	return path.split('.').reduce((current, key) => current?.[key], obj);
+	const keys = path.split('.');
+	let current = obj;
+
+	for (const key of keys) {
+		if (!canAccessKey(current, key)) {
+			return undefined;
+		}
+
+		current = current[key];
+	}
+
+	return current;
 }
 
 function hasPath(obj, path) {
@@ -12,11 +40,13 @@ function hasPath(obj, path) {
 	let current = obj;
 
 	for (const key of keys) {
-		if (!isPlainObject(current) || !(key in current)) {
+		if (!canAccessKey(current, key)) {
 			return false;
 		}
+
 		current = current[key];
 	}
+
 	return true;
 }
 

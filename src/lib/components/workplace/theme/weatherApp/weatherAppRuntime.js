@@ -1,9 +1,9 @@
 // src/lib/components/workplace/theme/weatherApp/weatherAppRuntime.js
 
 const PHONE_SCREEN = {
-	x: 340,
+	x: 322,
 	y: 200,
-	width: 820,
+	width: 818,
 	height: 1800
 };
 
@@ -553,6 +553,8 @@ export function createWeatherAppRuntime({ app, PIXI, getState }) {
 	function render(time) {
 		const state = getState?.() ?? {};
 		const flags = state.flags ?? {};
+
+
 
 		const renderKey = getRenderKey(flags) + `:${Math.floor(time / 20)}`;
 

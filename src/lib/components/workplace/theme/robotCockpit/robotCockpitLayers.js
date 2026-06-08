@@ -47,7 +47,7 @@ export const robotCockpitMissionSuccessStates = {
 			[robotCockpitLayers.baseFar]: true,
 			[robotCockpitLayers.baseMiddle]: true,
 			[robotCockpitLayers.baseNear]: true,
-			[robotCockpitLayers.cockpit]: false,
+			[robotCockpitLayers.cockpit]: true,
 			[robotCockpitLayers.cockpitHud]: true
 		},
 		flags: {
@@ -64,7 +64,7 @@ export const robotCockpitMissionSuccessStates = {
 			[robotCockpitLayers.baseFar]: true,
 			[robotCockpitLayers.baseMiddle]: true,
 			[robotCockpitLayers.baseNear]: true,
-			[robotCockpitLayers.cockpit]: false,
+			[robotCockpitLayers.cockpit]: true,
 			[robotCockpitLayers.cockpitHud]: true
 		},
 		flags: {
