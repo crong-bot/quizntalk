@@ -20,6 +20,23 @@ function canAccessKey(current, key) {
 	return false;
 }
 
+function isIndexKey(key) {
+	return /^\d+$/.test(key);
+}
+
+function canAccessKey(current, key) {
+	if (Array.isArray(current)) {
+		const index = Number(key);
+		return isIndexKey(key) && index >= 0 && index < current.length;
+	}
+
+	if (isPlainObject(current)) {
+		return key in current;
+	}
+
+	return false;
+}
+
 function getValueByPath(obj, path) {
 	const keys = path.split('.');
 	let current = obj;
