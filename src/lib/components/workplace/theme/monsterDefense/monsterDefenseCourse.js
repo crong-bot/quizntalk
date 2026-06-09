@@ -9,6 +9,7 @@ const mission1wallStructureHint = {
 	type: 'structure',
 	title: '미션1 JSON 구조도',
 	rootLabel: '정찰',
+
 	items: [
 		{
 			label: '예상방향',
@@ -153,25 +154,26 @@ export const monsterDefenseCourse = {
 	subtitle: '정찰하고, 방어 도구를 만들고, 최종 방어 계획으로 도시를 지켜요.',
 	icon: '🛡️',
 	themeId: 'monsterDefense',
+	difficulty: 'JSON 전설',
 	completion: {
-			learningResults: [
-				{
-					label: '객체 object',
-					value: '{ }',
-					description: '성벽, 트랩, 대포 정보를 묶음'
-				},
-				{
-					label: '중첩 구조',
-					value: '성벽.방향',
-					description: '객체 안에 객체를 넣어 정리'
-				},
-				{
-					label: '불리언 boolean',
-					value: 'true',
-					description: '문닫기, 작동 상태 표현'
-				}
-			]
-		},
+		learningResults: [
+			{
+				label: '객체 object',
+				value: '{ }',
+				description: '성벽, 트랩, 대포 정보를 묶음'
+			},
+			{
+				label: '중첩 구조',
+				value: '성벽.방향',
+				description: '객체 안에 객체를 넣어 정리'
+			},
+			{
+				label: '불리언 boolean',
+				value: 'true',
+				description: '문닫기, 작동 상태 표현'
+			}
+		]
+	},
 	intro: {
 		badge: 'CITY DEFENSE',
 		title: '괴물 도시 방어 작전',
@@ -386,7 +388,7 @@ export const monsterDefenseCourse = {
 						description: '성벽 도구를 만드는 역할'
 					},
 					clues: [
-						 mission2wallStructureHint,
+						mission2wallStructureHint,
 						'위험하다고 생각하는 방향에 성벽을 준비해야 합니다.',
 						'문닫기 값이 true이면 성벽 문이 닫힌 상태입니다.',
 						'문닫기 값이 false이면 성벽 문이 열린 상태입니다.'

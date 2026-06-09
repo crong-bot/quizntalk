@@ -11,7 +11,7 @@ export const robotCockpitCourse = {
 	subtitle: 'JSON 명령으로 로봇에 탑승하고 HUD를 켠 뒤 목표 지점을 공격하세요.',
 	icon: '🤖',
 	themeId: 'robotCockpit',
-
+	difficulty: 'JSON 고수',
 	intro: {
 		badge: 'ROBOT STARTUP',
 		title: '거대 로봇 콕핏 작전',

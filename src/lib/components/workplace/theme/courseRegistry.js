@@ -17,9 +17,9 @@ export const courses = [
 	bikeRebalanceCourse,
 	disasterSafetyCourse,
 	owlBusCourse,
-	monsterDefenseCourse,
+	weatherAppCourse,
 	robotCockpitCourse,
-	weatherAppCourse
+	monsterDefenseCourse
 ];
 
 // const courseByThemeId = {

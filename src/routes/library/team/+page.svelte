@@ -20,45 +20,45 @@
 			title: '달 기지 복구',
 			subtitle: 'JSON 명령을 작성해 멈춰버린 달 기지를 복구합니다.',
 			icon: '🪐',
-			level: '초5~6',
+			level: 'JSON 새싹',
 			players: 4,
 			tags: ['객체', '문자열', '숫자', '불리언'],
 			enabled: true
 		},
 		{
-			id: 'rescueDrone',
+			id: 'weather-app',
 			categoryId: 'write',
 			categoryTitle: '제이슨 작성',
-			title: '구조 드론 작전',
-			subtitle: '드론 설정 JSON을 완성해 구조 지점을 찾아냅니다.',
-			icon: '🚁',
-			level: '준비 중',
+			title: '분실물 찾기 앱 만들기',
+			subtitle: '학교의 분실물을 보여주는 앱을 만들어봐요.',
+			icon: '🔎',
+			level: 'JSON 도전자',
 			players: 4,
 			tags: ['좌표', '센서', '객체'],
+			enabled: true
+		},
+		{
+			id: 'robot-cockpit',
+			categoryId: 'write',
+			categoryTitle: '제이슨 작성',
+			title: '거대 로봇 콕핏 작전',
+			subtitle: '거대 로봇을 협동해서 조종해봅시다.',
+			icon: '🤖',
+			level: 'JSON 고수',
+			players: 4,
+			tags: ['중첩 객체', '장비 상태', '조건'],
 			enabled: true
 		},
 		{
 			id: 'monster-defense',
 			categoryId: 'write',
 			categoryTitle: '제이슨 작성',
-			title: '몬스터 디펜스',
-			subtitle: '교실 장치의 상태를 JSON으로 제어합니다.',
-			icon: '🏫',
-			level: '준비 중',
+			title: '몬스터 방어 작전',
+			subtitle: '괴물로 부터 마을을 지킵니다.',
+			icon: '🛡️',
+			level: 'JSON 전설',
 			players: 4,
 			tags: ['상태값', 'true/false', '숫자'],
-			enabled: true
-		},
-		{
-			id: 'deepSeaBase',
-			categoryId: 'write',
-			categoryTitle: '제이슨 작성',
-			title: '심해 기지 탐사',
-			subtitle: '탐사 장비 설정 JSON을 완성해 심해 기지를 가동합니다.',
-			icon: '🌊',
-			level: '준비 중',
-			players: 4,
-			tags: ['중첩 객체', '장비 상태', '조건'],
 			enabled: true
 		},
 		{
@@ -73,6 +73,7 @@
 			tags: ['배열', '데이터 해석', '근거 판단'],
 			enabled: true
 		},
+
 		{
 			id: 'hackerTrace',
 			categoryId: 'read',
@@ -246,6 +247,42 @@
 	function increaseRoomCount() {
 		roomCount = Math.min(10, roomCount + 1);
 	}
+	function getThemeLevel(theme) {
+		return theme.level ?? 'JSON 새싹';
+	}
+
+	function getThemeLevelClass(theme) {
+		const level = getThemeLevel(theme);
+
+		if (level === 'JSON 새싹') {
+			return 'bg-sky-500 text-white ring-sky-200 shadow-[0_8px_18px_rgba(14,165,233,0.28)]';
+		}
+
+		if (level === 'JSON 도전자') {
+			return 'bg-amber-500 text-white ring-amber-200 shadow-[0_8px_18px_rgba(245,158,11,0.28)]';
+		}
+
+		if (level === 'JSON 고수') {
+			return 'bg-violet-600 text-white ring-violet-200 shadow-[0_8px_18px_rgba(124,58,237,0.30)]';
+		}
+
+		if (level === 'JSON 전설') {
+			return 'bg-rose-600 text-white ring-rose-200 shadow-[0_8px_20px_rgba(225,29,72,0.35)]';
+		}
+
+		return 'bg-slate-600 text-white ring-slate-200 shadow-[0_8px_18px_rgba(71,85,105,0.25)]';
+	}
+
+	function getThemeLevelIcon(theme) {
+		const level = getThemeLevel(theme);
+
+		if (level === 'JSON 새싹') return '🌱';
+		if (level === 'JSON 실력자') return '⚡';
+		if (level === 'JSON 고수') return '🔥';
+		if (level === 'JSON 전설') return '👑';
+
+		return '⭐';
+	}
 </script>
 
 <Nav />
@@ -346,15 +383,16 @@
 
 											{#if theme.enabled}
 												<div
-													class={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
-														selectedThemeId === theme.id ? tone.badge : 'bg-white text-slate-500'
-													}`}
+													class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
+														theme
+													)}`}
 												>
-													선택 가능
+													<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
+													<span>{getThemeLevel(theme)}</span>
 												</div>
 											{:else}
 												<div
-													class="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-extrabold text-slate-500"
+													class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300"
 												>
 													준비 중
 												</div>
@@ -382,9 +420,7 @@
 										</div>
 
 										<div class="mt-auto flex items-center justify-between pt-4">
-											<div class="text-[11px] font-extrabold text-slate-400">
-												{theme.level}
-											</div>
+											<div class="text-[11px] font-extrabold text-slate-400">테마미션</div>
 
 											<div class="text-[11px] font-extrabold text-slate-400">
 												{theme.players}인 협동
