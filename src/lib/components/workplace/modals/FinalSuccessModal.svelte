@@ -32,6 +32,29 @@
 	$: reasons = Array.isArray(safeCompletion.reasons) ? safeCompletion.reasons : [];
 	$: message = safeCompletion.message ?? '';
 	$: exitButtonText = safeCompletion.exitButtonText ?? '나가기';
+	$: learningResultsTitle = 'JSON 학습 결과';
+
+	$: defaultLearningResults = [
+		{
+			label: 'JSON 구조',
+			value: '{ }',
+			description: '데이터를 묶는 객체'
+		},
+		{
+			label: '키와 값',
+			value: 'key: value',
+			description: '정보를 이름과 내용으로 저장'
+		},
+		{
+			label: '검증과 수정',
+			value: 'check',
+			description: '오류를 고치며 완성'
+		}
+	];
+
+	$: learningResults = Array.isArray(safeCompletion.learningResults)
+		? safeCompletion.learningResults
+		: defaultLearningResults;
 </script>
 
 {#if show}
@@ -241,31 +264,31 @@
 									class="mt-3 max-h-[150px] overflow-auto rounded-2xl bg-slate-950 p-4 text-[13px] font-bold leading-6 text-emerald-200">{jsonText}</pre>
 							</div>
 
+							{#if learningResults.length > 0}
 							<div class="rounded-3xl border border-slate-200 bg-white p-4">
-								<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">
-									JSON 학습 결과
-								</div>
+	<div class="text-[11px] font-black tracking-[0.16em] text-slate-400">
+		{learningResultsTitle}
+	</div>
 
-								<div class="mt-3 grid grid-cols-3 gap-2">
-									<div class="rounded-2xl bg-slate-50 px-3 py-3">
-										<div class="text-[11px] font-black text-slate-400">숫자 number</div>
-										<div class="mt-1 text-[17px] font-black text-slate-950">100</div>
-										<div class="mt-1 text-[11px] font-bold text-slate-500">따옴표 없이 입력</div>
-									</div>
+	<div class={`mt-3 grid gap-2 ${learningResults.length >= 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+		{#each learningResults as item}
+			<div class="rounded-2xl bg-slate-50 px-3 py-3">
+				<div class="text-[11px] font-black text-slate-400">
+					{item.label}
+				</div>
 
-									<div class="rounded-2xl bg-slate-50 px-3 py-3">
-										<div class="text-[11px] font-black text-slate-400">문자열 string</div>
-										<div class="mt-1 text-[17px] font-black text-blue-600">"AD32"</div>
-										<div class="mt-1 text-[11px] font-bold text-slate-500">따옴표로 감싸기</div>
-									</div>
+				<div class="mt-1 text-[17px] font-black text-slate-950">
+					{item.value}
+				</div>
 
-									<div class="rounded-2xl bg-slate-50 px-3 py-3">
-										<div class="text-[11px] font-black text-slate-400">불리언 boolean</div>
-										<div class="mt-1 text-[17px] font-black text-emerald-600">true</div>
-										<div class="mt-1 text-[11px] font-bold text-slate-500">true / false</div>
-									</div>
-								</div>
-							</div>
+				<div class="mt-1 text-[11px] font-bold text-slate-500">
+					{item.description}
+				</div>
+			</div>
+		{/each}
+	</div>
+</div>
+						{/if}
 						</div>
 
 						<div class="space-y-3">

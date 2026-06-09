@@ -7,6 +7,25 @@ export const moonBaseCourse = {
 	subtitle: '달 기지의 꺼진 시스템을 JSON 명령으로 복구하세요.',
 	icon: '🪐',
 	themeId: 'spaceBase',
+	completion: {
+	learningResults: [
+			{
+				label: '숫자 number',
+				value: '100',
+				description: '따옴표 없이 입력'
+			},
+			{
+				label: '문자열 string',
+				value: '"AD32"',
+				description: '따옴표로 감싸기'
+			},
+			{
+				label: '불리언 boolean',
+				value: 'true',
+				description: 'true / false'
+			}
+		]
+	},
 
 	intro: {
 		badge: 'EMERGENCY BRIEFING',

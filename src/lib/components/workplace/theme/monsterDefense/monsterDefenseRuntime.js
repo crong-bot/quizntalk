@@ -34,7 +34,6 @@ const MONSTER_BREAKTHROUGH_SPEED = 0.9;
 const TRAP_HIT_FLASH_TIME = 18;
 const FINAL_RESULT_DELAY_TIME = 35;
 // 불덩어리탄 시작 위치
-// 물대포 입구에 맞게 여기만 조정하면 됨
 const FIREBALL_START = {
 	x: 935,
 	y: 455
@@ -42,13 +41,13 @@ const FIREBALL_START = {
 
 // 몬스터 몸통 어느 지점을 맞출지 조정
 const FIREBALL_TARGET_OFFSET = {
-	x: 120,
-	y: 35
+	x: 130,
+	y: 65
 };
 
 const MONSTER_TRAP_POINT = {
 	x: 595,
-	y: 55
+	y: 10
 };
 
 const HP_BAR = {
@@ -581,16 +580,16 @@ export function createMonsterDefenseRuntime({
 	function tick({ delta, time }) {
 		const state = getState?.() ?? {};
 		const flags = state.flags ?? {};
-		if (flags.finalStarted) {
-			console.log('RUNTIME FINAL FLAGS', {
-				finalStarted: flags.finalStarted,
-				finalSuccess: flags.finalSuccess,
-				finalFail: flags.finalFail,
-				wallDirection: flags.wallDirection,
-				trapPosition: flags.trapPosition,
-				cannonType: flags.cannonType
-			});
-		}
+		// if (flags.finalStarted) {
+		// 	console.log('RUNTIME FINAL FLAGS', {
+		// 		finalStarted: flags.finalStarted,
+		// 		finalSuccess: flags.finalSuccess,
+		// 		finalFail: flags.finalFail,
+		// 		wallDirection: flags.wallDirection,
+		// 		trapPosition: flags.trapPosition,
+		// 		cannonType: flags.cannonType
+		// 	});
+		// }
 
 		hideMonsterFrames(sprites);
 		resetTemporaryEffects(sprites);

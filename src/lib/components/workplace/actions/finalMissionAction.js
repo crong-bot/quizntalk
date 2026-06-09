@@ -413,8 +413,8 @@ export async function runFinalSequenceAction({ context, actions }) {
 	});
 
 	const finalJsonText = JSON.stringify(finalJson, null, 2);
-	console.log('FINAL JSON TEXT', finalJsonText);
-	console.log('FINAL SUBMISSIONS', finalSubmissions);
+	// console.log('FINAL JSON TEXT', finalJsonText);
+	// console.log('FINAL SUBMISSIONS', finalSubmissions);
 
 	const finalValidateResult = validateMissionJson({
 		jsonText: finalJsonText,
@@ -422,7 +422,7 @@ export async function runFinalSequenceAction({ context, actions }) {
 		missionIndex: currentMissionIndex,
 		roleId: 'team'
 	});
-	console.log('FINAL VALIDATE RESULT', finalValidateResult);
+	// console.log('FINAL VALIDATE RESULT', finalValidateResult);
 
 	if (!finalValidateResult.ok) {
 		setShowFinalReadyModal(false);

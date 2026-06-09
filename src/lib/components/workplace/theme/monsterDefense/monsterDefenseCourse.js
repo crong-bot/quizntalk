@@ -22,6 +22,74 @@ const mission1wallStructureHint = {
 		}
 	]
 };
+const mission1trapStructureHint = {
+	type: 'structure',
+	title: '미션1 JSON 구조도',
+	rootLabel: '정찰',
+	items: [
+		{
+			label: '트랩종류',
+			valueType: '문자',
+			description: '트랩의 종류'
+		},
+		{
+			label: '효과',
+			valueType: '문자',
+			description: '트랩의 효과'
+		}
+	]
+};
+const mission1cannonStructureHint = {
+	type: 'structure',
+	title: '미션1 JSON 구조도',
+	rootLabel: '정찰',
+	items: [
+		{
+			label: '대포종류',
+			valueType: '문자',
+			description: '무슨 대포인지'
+		},
+		{
+			label: '효과',
+			valueType: '문자',
+			description: '대포의 효과'
+		}
+	]
+};
+const mission1scoutStructureHint = {
+	type: 'structure',
+	title: '미션1 JSON 구조도',
+	rootLabel: '정찰',
+	items: [
+		{
+			label: '괴물이름',
+			valueType: '문자',
+			description: '무슨 괴물?'
+		},
+		{
+			label: '침입방향',
+			valueType: '문자',
+			description: '어디로 침입?'
+		}
+	]
+};
+const mission2wallStructureHint = {
+	type: 'structure',
+	title: '미션1 JSON 구조도',
+	rootLabel: '성벽',
+	items: [
+		{
+			label: '방향',
+			valueType: '문자',
+			description: '어느방향으로 침입?'
+		},
+		{
+			label: '문닫기',
+			valueType: 'bool',
+			description: '문이 열림?닫힘?'
+		}
+	]
+};
 
 const finalDefenseStructureHint = {
 	type: 'structure',
@@ -85,7 +153,25 @@ export const monsterDefenseCourse = {
 	subtitle: '정찰하고, 방어 도구를 만들고, 최종 방어 계획으로 도시를 지켜요.',
 	icon: '🛡️',
 	themeId: 'monsterDefense',
-
+	completion: {
+			learningResults: [
+				{
+					label: '객체 object',
+					value: '{ }',
+					description: '성벽, 트랩, 대포 정보를 묶음'
+				},
+				{
+					label: '중첩 구조',
+					value: '성벽.방향',
+					description: '객체 안에 객체를 넣어 정리'
+				},
+				{
+					label: '불리언 boolean',
+					value: 'true',
+					description: '문닫기, 작동 상태 표현'
+				}
+			]
+		},
 	intro: {
 		badge: 'CITY DEFENSE',
 		title: '괴물 도시 방어 작전',
@@ -137,14 +223,14 @@ export const monsterDefenseCourse = {
 		}
 	],
 
-	completion: {
-		badge: 'DEFENSE COMPLETE',
-		title: '도시 방어 작전 완료!',
-		subtitle: '최종 방어 계획이 실행되었습니다.',
-		summaryTitle: '최종 결과',
-		summary: '공용화면에서 괴물 침입과 방어 결과를 확인하세요.',
-		primaryButtonText: '홈으로'
-	},
+	// completion: {
+	// 	badge: 'DEFENSE COMPLETE',
+	// 	title: '도시 방어 작전 완료!',
+	// 	subtitle: '최종 방어 계획이 실행되었습니다.',
+	// 	summaryTitle: '최종 결과',
+	// 	summary: '공용화면에서 괴물 침입과 방어 결과를 확인하세요.',
+	// 	primaryButtonText: '홈으로'
+	// },
 
 	missions: [
 		{
@@ -206,6 +292,7 @@ export const monsterDefenseCourse = {
 						description: '괴물을 멈출 트랩을 판단하는 역할'
 					},
 					clues: [
+						mission1trapStructureHint,
 						'그물트랩은 초록괴물을 오래 멈추게 했습니다.',
 						'미끄럼기름은 처음에는 효과가 있었지만 금방 풀렸습니다.',
 						'소리폭탄은 거의 효과가 없었습니다.'
@@ -232,6 +319,7 @@ export const monsterDefenseCourse = {
 						description: '괴물을 약하게 만들 대포를 판단하는 역할'
 					},
 					clues: [
+						mission1cannonStructureHint,
 						'불대포를 맞은 초록괴물은 크게 약해졌습니다.',
 						'물대포는 거의 효과가 없었습니다.',
 						'바람대포는 조금 밀어냈지만 금방 다시 움직였습니다.'
@@ -257,6 +345,7 @@ export const monsterDefenseCourse = {
 						description: '괴물의 정체와 침입 방향을 추측하는 역할'
 					},
 					clues: [
+						mission1scoutStructureHint,
 						'정찰 기록에는 초록색 괴물이 보였다고 적혀 있습니다.',
 						'초록괴물은 크기가 크고 도시 쪽으로 걸어옵니다.',
 						'숲괴물도 초록색이지만 크기가 작고 숲에서 잘 나오지 않습니다.',
@@ -268,7 +357,6 @@ export const monsterDefenseCourse = {
   "정찰": {
     "괴물이름": "",
     "침입방향": "",
-    "몸색": ""
   }
 }`
 				}
@@ -298,6 +386,7 @@ export const monsterDefenseCourse = {
 						description: '성벽 도구를 만드는 역할'
 					},
 					clues: [
+						 mission2wallStructureHint,
 						'위험하다고 생각하는 방향에 성벽을 준비해야 합니다.',
 						'문닫기 값이 true이면 성벽 문이 닫힌 상태입니다.',
 						'문닫기 값이 false이면 성벽 문이 열린 상태입니다.'
@@ -306,10 +395,7 @@ export const monsterDefenseCourse = {
 					valueChips: ['"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"', 'true', 'false'],
 					initialJson: `{
   "방어도구": {
-    "성벽": {
-      "방향": "",
-      "문닫기": false
-    }
+    "성벽": 
   }
 }`
 				},
@@ -388,7 +474,7 @@ export const monsterDefenseCourse = {
 					keyChips: ['방어도구', '괴물이름', '침입방향'],
 					valueChips: ['"초록괴물"', '"숲괴물"', '"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"'],
 					initialJson: `{
-  "방어도구": {
+  "정찰기록": {
     "괴물이름": "",
     "침입방향": ""
   }

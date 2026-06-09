@@ -1361,12 +1361,12 @@ $: briefingClues = isReadCourse
 		await svelteTick();
 		showFinalReadyModal = true;
 
-		console.log('DEBUG FINAL READY TRIGGERED', {
-			finalSubmissions,
-			players: players.map((player) => player.missionProgress[currentMissionIndex]),
-			status,
-			showFinalReadyModal
-		});
+		// console.log('DEBUG FINAL READY TRIGGERED', {
+		// 	finalSubmissions,
+		// 	players: players.map((player) => player.missionProgress[currentMissionIndex]),
+		// 	status,
+		// 	showFinalReadyModal
+		// });
 	}
 	async function syncFinalSequenceToFirestore({
 		nextMissionProgress,
