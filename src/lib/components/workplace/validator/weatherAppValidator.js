@@ -3,22 +3,7 @@
 import { mapWeatherAppJsonToSimulationState } from '../theme/weatherApp/weatherAppMapper.js';
 import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
-function isIndexKey(key) {
-	return /^\d+$/.test(key);
-}
 
-function canAccessKey(current, key) {
-	if (Array.isArray(current)) {
-		const index = Number(key);
-		return isIndexKey(key) && index >= 0 && index < current.length;
-	}
-
-	if (isPlainObject(current)) {
-		return key in current;
-	}
-
-	return false;
-}
 
 function isIndexKey(key) {
 	return /^\d+$/.test(key);

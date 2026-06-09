@@ -678,6 +678,107 @@
 	$: currentPlayer = players.find((player) => player.id === currentPlayerId) ?? players[0];
 	$: currentMission = course.missions[currentMissionIndex] ?? course.missions[0];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
+
+function withBriefingTitle(clue, prefix) {
+	if (typeof clue === 'string') {
+		return `${prefix} ${clue}`;
+	}
+
+	return {
+		...clue,
+		title: `${prefix} ${clue.title ?? 'JSON 단서'}`
+	};
+}
+
+function getRoleNameById(roleId) {
+	const role = (course?.roles ?? []).find((role) => role.id === roleId);
+
+	return role?.roleName ?? role?.name ?? roleId;
+}
+
+function getParticipantRoleId(participant) {
+	return (
+		participant?.roleId ??
+		participant?.role?.id ??
+		participant?.playerRoleId ??
+		participant?.assignedRoleId ??
+		''
+	);
+}
+
+/**
+ * 실제 사람이 들어온 역할 ID
+ * Firebase 방이면 participants 기준으로 계산해야 함.
+ * players는 화면 표시용이라 4개 역할이 다 잡힐 수 있음.
+ */
+$: joinedRoleIds = shouldUseFirebase
+	? participants.map(getParticipantRoleId).filter(Boolean)
+	: players.map((player) => player.roleId).filter(Boolean);
+
+/**
+ * 읽기 미션의 협동 보고서에서만 시스템 단서가 필요함.
+ * 미션1에서는 필요 없음.
+ */
+$: isThreePlayerReadTeamReport =
+	isReadCourse &&
+	currentMission?.type === 'team-json-report' &&
+	(course?.roles?.length ?? 0) === 4 &&
+	(
+		room?.maxParticipants === 3 ||
+		participants.length === 3 ||
+		joinedRoleIds.length === 3
+	);
+
+$: missingReadRoleIds = isThreePlayerReadTeamReport
+	? (course?.roles ?? [])
+			.map((role) => role.id)
+			.filter((roleId) => !joinedRoleIds.includes(roleId))
+	: [];
+
+/**
+ * 미션2에서 내 미션1 단서 다시 보여주기
+ */
+$: previousCurrentRoleClues =
+	isReadCourse && currentMission?.type === 'team-json-report'
+		? (() => {
+				const previousMission = course?.missions?.[currentMissionIndex - 1];
+				const roleMission = previousMission?.roleMissions?.[currentPlayer?.roleId];
+
+				return (roleMission?.clues ?? []).map((clue) =>
+					withBriefingTitle(clue, '[내 이전 단서]')
+				);
+		  })()
+		: [];
+
+/**
+ * 3명 방일 때만, 빠진 4번째 시스템 역할의 미션1 단서 가져오기
+ */
+$: missingSystemRoleClues =
+	isThreePlayerReadTeamReport
+		? missingReadRoleIds.flatMap((roleId) => {
+				const previousMission = course?.missions?.[currentMissionIndex - 1];
+				const roleMission = previousMission?.roleMissions?.[roleId];
+				const roleName = getRoleNameById(roleId);
+
+				return (roleMission?.clues ?? []).map((clue) =>
+					withBriefingTitle(clue, `[시스템 단서 · ${roleName}]`)
+				);
+		  })
+		: [];
+
+/**
+ * 왼쪽 MissionBriefingPanel에 들어갈 단서
+ */
+$: briefingClues = isReadCourse
+	? currentMission?.type === 'team-json-report'
+		? [
+				...previousCurrentRoleClues,
+				...missingSystemRoleClues
+		  ]
+		: currentRoleMission?.sideClues ?? []
+	: currentRoleMission?.clues ?? [];
+
+
 	$: missionBriefingKey = [
 		course?.id ?? course?.themeId ?? '',
 		currentMissionIndex,
@@ -1600,7 +1701,7 @@
 							story={currentRoleMission?.story}
 							role={currentRoleMission?.role}
 							playerName={currentPlayer?.name ?? ''}
-							clues={isReadCourse ? [] : currentRoleMission?.clues ?? []}
+							clues={briefingClues}
 							keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
 							panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
 							onInsertKey={insertKey}
