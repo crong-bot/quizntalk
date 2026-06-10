@@ -112,7 +112,9 @@ function makeSimulationState({ jsonText, mission }) {
 		jsonText,
 		missionId: mission?.id
 	});
+	
 }
+
 
 function validateIndividualMission({ parsed, jsonText, mission, roleId }) {
 	const rootError = validateRootObject(parsed);

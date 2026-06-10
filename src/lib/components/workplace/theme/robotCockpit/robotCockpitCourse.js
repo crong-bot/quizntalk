@@ -67,7 +67,7 @@ export const robotCockpitCourse = {
 			title: '콕핏 진입',
 			type: 'individual',
 			roleSuccessState: robotCockpitRoleSuccessStates.enterCockpit,
-			// successState: robotCockpitMissionSuccessStates.enterCockpit,
+			successState: robotCockpitMissionSuccessStates.enterCockpit,
 			simulationScope: 'local',
 			initialJson: ``,
 
@@ -167,7 +167,7 @@ export const robotCockpitCourse = {
 			title: 'HUD 전원 켜기',
 			type: 'individual',
 			roleSuccessState: robotCockpitRoleSuccessStates.powerOn,
-			// successState: robotCockpitMissionSuccessStates.powerOn,
+			successState: robotCockpitMissionSuccessStates.powerOn,
 			simulationScope: 'local',
 			initialJson: ``,
 
@@ -287,7 +287,12 @@ export const robotCockpitCourse = {
 			'팀원들의 최종 공격 JSON이 서로 다릅니다. 회의 후 같은 명령을 다시 제출하세요.',
 
 		initialJson: `{
-공격실행:
+ "공격실행": {
+   "목표": "",
+   "좌표": "",
+   "무기": "",
+   "발사각도": 
+  }
 }`,
 
 		finalAnswer: {
@@ -300,70 +305,82 @@ export const robotCockpitCourse = {
 		},
 
 		roleMissions: {
-			pilot: {
-				story: {
-					call: '조종 담당, 공격 목표를 확인하세요.',
-					summary: '조종석 화면에 공격 목표 이름이 표시되었습니다.',
-					mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
-				},
-				role: {
-					title: '조종 담당',
-					icon: '🕹️',
-					description: '공격 목표를 확인하는 역할'
-				},
-				clues: ['공격할 목표는 "붉은타워"입니다.'],
-				keyChips: ['공격실행', '목표'],
-				valueChips: ['"붉은타워"']
+		pilot: {
+			story: {
+				call: '조종 담당, 공격 목표를 확인하세요.',
+				summary: '조종석 화면에 공격 목표와 좌표 앞부분이 표시되었습니다.',
+				mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
 			},
-
-			sensor: {
-				story: {
-					call: '센서 담당, 목표 좌표를 확인하세요.',
-					summary: '센서 화면에 목표 좌표가 표시되었습니다.',
-					mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
-				},
-				role: {
-					title: '센서 담당',
-					icon: '📡',
-					description: '목표 좌표를 확인하는 역할'
-				},
-				clues: ['목표 좌표는 "B7"입니다.'],
-				keyChips: ['공격실행', '좌표'],
-				valueChips: ['"B7"']
+			role: {
+				title: '조종 담당',
+				icon: '🕹️',
+				description: '공격 목표와 좌표 앞부분을 확인하는 역할'
 			},
-
-			weapon: {
-				story: {
-					call: '무장 담당, 사용할 무기를 확인하세요.',
-					summary: '무장 시스템에서 사용 가능한 무기가 표시되었습니다.',
-					mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
-				},
-				role: {
-					title: '무장 담당',
-					icon: '🚀',
-					description: '공격 무기를 확인하는 역할'
-				},
-				clues: ['사용할 무기는 "미사일"입니다.'],
-				keyChips: ['공격실행', '무기'],
-				valueChips: ['"미사일"']
-			},
-
-			engineer: {
-				story: {
-					call: '정비 담당, 발사각도를 확인하세요.',
-					summary: '정비 시스템에서 정확한 발사각도를 계산했습니다.',
-					mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
-				},
-				role: {
-					title: '정비 담당',
-					icon: '🔧',
-					description: '발사각도를 확인하는 역할'
-				},
-				clues: ['발사각도는 24입니다.'],
-				keyChips: ['공격실행', '발사각도'],
-				valueChips: ['24']
-			}
+			clues: [
+				'공격 목표는 "붉은타워"입니다.',
+				'좌표는 알파벳과 숫자를 붙여 만듭니다.',
+				'좌표의 알파벳은 B입니다.'
+			],
+			keyChips: ['공격실행', '목표', '좌표'],
+			valueChips: ['"붉은타워"', '"B"']
 		},
+
+		sensor: {
+			story: {
+				call: '센서 담당, 좌표 숫자를 확인하세요.',
+				summary: '센서 화면에 목표 위치 번호가 표시되었습니다.',
+				mission: '좌표의 숫자 부분을 팀원에게 알려주세요.'
+			},
+			role: {
+				title: '센서 담당',
+				icon: '📡',
+				description: '좌표 숫자를 확인하는 역할'
+			},
+			clues: [
+				'좌표의 숫자는 7입니다.',
+				'좌표는 알파벳과 숫자를 붙여 만듭니다.'
+			],
+			keyChips: ['공격실행', '좌표'],
+			valueChips: ['7', '"B7"']
+		},
+
+		weapon: {
+			story: {
+				call: '무장 담당, 사용할 무기를 확인하세요.',
+				summary: '무장 시스템에 사용 가능한 무기가 표시되었습니다.',
+				mission: '사용할 무기를 팀원에게 알려주세요.'
+			},
+			role: {
+				title: '무장 담당',
+				icon: '🚀',
+				description: '공격 무기를 확인하는 역할'
+			},
+			clues: [
+				'사용할 무기는 "미사일"입니다.',
+				'미사일의 발사각도는 정비 담당 화면에서 확인합니다.'
+			],
+			keyChips: ['공격실행', '무기'],
+			valueChips: ['"미사일"']
+		},
+
+		engineer: {
+			story: {
+				call: '정비 담당, 발사각도를 확인하세요.',
+				summary: '정비 시스템에 무기별 발사각도가 표시되었습니다.',
+				mission: '사용할 무기에 맞는 발사각도를 팀원에게 알려주세요.'
+			},
+			role: {
+				title: '정비 담당',
+				icon: '🔧',
+				description: '발사각도를 확인하는 역할'
+			},
+			clues: [
+				'무기별 발사각도: 레이저는 12, 미사일은 24, 전자포는 36입니다.'
+			],
+			keyChips: ['공격실행', '발사각도'],
+			valueChips: ['12', '24', '36']
+		}
+	},
 
 		finalSuccessMessage: '목표 지점 공격 성공! 미사일이 정확히 명중했습니다.'
 	}
