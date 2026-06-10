@@ -52,7 +52,7 @@
 
 	export let course = moonBaseCourse;
 
-	let lastRestartEventVersion = 0;
+	let workspaceResetVersion = 0;
 
 	$: localParticipantId =
 		typeof localStorage !== 'undefined'
@@ -271,12 +271,28 @@
 		message: '',
 		progress: 0
 	};
-	let consoleLogs = [
-		{
-			type: 'info',
-			text: '복구 명령 JSON을 작성한 뒤 명령전송을 누르세요.'
+	function getInitialConsoleLogs() {
+		if (isReadCourse) {
+			return [
+				{
+					type: 'info',
+					text: 'JSON 단서를 읽고 질문에 대한 분석 결과를 작성한 뒤 제출하세요.'
+				}
+			];
 		}
-	];
+
+		return [
+			{
+				type: 'info',
+				text: '복구 명령 JSON을 작성한 뒤 명령전송을 누르세요.'
+			}
+		];
+	}
+	let consoleLogs = [];
+
+	$: if (consoleLogs.length === 0) {
+		consoleLogs = getInitialConsoleLogs();
+	}
 
 	let editorApi;
 
@@ -577,6 +593,12 @@
 	}
 
 	function resetMission() {
+		workspaceResetVersion += 1;
+		lastInitialJsonKey = '';
+		lastRoomSimulationStateKey = '';
+		lastRoomFinalSubmissionsKey = '';
+		lastSeenMissionEventKey = '';
+
 		finalResultHandled = false;
 		localCurrentPlayerId = 'player_1';
 		currentMissionIndex = 0;
@@ -616,14 +638,11 @@
 			layers: {}
 		};
 
-		consoleLogs = [
-			{
-				type: 'info',
-				text: '복구 명령 JSON을 작성한 뒤 명령전송을 누르세요.'
-			}
-		];
+		consoleLogs = getInitialConsoleLogs();
 	}
 	function resetCurrentJsonToInitial() {
+		workspaceResetVersion += 1;
+		lastInitialJsonKey = '';
 		jsonText = getInitialJsonForMission(currentMissionIndex, currentPlayer);
 		status = 'editing';
 		hasExecuted = false;
@@ -783,7 +802,17 @@ $: briefingClues = isReadCourse
 		course?.id ?? course?.themeId ?? '',
 		currentMissionIndex,
 		currentPlayer?.roleId ?? '',
-		room?.restartVersion ?? 0
+		room?.restartVersion ?? 0,
+		workspaceResetVersion
+	].join(':');
+
+	$: readMissionPanelKey = [
+		'read-panel',
+		course?.id ?? course?.themeId ?? '',
+		currentMissionIndex,
+		currentPlayer?.roleId ?? '',
+		room?.restartVersion ?? 0,
+		workspaceResetVersion
 	].join(':');
 
 	let lastInitialJsonKey = '';
@@ -1519,6 +1548,12 @@ $: briefingClues = isReadCourse
 		});
 	}
 	function resetWorkspaceFromRestartEvent(event) {
+		workspaceResetVersion += 1;
+		lastInitialJsonKey = '';
+		lastRoomSimulationStateKey = '';
+		lastRoomFinalSubmissionsKey = '';
+		lastSeenMissionEventKey = '';
+
 		finalResultHandled = false;
 		currentMissionIndex = 0;
 		localVerificationEnergy = maxVerificationEnergy;
@@ -1566,7 +1601,9 @@ $: briefingClues = isReadCourse
 			},
 			{
 				type: 'info',
-				text: '미션 1의 JSON을 다시 작성해 주세요.'
+				text: isReadCourse
+					? '미션 1의 JSON 단서를 다시 읽고 분석 결과를 작성해 주세요.'
+					: '미션 1의 JSON을 다시 작성해 주세요.'
 			}
 		];
 	}
@@ -1802,17 +1839,19 @@ $: briefingClues = isReadCourse
 					{/if}
 
 					{#if isReadCourse}
-						<ReadMissionPanel
-							clues={currentRoleMission?.clues ?? []}
-							question={readQuestion}
-							bind:answerText={jsonText}
-							{status}
-							logs={consoleLogs}
-							onReady={handleEditorReady}
-							onFormat={formatJson}
-							onSubmit={executeMission}
-							onReset={resetCurrentJsonToInitial}
-						/>
+						{#key readMissionPanelKey}
+							<ReadMissionPanel
+								clues={currentRoleMission?.clues ?? []}
+								question={readQuestion}
+								bind:answerText={jsonText}
+								{status}
+								logs={consoleLogs}
+								onReady={handleEditorReady}
+								onFormat={formatJson}
+								onSubmit={executeMission}
+								onReset={resetCurrentJsonToInitial}
+							/>
+						{/key}
 					{:else}
 						<JsonEditorPanel
 							bind:jsonText

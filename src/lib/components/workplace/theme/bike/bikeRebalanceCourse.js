@@ -6,6 +6,7 @@ export const bikeRebalanceCourse = {
 	subtitle: '서울시 공공자전거 실제 이용 데이터를 분석해 자전거가 많이 필요한 곳을 찾아보세요!',
 	icon: '🚲',
 	themeId: 'bikeRebalance',
+	isRealData: true,
 	categoryId: 'read',
 	categoryTitle: '제이슨 해석',
 	mode: 'read',

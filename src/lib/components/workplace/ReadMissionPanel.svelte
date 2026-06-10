@@ -13,6 +13,8 @@
 	export let onSubmit = () => {};
 	export let onReset = () => {};
 
+	export let submitButtonText = '분석 결과 제출';
+
 	$: latestLog = logs?.[0] ?? null;
 
 	$: safeClues = Array.isArray(clues) ? clues : [];
@@ -283,7 +285,7 @@
 					on:click={onSubmit}
 					class="ml-auto h-10 rounded-xl bg-blue-600 px-4 text-[13px] font-black text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-700"
 				>
-					분석 결과 제출
+					{submitButtonText}
 				</button>
 			</div>
 		</div>

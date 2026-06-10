@@ -3,121 +3,72 @@
 	import { goto } from '$app/navigation';
 	import {
 		createClassroomSession,
-		deleteClassroomSession
+		deleteClassroomSession,
+		isReadMissionCourse
 	} from '$lib/firebase/missionRoom/missionRoomService.js';
 	import { createTeacherLessonsStore } from '$lib/firebase/missionRoom/missionRoomStore';
 	import { authUser } from '$lib/stores/authUser';
+	import { getAllCourses } from '$lib/components/workplace/theme/courseRegistry';
 	import { onDestroy } from 'svelte';
 	import Nav from '../../../lib/components/nav.svelte';
 
 	export let data;
 
-	const themes = [
-		{
-			id: 'spaceBase',
-			categoryId: 'write',
-			categoryTitle: '제이슨 작성',
-			title: '달 기지 복구',
-			subtitle: 'JSON 명령을 작성해 멈춰버린 달 기지를 복구합니다.',
-			icon: '🪐',
-			level: 'JSON 새싹',
-			players: 4,
-			tags: ['객체', '문자열', '숫자', '불리언'],
-			enabled: true
-		},
-		{
-			id: 'weather-app',
-			categoryId: 'write',
-			categoryTitle: '제이슨 작성',
-			title: '분실물 찾기 앱 만들기',
-			subtitle: '학교의 분실물을 보여주는 앱을 만들어봐요.',
-			icon: '🔎',
-			level: 'JSON 도전자',
-			players: 4,
-			tags: ['좌표', '센서', '객체'],
-			enabled: true
-		},
-		{
-			id: 'robot-cockpit',
-			categoryId: 'write',
-			categoryTitle: '제이슨 작성',
-			title: '거대 로봇 콕핏 작전',
-			subtitle: '거대 로봇을 협동해서 조종해봅시다.',
-			icon: '🤖',
-			level: 'JSON 고수',
-			players: 4,
-			tags: ['중첩 객체', '장비 상태', '조건'],
-			enabled: true
-		},
-		{
-			id: 'monster-defense',
-			categoryId: 'write',
-			categoryTitle: '제이슨 작성',
-			title: '몬스터 방어 작전',
-			subtitle: '괴물로 부터 마을을 지킵니다.',
-			icon: '🛡️',
-			level: 'JSON 전설',
-			players: 4,
-			tags: ['상태값', 'true/false', '숫자'],
-			enabled: true
-		},
-		{
-			id: 'animalRescue',
-			categoryId: 'read',
-			categoryTitle: '제이슨 해석',
-			title: '동물구조대: 늑구 추적 작전',
-			subtitle: '제보 JSON과 흔적 데이터를 분석해 늑구 구조 계획서를 만들어보세요.',
-			icon: '🐾',
-			level: '초5~6',
-			players: 4,
-			tags: ['배열', '데이터 해석', '근거 판단'],
-			enabled: true
-		},
+	const courses = getAllCourses();
 
-		{
-			id: 'hackerTrace',
-			categoryId: 'read',
-			categoryTitle: '제이슨 해석',
-			title: '해커 추적대: 사라진 학생정보',
-			subtitle: '흩어진 로그를 연결해 진짜 의심 아이디를 찾아보세요!',
-			icon: '👻',
-			level: '준비 중',
-			players: 4,
-			tags: ['데이터 읽기', '분류', '상태 판단'],
-			enabled: true
-		},
-		{
-			id: 'marketBasket',
-			categoryId: 'read',
-			categoryTitle: '제이슨 해석',
-			title: '장바구니 탐정단: 숨은 구매 패턴을 찾아라',
-			subtitle: '마트 판매 JSON 데이터를 분석해 함께 잘 팔리는 상품의 비밀을 밝혀보세요!',
-			icon: '🛒',
-			level: '준비 중',
-			players: 4,
-			tags: ['배열', '객체', '조건 찾기'],
-			enabled: true
-		},
-		{
-			id: 'securityLog',
-			categoryId: 'read',
-			categoryTitle: '제이슨 해석',
-			title: '보안 로그 분석',
-			subtitle: '접속 기록 JSON을 읽고 이상한 기록을 찾아냅니다.',
-			icon: '🛡️',
-			level: '준비 중',
-			players: 4,
-			tags: ['로그 읽기', '패턴 찾기', '이상 탐지'],
-			enabled: true
+	function getCourseDifficulty(course) {
+		return course?.difficulty ?? course?.level ?? 'JSON 새싹';
+	}
+
+	function getCourseTags(course) {
+		if (Array.isArray(course?.tags) && course.tags.length > 0) {
+			return course.tags;
 		}
-	];
 
-	let selectedThemeId = 'spaceBase';
+		if (Array.isArray(course?.concepts) && course.concepts.length > 0) {
+			return course.concepts;
+		}
+
+		return isReadMissionCourse(course)
+			? ['데이터 해석', '근거 판단']
+			: ['JSON 작성', '협동 미션'];
+	}
+
+	function courseToTheme(course) {
+		const isRead = isReadMissionCourse(course);
+
+		return {
+			id: course.id,
+			themeId: course.themeId ?? course.id,
+			courseId: course.id,
+
+			categoryId: isRead ? 'read' : 'write',
+			categoryTitle: isRead ? '제이슨 해석' : '제이슨 작성',
+
+			title: course.title ?? '이름 없는 미션',
+			subtitle: course.subtitle ?? '미션 설명이 없습니다.',
+			icon: course.icon ?? '🧩',
+			level: getCourseDifficulty(course),
+			players: course.roles?.length ?? 4,
+			tags: getCourseTags(course),
+
+			isRealData: course?.isRealData === true,
+			enabled: course.enabled ?? true,
+
+			course
+		};
+	}
+
+	const themes = courses.map(courseToTheme);
+
+	let selectedThemeId = themes[0]?.id ?? '';
 	let roomCount = 4;
 	let roomCapacities = [4, 4, 4, 4];
 	let isCreating = false;
+	let deletingLessonId = '';
+	let startedOwnerUid = '';
 
-	$: selectedTheme = themes.find((theme) => theme.id === selectedThemeId);
+	$: selectedTheme = themes.find((theme) => theme.id === selectedThemeId) ?? themes[0];
 	$: writeThemes = themes.filter((theme) => theme.categoryId === 'write');
 	$: readThemes = themes.filter((theme) => theme.categoryId === 'read');
 
@@ -138,8 +89,6 @@
 		}
 	}
 
-	let startedOwnerUid = '';
-
 	$: if (ownerUid && ownerUid !== startedOwnerUid) {
 		startedOwnerUid = ownerUid;
 		teacherLessonsStore.start(ownerUid);
@@ -158,12 +107,6 @@
 			currentIndex === index ? capacity : value
 		);
 	}
-
-	// onMount(() => {
-	// 	if (ownerUid) {
-	// 		teacherLessonsStore.start(ownerUid);
-	// 	}
-	// });
 
 	async function createSession() {
 		if (isCreating) return;
@@ -186,7 +129,6 @@
 			isCreating = false;
 		}
 	}
-	let deletingLessonId = '';
 
 	async function deleteLesson(lesson) {
 		if (!lesson?.id) return;
@@ -212,6 +154,7 @@
 			deletingLessonId = '';
 		}
 	}
+
 	function selectTheme(theme) {
 		if (!theme.enabled) return;
 		selectedThemeId = theme.id;
@@ -220,26 +163,19 @@
 	function getCategoryTone(categoryId) {
 		if (categoryId === 'write') {
 			return {
-				sectionIconBg: 'bg-blue-50',
-				sectionTitle: 'text-blue-700',
 				selectedBorder: 'border-blue-300',
 				selectedBg: 'bg-blue-50',
-				selectedShadow: 'shadow-[0_18px_40px_rgba(37,99,235,0.12)]',
-				badge: 'bg-blue-600 text-white',
-				sideBadge: 'bg-blue-50 text-blue-700'
+				selectedShadow: 'shadow-[0_18px_40px_rgba(37,99,235,0.12)]'
 			};
 		}
 
 		return {
-			sectionIconBg: 'bg-violet-50',
-			sectionTitle: 'text-violet-700',
 			selectedBorder: 'border-violet-300',
 			selectedBg: 'bg-violet-50',
-			selectedShadow: 'shadow-[0_18px_40px_rgba(124,58,237,0.12)]',
-			badge: 'bg-violet-600 text-white',
-			sideBadge: 'bg-violet-50 text-violet-700'
+			selectedShadow: 'shadow-[0_18px_40px_rgba(124,58,237,0.12)]'
 		};
 	}
+
 	function decreaseRoomCount() {
 		roomCount = Math.max(1, roomCount - 1);
 	}
@@ -247,8 +183,9 @@
 	function increaseRoomCount() {
 		roomCount = Math.min(10, roomCount + 1);
 	}
+
 	function getThemeLevel(theme) {
-		return theme.level ?? 'JSON 새싹';
+		return theme?.level ?? 'JSON 새싹';
 	}
 
 	function getThemeLevelClass(theme) {
@@ -258,7 +195,7 @@
 			return 'bg-sky-500 text-white ring-sky-200 shadow-[0_8px_18px_rgba(14,165,233,0.28)]';
 		}
 
-		if (level === 'JSON 도전자') {
+		if (level === 'JSON 중급') {
 			return 'bg-amber-500 text-white ring-amber-200 shadow-[0_8px_18px_rgba(245,158,11,0.28)]';
 		}
 
@@ -277,33 +214,44 @@
 		const level = getThemeLevel(theme);
 
 		if (level === 'JSON 새싹') return '🌱';
-		if (level === 'JSON 실력자') return '⚡';
+		if (level === 'JSON 중급') return '⚡';
 		if (level === 'JSON 고수') return '🔥';
 		if (level === 'JSON 전설') return '👑';
 
 		return '⭐';
 	}
+
+	
+	function getThemeDataLabel(theme) {
+	return theme?.isRealData ? '실제데이터' : '가상데이터';
+}
+
+function getThemeDataTextClass(theme) {
+	return theme?.isRealData ? 'text-emerald-500' : 'text-blue-500';
+}
+
+function getThemeDataIcon(theme) {
+	return theme?.isRealData ? '📊' : '🧪';
+}
+
+function getThemeDataBarClass(theme) {
+	return theme?.isRealData ? 'bg-emerald-300' : 'bg-blue-300';
+}
+
+function getThemeDataLabelClass(theme) {
+	return theme?.isRealData ? 'text-emerald-600' : 'text-blue-500';
+}
 </script>
 
 <Nav />
+
 <div class="min-h-screen bg-[#f4f7fb] px-4 py-2 font-nanum text-slate-800">
 	<div class="mx-auto flex w-full max-w-[1220px] flex-col gap-5">
 		<header
 			class="flex items-center justify-between rounded-[26px] border border-slate-200 bg-white px-6 py-5 shadow-sm"
 		>
 			<div>
-				<!-- <button
-					type="button"
-					on:click={() => goto('/')}
-					class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-extrabold text-slate-600 transition hover:bg-slate-50"
-				>
-					홈으로
-				</button> -->
-				<!-- <div class="font-gmarket text-[11px] font-bold tracking-[0.18em] text-blue-500">
-					CREATE GAME
-				</div> -->
-
-				<h1 class=" font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
+				<h1 class="font-gmarket text-[30px] font-bold tracking-[-0.06em] text-slate-950">
 					미션 생성 - 팀미션 만들기
 				</h1>
 
@@ -367,7 +315,7 @@
 									type="button"
 									disabled={!theme.enabled}
 									on:click={() => selectTheme(theme)}
-									class={`group relative min-h-[216px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+									class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
 										selectedThemeId === theme.id
 											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
 											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
@@ -378,7 +326,7 @@
 									></div>
 
 									<div class="relative z-10 flex h-full flex-col">
-										<div class="flex items-start justify-between">
+										<div class="flex items-start justify-between gap-2">
 											<div class="text-[34px]">{theme.icon}</div>
 
 											{#if theme.enabled}
@@ -419,11 +367,14 @@
 											{/each}
 										</div>
 
-										<div class="mt-auto flex items-center justify-between pt-4">
-											<div class="text-[11px] font-extrabold text-slate-400">테마미션</div>
-
-											<div class="text-[11px] font-extrabold text-slate-400">
-												{theme.players}인 협동
+										<div class="mt-auto border-t border-slate-200/80 pt-3">
+											<div
+												class={`flex items-center gap-2 text-[11px] font-black ${getThemeDataTextClass(
+													theme
+												)}`}
+											>
+												<span class="text-[14px]">{getThemeDataIcon(theme)}</span>
+												<span>{getThemeDataLabel(theme)}</span>
 											</div>
 										</div>
 									</div>
@@ -459,7 +410,7 @@
 									type="button"
 									disabled={!theme.enabled}
 									on:click={() => selectTheme(theme)}
-									class={`group relative min-h-[216px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+									class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
 										selectedThemeId === theme.id
 											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
 											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
@@ -470,20 +421,21 @@
 									></div>
 
 									<div class="relative z-10 flex h-full flex-col">
-										<div class="flex items-start justify-between">
+										<div class="flex items-start justify-between gap-2">
 											<div class="text-[34px]">{theme.icon}</div>
 
 											{#if theme.enabled}
 												<div
-													class={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
-														selectedThemeId === theme.id ? tone.badge : 'bg-white text-slate-500'
-													}`}
+													class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
+														theme
+													)}`}
 												>
-													선택 가능
+													<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
+													<span>{getThemeLevel(theme)}</span>
 												</div>
 											{:else}
 												<div
-													class="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-extrabold text-slate-500"
+													class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300"
 												>
 													준비 중
 												</div>
@@ -510,15 +462,15 @@
 											{/each}
 										</div>
 
-										<div class="mt-auto flex items-center justify-between pt-4">
-											<div class="text-[11px] font-extrabold text-slate-400">
-												{theme.level}
-											</div>
+										<div class="mt-auto pt-4">
+	<div class={`h-[3px] rounded-full ${getThemeDataBarClass(theme)}`}></div>
 
-											<div class="text-[11px] font-extrabold text-slate-400">
-												{theme.players}인 협동
-											</div>
-										</div>
+	<div class="mt-2 flex items-center justify-end">
+		<div class={`text-[11px] font-black ${getThemeDataLabelClass(theme)}`}>
+			{getThemeDataLabel(theme)}
+		</div>
+	</div>
+</div>
 									</div>
 								</button>
 							{/each}
@@ -571,17 +523,23 @@
 							<div class="mt-4 grid grid-cols-2 gap-2">
 								<div class="rounded-2xl bg-white/10 p-3">
 									<div class="text-[11px] font-extrabold text-slate-400">미션 유형</div>
-									<div class="mt-1 text-[14px] font-extrabold">{selectedTheme?.categoryTitle}</div>
+									<div class="mt-1 text-[14px] font-extrabold">
+										{selectedTheme?.categoryTitle}
+									</div>
 								</div>
 
 								<div class="rounded-2xl bg-white/10 p-3">
-									<div class="text-[11px] font-extrabold text-slate-400">참여 방식</div>
-									<div class="mt-1 text-[14px] font-extrabold">게임 코드</div>
+									<div class="text-[11px] font-extrabold text-slate-400">난이도</div>
+									<div class="mt-1 text-[14px] font-extrabold">
+										{getThemeLevelIcon(selectedTheme)} {getThemeLevel(selectedTheme)}
+									</div>
 								</div>
 
 								<div class="rounded-2xl bg-white/10 p-3">
-									<div class="text-[11px] font-extrabold text-slate-400">방 정원</div>
-									<div class="mt-1 text-[14px] font-extrabold">방별 선택</div>
+									<div class="text-[11px] font-extrabold text-slate-400">데이터</div>
+									<div class="mt-1 text-[14px] font-extrabold">
+										{getThemeDataIcon(selectedTheme)} {getThemeDataLabel(selectedTheme)}
+									</div>
 								</div>
 
 								<div class="rounded-2xl bg-white/10 p-3">
@@ -691,7 +649,7 @@
 							type="button"
 							disabled={!selectedTheme?.enabled || isCreating}
 							on:click={createSession}
-							class="mt-5 h-13 w-full rounded-2xl bg-blue-600 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+							class="mt-2 h-16 w-full rounded-2xl bg-blue-600 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
 						>
 							{isCreating ? '방 코드 생성 중...' : `${roomCount}개 방 코드 만들기`}
 						</button>
@@ -705,6 +663,9 @@
 				</section>
 			</aside>
 		</div>
+
+		<!-- 필요하면 다시 살려서 사용 -->
+		<!--
 		<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
 			<div class="flex items-center justify-between">
 				<div>
@@ -755,59 +716,6 @@
 				{/if}
 			</div>
 		</section>
-
-		<section class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
-			<div class="flex items-center justify-between">
-				<div>
-					<div class="text-[18px] font-black text-slate-950">완료된 수업</div>
-					<div class="mt-1 text-sm font-bold text-slate-500">
-						학생별 기록과 개념별 어려움을 확인합니다.
-					</div>
-				</div>
-
-				<div class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">
-					{completedLessons.length}개
-				</div>
-			</div>
-
-			<div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-				{#each completedLessons as lesson}
-					<div
-						class="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-emerald-200 hover:bg-white"
-					>
-						<button
-							type="button"
-							on:click={() => openLesson(lesson.id)}
-							class="block w-full text-left"
-						>
-							<div class="text-[17px] font-black text-slate-950">{lesson.title}</div>
-							<div class="mt-1 text-sm font-bold text-slate-500">
-								참여 {lesson.summary?.totalParticipants ?? 0}명 · 완료 방
-								{lesson.summary?.completedRoomCount ?? 0}/{lesson.summary?.roomCount ??
-									lesson.roomCount ??
-									0}
-							</div>
-						</button>
-
-						<div class="mt-4 flex justify-end">
-							<button
-								type="button"
-								disabled={deletingLessonId === lesson.id}
-								on:click|stopPropagation={() => deleteLesson(lesson)}
-								class="rounded-xl border border-red-100 bg-white px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{deletingLessonId === lesson.id ? '삭제 중...' : '삭제'}
-							</button>
-						</div>
-					</div>
-				{/each}
-
-				{#if completedLessons.length === 0}
-					<div class="rounded-3xl bg-slate-50 p-5 text-sm font-bold text-slate-500">
-						완료된 수업이 없습니다.
-					</div>
-				{/if}
-			</div>
-		</section>
+		-->
 	</div>
 </div>

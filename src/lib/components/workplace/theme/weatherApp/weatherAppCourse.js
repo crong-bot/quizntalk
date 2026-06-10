@@ -8,7 +8,7 @@ export const weatherAppCourse = {
 	subtitle: '분실물 분류 기준을 만들고, 실제 분실물을 앱에 등록하세요.',
 	icon: '🔎',
 	themeId: 'weatherApp',
-	difficulty: 'JSON 도전자',
+	difficulty: 'JSON 중급',
 	intro: {
 		badge: 'LOST ITEM APP',
 		title: '분실물찾기 앱 만들기',

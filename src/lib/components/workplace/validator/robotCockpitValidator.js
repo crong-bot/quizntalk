@@ -3,46 +3,6 @@
 import { mapRobotCockpitJsonToSimulationState } from '../theme/robotCockpit/robotCockpitMapper.js';
 import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
-function getValueByPath(obj, path) {
-	return path.split('.').reduce((current, key) => current?.[key], obj);
-}
-
-function hasPath(obj, path) {
-	const keys = path.split('.');
-	let current = obj;
-
-	for (const key of keys) {
-		if (!isPlainObject(current) || !(key in current)) {
-			return false;
-		}
-
-		current = current[key];
-	}
-
-	return true;
-}
-
-function pushMissing(messages, path) {
-	messages.push({
-		type: 'error',
-		text: `"${path}" 값이 없습니다.`
-	});
-}
-
-function pushTypeError(messages, path, expectedTypeLabel) {
-	messages.push({
-		type: 'error',
-		text: `"${path}" 값은 ${expectedTypeLabel}로 입력해야 합니다.`
-	});
-}
-
-function pushRequiredTrue(messages, path) {
-	messages.push({
-		type: 'error',
-		text: `"${path}" 값은 true여야 합니다.`
-	});
-}
-
 function validateRootObject(parsed) {
 	if (!isPlainObject(parsed)) {
 		return makeResult(false, 'condition', [
@@ -56,29 +16,95 @@ function validateRootObject(parsed) {
 	return null;
 }
 
-function validateBooleanPath({ parsed, path, messages }) {
-	if (!hasPath(parsed, path)) {
-		pushMissing(messages, path);
-		return null;
-	}
-
-	const value = getValueByPath(parsed, path);
-
-	if (typeof value !== 'boolean') {
-		pushTypeError(messages, path, 'true/false');
-		return null;
-	}
-
-	messages.push({
-		type: 'success',
-		text: `"${path}" 값이 확인되었습니다.`
-	});
-
-	return value;
+function createEmptySimulationState() {
+	return {
+		layers: {},
+		sprites: {},
+		camera: {},
+		flags: {}
+	};
 }
 
-function hasOnlySuccess(messages) {
-	return messages.length > 0 && messages.every((message) => message.type === 'success');
+function getRoleMissionAnswer({ mission, roleId }) {
+	return mission?.roleMissions?.[roleId]?.answer;
+}
+
+function isDeepEqual(a, b) {
+	if (a === b) return true;
+
+	if (Array.isArray(a) || Array.isArray(b)) {
+		if (!Array.isArray(a) || !Array.isArray(b)) return false;
+		if (a.length !== b.length) return false;
+
+		return a.every((item, index) => isDeepEqual(item, b[index]));
+	}
+
+	if (isPlainObject(a) || isPlainObject(b)) {
+		if (!isPlainObject(a) || !isPlainObject(b)) return false;
+
+		const aKeys = Object.keys(a);
+		const bKeys = Object.keys(b);
+
+		if (aKeys.length !== bKeys.length) return false;
+
+		return aKeys.every(
+			(key) =>
+				Object.prototype.hasOwnProperty.call(b, key) &&
+				isDeepEqual(a[key], b[key])
+		);
+	}
+
+	return false;
+}
+
+function getMissingAndWrongMessages({ parsed, answer, basePath = '' }) {
+	const messages = [];
+
+	if (!isPlainObject(answer)) {
+		if (!isDeepEqual(parsed, answer)) {
+			messages.push({
+				type: 'error',
+				text: `"${basePath}" 값이 미션 조건과 다릅니다.`
+			});
+		}
+
+		return messages;
+	}
+
+	for (const key of Object.keys(answer)) {
+		const path = basePath ? `${basePath}.${key}` : key;
+
+		if (!isPlainObject(parsed) || !Object.prototype.hasOwnProperty.call(parsed, key)) {
+			messages.push({
+				type: 'error',
+				text: `"${path}" 값이 없습니다.`
+			});
+			continue;
+		}
+
+		const expectedValue = answer[key];
+		const submittedValue = parsed[key];
+
+		if (isPlainObject(expectedValue)) {
+			messages.push(
+				...getMissingAndWrongMessages({
+					parsed: submittedValue,
+					answer: expectedValue,
+					basePath: path
+				})
+			);
+			continue;
+		}
+
+		if (!isDeepEqual(submittedValue, expectedValue)) {
+			messages.push({
+				type: 'error',
+				text: `"${path}" 값이 미션 조건과 다릅니다.`
+			});
+		}
+	}
+
+	return messages;
 }
 
 function makeSimulationState({ jsonText, mission }) {
@@ -88,34 +114,27 @@ function makeSimulationState({ jsonText, mission }) {
 	});
 }
 
-function normalizeJson(value) {
-	return JSON.stringify(value);
-}
-
-function isAnswerCorrect(parsed, answer) {
-	if (!answer) return true;
-	return normalizeJson(parsed) === normalizeJson(answer);
-}
-
-function validateEnterCockpitMission({ parsed, jsonText, mission }) {
+function validateIndividualMission({ parsed, jsonText, mission, roleId }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
-	const messages = [];
+	const answer = getRoleMissionAnswer({ mission, roleId });
 
-	const entered = validateBooleanPath({
-		parsed,
-		path: '콕핏입장',
-		messages
-	});
-
-	if (!hasOnlySuccess(messages)) {
-		return makeResult(false, 'condition', messages);
+	if (!answer) {
+		return makeResult(false, 'condition', [
+			{
+				type: 'error',
+				text: '이 역할의 정답 정보를 찾을 수 없습니다.'
+			}
+		]);
 	}
 
-	if (entered !== true) {
-		pushRequiredTrue(messages, '콕핏입장');
+	const messages = getMissingAndWrongMessages({
+		parsed,
+		answer
+	});
 
+	if (messages.length > 0) {
 		return makeResult(false, 'condition', messages);
 	}
 
@@ -130,7 +149,7 @@ function validateEnterCockpitMission({ parsed, jsonText, mission }) {
 		[
 			{
 				type: 'success',
-				text: '콕핏 진입 명령이 확인되었습니다.'
+				text: '미션 JSON이 정확히 확인되었습니다.'
 			}
 		],
 		{
@@ -139,90 +158,27 @@ function validateEnterCockpitMission({ parsed, jsonText, mission }) {
 		}
 	);
 }
-
-function validatePowerOnMission({ parsed, jsonText, mission }) {
+function validateTeamFinalMission({ parsed, jsonText, mission }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
-	const messages = [];
+	const answer = mission?.finalAnswer;
 
-	const hudOn = validateBooleanPath({
-		parsed,
-		path: 'HUD전원',
-		messages
-	});
-
-	const lookChecked = validateBooleanPath({
-		parsed,
-		path: '시선확인',
-		messages
-	});
-
-	if (!hasOnlySuccess(messages)) {
-		return makeResult(false, 'condition', messages);
-	}
-
-	if (hudOn !== true) {
-		pushRequiredTrue(messages, 'HUD전원');
-	}
-
-	if (lookChecked !== true) {
-		pushRequiredTrue(messages, '시선확인');
-	}
-
-	if (!hasOnlySuccess(messages)) {
-		return makeResult(false, 'condition', messages);
-	}
-
-	const simulationState = makeSimulationState({
-		jsonText,
-		mission
-	});
-
-	return makeResult(
-		true,
-		'success',
-		[
+	if (!answer) {
+		return makeResult(false, 'condition', [
 			{
-				type: 'success',
-				text: 'HUD 전원과 시선 확인 명령이 확인되었습니다.'
+				type: 'error',
+				text: '최종 미션의 정답 정보를 찾을 수 없습니다.'
 			}
-		],
-		{
-			correct: true,
-			simulationState
-		}
-	);
-}
-
-function validateFireMissileMission({ parsed, jsonText, mission }) {
-	const rootError = validateRootObject(parsed);
-	if (rootError) return rootError;
-
-	const messages = [];
-
-	validateBooleanPath({
-		parsed,
-		path: '목표조준',
-		messages
-	});
-
-	validateBooleanPath({
-		parsed,
-		path: '미사일발사',
-		messages
-	});
-
-	if (!hasOnlySuccess(messages)) {
-		return makeResult(false, 'condition', messages);
+		]);
 	}
 
-	const answer = mission?.finalAnswer ?? {
-		목표조준: true,
-		미사일발사: true
-	};
+	const messages = getMissingAndWrongMessages({
+		parsed,
+		answer
+	});
 
-	const finalCorrect = isAnswerCorrect(parsed, answer);
+	const finalCorrect = messages.length === 0;
 
 	const simulationState = makeSimulationState({
 		jsonText,
@@ -236,9 +192,10 @@ function validateFireMissileMission({ parsed, jsonText, mission }) {
 			{
 				type: finalCorrect ? 'success' : 'warning',
 				text: finalCorrect
-					? '목표 조준과 미사일 발사 명령이 확인되었습니다.'
-					: '명령 구조는 맞지만 목표 공격 조건이 정확하지 않습니다. 결과를 공용화면에서 확인하세요.'
-			}
+					? '최종 공격 JSON이 확인되었습니다.'
+					: 'JSON 구조는 제출되었지만 공격 조건이 정확하지 않습니다. 팀원들과 단서를 다시 확인하세요.'
+			},
+			...messages
 		],
 		{
 			finalCorrect,
@@ -274,24 +231,17 @@ export function validateRobotCockpitMissionJson({ jsonText, course, missionIndex
 		]);
 	}
 
-	if (mission.id === 'enter-cockpit') {
-		return validateEnterCockpitMission({
+	if (mission.id === 'enter-cockpit' || mission.id === 'power-on') {
+		return validateIndividualMission({
 			parsed: parsedResult.data,
 			jsonText,
-			mission
-		});
-	}
-
-	if (mission.id === 'power-on') {
-		return validatePowerOnMission({
-			parsed: parsedResult.data,
-			jsonText,
-			mission
+			mission,
+			roleId
 		});
 	}
 
 	if (mission.id === 'fire-missile' || mission.type === 'team-final') {
-		return validateFireMissileMission({
+		return validateTeamFinalMission({
 			parsed: parsedResult.data,
 			jsonText,
 			mission
