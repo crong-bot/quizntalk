@@ -1,6 +1,6 @@
 // src/lib/components/workplace/theme/monsterDefense/monsterDefenseRuntime.js
 
-import { GlowFilter } from 'pixi-filters';
+let GlowFilterClass = null;
 
 const MONSTER_START = {
 	x: 595,
@@ -102,8 +102,14 @@ function getDirectionFromText(value = '', fallback = '북쪽') {
 function applyInstallGlow(sprite, color = 0xdfe4ea) {
 	if (!sprite) return;
 
+	// pixi-filters가 아직 로드되기 전이면 필터 없이 표시만 함
+	if (!GlowFilterClass) {
+		sprite.alpha = 1;
+		return;
+	}
+
 	if (!sprite.__installGlowFilter) {
-		sprite.__installGlowFilter = new GlowFilter({
+		sprite.__installGlowFilter = new GlowFilterClass({
 			distance: 8,
 			outerStrength: 2.8,
 			innerStrength: 0,
@@ -460,6 +466,15 @@ export function createMonsterDefenseRuntime({
 	getState,
 	onFinalResultShown = () => {}
 }) {
+	if (typeof window !== 'undefined') {
+		import('pixi-filters')
+			.then((mod) => {
+				GlowFilterClass = mod.GlowFilter;
+			})
+			.catch((error) => {
+				console.warn('[monsterDefenseRuntime] pixi-filters 로드 실패:', error);
+			});
+	}
 	const hpBar = createHpBar({
 		app,
 		PIXI

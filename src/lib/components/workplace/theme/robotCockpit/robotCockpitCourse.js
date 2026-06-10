@@ -83,14 +83,15 @@ export const robotCockpitCourse = {
 						icon: '🕹️',
 						description: '로봇 탑승 명령을 입력하는 역할'
 					},
-					clues: ['로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
+					clues: [
+						'로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
 						'"파일럿 ID"는 "25KE-415" 이고 코드는 31735 입니다.'
 					],
 					keyChips: ['파일럿아이디'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"파일럿아이디":"25KE-415",
-  						"코드":31735
+						파일럿아이디: '25KE-415',
+						코드: 31735
 					}
 				},
 
@@ -105,14 +106,15 @@ export const robotCockpitCourse = {
 						icon: '📡',
 						description: '진입 신호를 확인하는 역할'
 					},
-					clues: ['로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
+					clues: [
+						'로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
 						'"파일럿 ID"는 "25KE-415" 이고 코드는 31735 입니다.'
 					],
 					keyChips: ['파일럿아이디'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"파일럿아이디":"25KE-415",
-  						"코드":31735
+						파일럿아이디: '25KE-415',
+						코드: 31735
 					}
 				},
 
@@ -127,14 +129,15 @@ export const robotCockpitCourse = {
 						icon: '🚀',
 						description: '무기 시스템 준비 전 진입을 확인하는 역할'
 					},
-					clues: ['로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
+					clues: [
+						'로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
 						'"파일럿 ID"는 "25KE-415" 이고 코드는 31735 입니다.'
 					],
 					keyChips: ['파일럿아이디'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"파일럿아이디":"25KE-415",
-  						"코드":31735
+						파일럿아이디: '25KE-415',
+						코드: 31735
 					}
 				},
 
@@ -149,14 +152,15 @@ export const robotCockpitCourse = {
 						icon: '🔧',
 						description: '내부 시스템 진입을 담당하는 역할'
 					},
-					clues: ['로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
+					clues: [
+						'로봇에 탑승하려면 "파일럿아이디"와 "코드"를 입력해야 합니다.',
 						'"파일럿 ID"는 "25KE-415" 이고 코드는 31735 입니다.'
 					],
 					keyChips: ['파일럿아이디'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"파일럿아이디":"25KE-415",
-  						"코드":31735
+						파일럿아이디: '25KE-415',
+						코드: 31735
 					}
 				}
 			}
@@ -191,16 +195,16 @@ export const robotCockpitCourse = {
 					keyChips: ['HUD전원', '시선확인'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"HUD전원": true,
-						"시선확인": ["오른쪽", "가운데", "왼쪽", "가운데"],
-						"이동": ["앞", "원위치", "뒤", "원위치"]
+						HUD전원: true,
+						시선확인: ['오른쪽', '가운데', '왼쪽', '가운데'],
+						이동: ['앞', '원위치', '뒤', '원위치']
 					}
 				},
 				sensor: {
 					story: {
 						call: '센서 담당, 주변 감지 화면을 켜세요.',
 						summary: '센서 HUD를 켜고 좌우 시야를 확인해야 합니다.',
-							mission: 'HUD전원을 키고 시선을 움직이고 움직여보세요.'
+						mission: 'HUD전원을 키고 시선을 움직이고 움직여보세요.'
 					},
 					role: {
 						title: '센서 담당',
@@ -215,9 +219,9 @@ export const robotCockpitCourse = {
 					keyChips: ['HUD전원', '시선확인'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"HUD전원": true,
-						"시선확인": ["오른쪽", "가운데", "왼쪽", "가운데"],
-						"이동": ["앞", "원위치", "뒤", "원위치"]
+						HUD전원: true,
+						시선확인: ['오른쪽', '가운데', '왼쪽', '가운데'],
+						이동: ['앞', '원위치', '뒤', '원위치']
 					}
 				},
 
@@ -225,7 +229,7 @@ export const robotCockpitCourse = {
 					story: {
 						call: '무장 담당, 조준 화면을 준비하세요.',
 						summary: '조준하려면 HUD가 켜지고 시야 확인이 끝나야 합니다.',
-							mission: 'HUD전원을 키고 시선을 움직이고 움직여보세요.'
+						mission: 'HUD전원을 키고 시선을 움직이고 움직여보세요.'
 					},
 					role: {
 						title: '무장 담당',
@@ -240,9 +244,9 @@ export const robotCockpitCourse = {
 					keyChips: ['HUD전원', '시선확인'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"HUD전원": true,
-						"시선확인": ["오른쪽", "가운데", "왼쪽", "가운데"],
-						"이동": ["앞", "원위치", "뒤", "원위치"]
+						HUD전원: true,
+						시선확인: ['오른쪽', '가운데', '왼쪽', '가운데'],
+						이동: ['앞', '원위치', '뒤', '원위치']
 					}
 				},
 
@@ -265,28 +269,28 @@ export const robotCockpitCourse = {
 					keyChips: ['HUD전원', '시선확인'],
 					valueChips: ['true', 'false'],
 					answer: {
-						"HUD전원": true,
-						"시선확인": ["오른쪽", "가운데", "왼쪽", "가운데"],
-						"이동": ["앞", "원위치", "뒤", "원위치"]
+						HUD전원: true,
+						시선확인: ['오른쪽', '가운데', '왼쪽', '가운데'],
+						이동: ['앞', '원위치', '뒤', '원위치']
 					}
 				}
 			}
 		},
 
 		{
-		id: 'fire-missile',
-		title: '목표 지점 공격',
-		type: 'team-final',
-		roleSuccessState: robotCockpitRoleSuccessStates.fireMissile,
-		successState: robotCockpitMissionSuccessStates.fireMissile,
-		simulationScope: 'room',
-		finalSubmitMode: 'full',
-		waitForFinalResultCallback: true,
-		requireSameFinalSubmissions: true,
-		finalMismatchMessage:
-			'팀원들의 최종 공격 JSON이 서로 다릅니다. 회의 후 같은 명령을 다시 제출하세요.',
+			id: 'fire-missile',
+			title: '목표 지점 공격',
+			type: 'team-final',
+			roleSuccessState: robotCockpitRoleSuccessStates.fireMissile,
+			successState: robotCockpitMissionSuccessStates.fireMissile,
+			simulationScope: 'room',
+			finalSubmitMode: 'full',
+			waitForFinalResultCallback: true,
+			requireSameFinalSubmissions: true,
+			finalMismatchMessage:
+				'팀원들의 최종 공격 JSON이 서로 다릅니다. 회의 후 같은 명령을 다시 제출하세요.',
 
-		initialJson: `{
+			initialJson: `{
  "공격실행": {
    "목표": "",
    "좌표": "",
@@ -295,103 +299,98 @@ export const robotCockpitCourse = {
   }
 }`,
 
-		finalAnswer: {
-			공격실행: {
-				목표: '붉은타워',
-				좌표: 'B7',
-				무기: '미사일',
-				발사각도: 24
-			}
-		},
+			finalAnswer: {
+				공격실행: {
+					목표: '붉은타워',
+					좌표: 'B7',
+					무기: '미사일',
+					발사각도: 24
+				}
+			},
 
-		roleMissions: {
-		pilot: {
-			story: {
-				call: '조종 담당, 공격 목표를 확인하세요.',
-				summary: '조종석 화면에 공격 목표와 좌표 앞부분이 표시되었습니다.',
-				mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
-			},
-			role: {
-				title: '조종 담당',
-				icon: '🕹️',
-				description: '공격 목표와 좌표 앞부분을 확인하는 역할'
-			},
-			clues: [
-				'공격 목표는 "붉은타워"입니다.',
-				'좌표는 알파벳과 숫자를 붙여 만듭니다.',
-				'좌표의 알파벳은 B입니다.'
-			],
-			keyChips: ['공격실행', '목표', '좌표'],
-			valueChips: ['"붉은타워"', '"B"']
-		},
+			roleMissions: {
+				pilot: {
+					story: {
+						call: '조종 담당, 공격 목표를 확인하세요.',
+						summary: '조종석 화면에 공격 목표와 좌표 앞부분이 표시되었습니다.',
+						mission: '팀원들과 단서를 합쳐 최종 공격 JSON을 완성하세요.'
+					},
+					role: {
+						title: '조종 담당',
+						icon: '🕹️',
+						description: '공격 목표와 좌표 앞부분을 확인하는 역할'
+					},
+					clues: [
+						'"목표"는 "붉은타워"입니다.',
+						'"좌표"는 알파벳과 숫자를 붙여 만듭니다.',
+						'"좌표"의 알파벳은 B입니다.'
+					],
+					keyChips: ['공격실행', '목표', '좌표'],
+					valueChips: ['"붉은타워"', '"B"']
+				},
 
-		sensor: {
-			story: {
-				call: '센서 담당, 좌표 숫자를 확인하세요.',
-				summary: '센서 화면에 목표 위치 번호가 표시되었습니다.',
-				mission: '좌표의 숫자 부분을 팀원에게 알려주세요.'
-			},
-			role: {
-				title: '센서 담당',
-				icon: '📡',
-				description: '좌표 숫자를 확인하는 역할'
-			},
-			clues: [
-				'좌표의 숫자는 7입니다.',
-				'좌표는 알파벳과 숫자를 붙여 만듭니다.'
-			],
-			keyChips: ['공격실행', '좌표'],
-			valueChips: ['7', '"B7"']
-		},
+				sensor: {
+					story: {
+						call: '센서 담당, 좌표 숫자를 확인하세요.',
+						summary: '센서 화면에 목표 위치 번호가 표시되었습니다.',
+						mission: '좌표의 숫자 부분을 팀원에게 알려주세요.'
+					},
+					role: {
+						title: '센서 담당',
+						icon: '📡',
+						description: '좌표 숫자를 확인하는 역할'
+					},
+					clues: ['"좌표"의 숫자는 7입니다.', '"좌표"는 알파벳과 숫자를 붙여 만듭니다.'],
+					keyChips: ['공격실행', '좌표'],
+					valueChips: ['7', '"B7"']
+				},
 
-		weapon: {
-			story: {
-				call: '무장 담당, 사용할 무기를 확인하세요.',
-				summary: '무장 시스템에 사용 가능한 무기가 표시되었습니다.',
-				mission: '사용할 무기를 팀원에게 알려주세요.'
-			},
-			role: {
-				title: '무장 담당',
-				icon: '🚀',
-				description: '공격 무기를 확인하는 역할'
-			},
-			clues: [
-				'사용할 무기는 "미사일"입니다.',
-				'미사일의 발사각도는 정비 담당 화면에서 확인합니다.'
-			],
-			keyChips: ['공격실행', '무기'],
-			valueChips: ['"미사일"']
-		},
+				weapon: {
+					story: {
+						call: '무장 담당, 사용할 무기를 확인하세요.',
+						summary: '무장 시스템에 사용 가능한 무기가 표시되었습니다.',
+						mission: '사용할 무기를 팀원에게 알려주세요.'
+					},
+					role: {
+						title: '무장 담당',
+						icon: '🚀',
+						description: '공격 무기를 확인하는 역할'
+					},
+					clues: [
+						'사용할 무기는 "미사일"입니다.',
+						'미사일의 발사각도는 정비 담당 화면에서 확인합니다.'
+					],
+					keyChips: ['공격실행', '무기'],
+					valueChips: ['"미사일"']
+				},
 
-		engineer: {
-			story: {
-				call: '정비 담당, 발사각도를 확인하세요.',
-				summary: '정비 시스템에 무기별 발사각도가 표시되었습니다.',
-				mission: '사용할 무기에 맞는 발사각도를 팀원에게 알려주세요.'
+				engineer: {
+					story: {
+						call: '정비 담당, 발사각도를 확인하세요.',
+						summary: '정비 시스템에 무기별 발사각도가 표시되었습니다.',
+						mission: '사용할 무기에 맞는 발사각도를 팀원에게 알려주세요.'
+					},
+					role: {
+						title: '정비 담당',
+						icon: '🔧',
+						description: '발사각도를 확인하는 역할'
+					},
+					clues: ['무기별 발사각도: 레이저는 12, 미사일은 24, 전자포는 36입니다.'],
+					keyChips: ['공격실행', '발사각도'],
+					valueChips: ['12', '24', '36']
+				}
 			},
-			role: {
-				title: '정비 담당',
-				icon: '🔧',
-				description: '발사각도를 확인하는 역할'
-			},
-			clues: [
-				'무기별 발사각도: 레이저는 12, 미사일은 24, 전자포는 36입니다.'
-			],
-			keyChips: ['공격실행', '발사각도'],
-			valueChips: ['12', '24', '36']
+
+			finalSuccessMessage: '목표 지점 공격 성공! 미사일이 정확히 명중했습니다.'
 		}
-	},
+	],
 
-		finalSuccessMessage: '목표 지점 공격 성공! 미사일이 정확히 명중했습니다.'
+	completion: {
+		badge: 'ROBOT MISSION COMPLETE',
+		title: '로봇 콕핏 작전 완료!',
+		subtitle: '팀의 JSON 명령으로 로봇을 조종하고 목표 지점을 공격했습니다.',
+		summaryTitle: '최종 결과',
+		summary: '콕핏 진입, HUD 전원, 미사일 발사까지 모든 단계가 완료되었습니다.',
+		primaryButtonText: '홈으로'
 	}
-		],
-
-		completion: {
-			badge: 'ROBOT MISSION COMPLETE',
-			title: '로봇 콕핏 작전 완료!',
-			subtitle: '팀의 JSON 명령으로 로봇을 조종하고 목표 지점을 공격했습니다.',
-			summaryTitle: '최종 결과',
-			summary: '콕핏 진입, HUD 전원, 미사일 발사까지 모든 단계가 완료되었습니다.',
-			primaryButtonText: '홈으로'
-		}
 };

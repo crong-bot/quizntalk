@@ -25,47 +25,44 @@ export const robotCockpitRoleSuccessStates = {
 
 export const robotCockpitMissionSuccessStates = {
 	enterCockpit: {
-		layers: {},
-		flags: {}
+		layers: {
+			[robotCockpitLayers.outside]: false,
+
+			[robotCockpitLayers.baseFar]: true,
+			[robotCockpitLayers.baseMiddle]: true,
+			[robotCockpitLayers.baseNear]: true,
+
+			[robotCockpitLayers.cockpit]: true,
+			[robotCockpitLayers.cockpitHud]: false
+		},
+		flags: {
+			enteredCockpit: true,
+			hudOn: false,
+			lookSequenceStarted: false,
+			missileStarted: false,
+			missileHit: false
+		}
 	},
 
 	powerOn: {
-		layers: {},
-		flags: {}
-	},
-	// enterCockpit: {
-	// 	layers: {
-	// 		[robotCockpitLayers.outside]: false,
-	// 		[robotCockpitLayers.baseFar]: true,
-	// 		[robotCockpitLayers.baseMiddle]: true,
-	// 		[robotCockpitLayers.baseNear]: true,
-	// 		[robotCockpitLayers.cockpit]: true,
-	// 		[robotCockpitLayers.cockpitHud]: false
-	// 	},
-	// 	flags: {
-	// 		enteredCockpit: true,
-	// 		hudOn: false,
-	// 		lookSequenceStarted: false,
-	// 		missileStarted: false
-	// 	}
-	// },
+		layers: {
+			[robotCockpitLayers.outside]: false,
 
-	// powerOn: {
-	// 	layers: {
-	// 		[robotCockpitLayers.outside]: false,
-	// 		[robotCockpitLayers.baseFar]: true,
-	// 		[robotCockpitLayers.baseMiddle]: true,
-	// 		[robotCockpitLayers.baseNear]: true,
-	// 		[robotCockpitLayers.cockpit]: true,
-	// 		[robotCockpitLayers.cockpitHud]: true
-	// 	},
-	// 	flags: {
-	// 		enteredCockpit: true,
-	// 		hudOn: true,
-	// 		lookSequenceStarted: true,
-	// 		missileStarted: false
-	// 	}
-	// },
+			[robotCockpitLayers.baseFar]: true,
+			[robotCockpitLayers.baseMiddle]: true,
+			[robotCockpitLayers.baseNear]: true,
+
+			[robotCockpitLayers.cockpit]: true,
+			[robotCockpitLayers.cockpitHud]: true
+		},
+		flags: {
+			enteredCockpit: true,
+			hudOn: true,
+			lookSequenceStarted: true,
+			missileStarted: false,
+			missileHit: false
+		}
+	},
 
 	fireMissile: {
 		layers: {
