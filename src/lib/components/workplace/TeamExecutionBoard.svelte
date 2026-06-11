@@ -5,6 +5,7 @@
 	export let verificationEnergy = 0;
 	export let maxVerificationEnergy = 0;
 	export let maxPlayers = 4;
+	export let layout = 'grid';
 
 	$: clearedCount = players.filter(
 		(player) => player.missionProgress?.[currentMissionIndex] === 'cleared'
@@ -70,7 +71,9 @@
 <div class="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
 	<div class="flex items-start justify-between gap-3">
 		<div>
-			<div class="text-base font-extrabold text-slate-900">팀 실행 보드 :모든 팀원이 완료하면 다음 미션이 열</div>
+			<div class="text-base font-extrabold text-slate-900">
+				팀 실행 보드 :모든 팀원이 완료하면 다음 미션이 열
+			</div>
 			<!-- <div class="mt-1 text-xs font-bold text-slate-400">
 				모든 팀원이 완료하면 다음 미션이 열립니다
 			</div> -->
@@ -81,7 +84,7 @@
 		</div>
 	</div>
 
-	<div class="mt-3 grid grid-cols-2 gap-2">
+	<div class={layout === 'vertical' ? 'mt-3 flex flex-col gap-2' : 'mt-3 grid grid-cols-2 gap-2'}>
 		{#each players as player}
 			{@const status = getStatus(player)}
 			{@const isCurrentPlayer = player.id === currentPlayerId}
@@ -106,8 +109,8 @@
 								{player.roleName}
 							</span>
 							<div class="mt-1 truncate text-xs font-semibold text-slate-500">
-							{getDetail(player)}
-						</div>
+								{getDetail(player)}
+							</div>
 						</div>
 
 						<div class="flex min-w-0 items-center gap-1.5">
@@ -115,8 +118,6 @@
 								{player.name}
 							</span>
 						</div>
-
-						
 					</div>
 
 					<span
@@ -148,14 +149,13 @@
 							>
 								빈 자리
 							</span>
-							
-						<div class="mt-1 truncate text-xs font-semibold text-slate-400">
-							학생이 입장하면 표시됩니다
-						</div>
+
+							<div class="mt-1 truncate text-xs font-semibold text-slate-400">
+								학생이 입장하면 표시됩니다
+							</div>
 						</div>
 
 						<div class="mt-1 truncate text-sm font-extrabold text-slate-400">참가 대기</div>
-
 					</div>
 
 					<span

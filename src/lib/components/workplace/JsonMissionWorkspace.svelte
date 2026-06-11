@@ -26,7 +26,6 @@
 	import MissionWorkspaceHeader from './MissionWorkspaceHeader.svelte';
 	import FinalSuccessModal from './modals/FinalSuccessModal.svelte';
 	import MissionCompleteModal from './modals/MissionCompleteModal.svelte';
-	import ReadMissionPanel from './ReadMissionPanel.svelte';
 	import {
 		buildWorkspacePlayers,
 		getNextMissionProgressForPlayer,
@@ -39,6 +38,7 @@
 	import LeaveRoomModal from './modals/LeaveRoomModal.svelte';
 	import RoomIntroModal from './modals/RoomIntroModal.svelte';
 	import RoomWaitingModal from './modals/RoomWaitingModal.svelte';
+	import ReadMissionWorkspacePanel from './ReadMissionWorkspacePanel.svelte';
 	import { validateMissionJson } from './validator/missionValidator.js';
 
 	export let roomCode = '';
@@ -698,82 +698,77 @@
 	$: currentMission = course.missions[currentMissionIndex] ?? course.missions[0];
 	$: currentRoleMission = currentMission?.roleMissions?.[currentPlayer?.roleId];
 
-function withBriefingTitle(clue, prefix) {
-	if (typeof clue === 'string') {
-		return `${prefix} ${clue}`;
+	function withBriefingTitle(clue, prefix) {
+		if (typeof clue === 'string') {
+			return `${prefix} ${clue}`;
+		}
+
+		return {
+			...clue,
+			title: `${prefix} ${clue.title ?? 'JSON 단서'}`
+		};
 	}
 
-	return {
-		...clue,
-		title: `${prefix} ${clue.title ?? 'JSON 단서'}`
-	};
-}
+	function getRoleNameById(roleId) {
+		const role = (course?.roles ?? []).find((role) => role.id === roleId);
 
-function getRoleNameById(roleId) {
-	const role = (course?.roles ?? []).find((role) => role.id === roleId);
+		return role?.roleName ?? role?.name ?? roleId;
+	}
 
-	return role?.roleName ?? role?.name ?? roleId;
-}
+	function getParticipantRoleId(participant) {
+		return (
+			participant?.roleId ??
+			participant?.role?.id ??
+			participant?.playerRoleId ??
+			participant?.assignedRoleId ??
+			''
+		);
+	}
 
-function getParticipantRoleId(participant) {
-	return (
-		participant?.roleId ??
-		participant?.role?.id ??
-		participant?.playerRoleId ??
-		participant?.assignedRoleId ??
-		''
-	);
-}
+	/**
+	 * 실제 사람이 들어온 역할 ID
+	 * Firebase 방이면 participants 기준으로 계산해야 함.
+	 * players는 화면 표시용이라 4개 역할이 다 잡힐 수 있음.
+	 */
+	$: joinedRoleIds = shouldUseFirebase
+		? participants.map(getParticipantRoleId).filter(Boolean)
+		: players.map((player) => player.roleId).filter(Boolean);
 
-/**
- * 실제 사람이 들어온 역할 ID
- * Firebase 방이면 participants 기준으로 계산해야 함.
- * players는 화면 표시용이라 4개 역할이 다 잡힐 수 있음.
- */
-$: joinedRoleIds = shouldUseFirebase
-	? participants.map(getParticipantRoleId).filter(Boolean)
-	: players.map((player) => player.roleId).filter(Boolean);
+	/**
+	 * 읽기 미션의 협동 보고서에서만 시스템 단서가 필요함.
+	 * 미션1에서는 필요 없음.
+	 */
+	$: isThreePlayerReadTeamReport =
+		isReadCourse &&
+		currentMission?.type === 'team-json-report' &&
+		(course?.roles?.length ?? 0) === 4 &&
+		(room?.maxParticipants === 3 || participants.length === 3 || joinedRoleIds.length === 3);
 
-/**
- * 읽기 미션의 협동 보고서에서만 시스템 단서가 필요함.
- * 미션1에서는 필요 없음.
- */
-$: isThreePlayerReadTeamReport =
-	isReadCourse &&
-	currentMission?.type === 'team-json-report' &&
-	(course?.roles?.length ?? 0) === 4 &&
-	(
-		room?.maxParticipants === 3 ||
-		participants.length === 3 ||
-		joinedRoleIds.length === 3
-	);
-
-$: missingReadRoleIds = isThreePlayerReadTeamReport
-	? (course?.roles ?? [])
-			.map((role) => role.id)
-			.filter((roleId) => !joinedRoleIds.includes(roleId))
-	: [];
-
-/**
- * 미션2에서 내 미션1 단서 다시 보여주기
- */
-$: previousCurrentRoleClues =
-	isReadCourse && currentMission?.type === 'team-json-report'
-		? (() => {
-				const previousMission = course?.missions?.[currentMissionIndex - 1];
-				const roleMission = previousMission?.roleMissions?.[currentPlayer?.roleId];
-
-				return (roleMission?.clues ?? []).map((clue) =>
-					withBriefingTitle(clue, '[내 이전 단서]')
-				);
-		  })()
+	$: missingReadRoleIds = isThreePlayerReadTeamReport
+		? (course?.roles ?? [])
+				.map((role) => role.id)
+				.filter((roleId) => !joinedRoleIds.includes(roleId))
 		: [];
 
-/**
- * 3명 방일 때만, 빠진 4번째 시스템 역할의 미션1 단서 가져오기
- */
-$: missingSystemRoleClues =
-	isThreePlayerReadTeamReport
+	/**
+	 * 미션2에서 내 미션1 단서 다시 보여주기
+	 */
+	$: previousCurrentRoleClues =
+		isReadCourse && currentMission?.type === 'team-json-report'
+			? (() => {
+					const previousMission = course?.missions?.[currentMissionIndex - 1];
+					const roleMission = previousMission?.roleMissions?.[currentPlayer?.roleId];
+
+					return (roleMission?.clues ?? []).map((clue) =>
+						withBriefingTitle(clue, '[내 이전 단서]')
+					);
+			  })()
+			: [];
+
+	/**
+	 * 3명 방일 때만, 빠진 4번째 시스템 역할의 미션1 단서 가져오기
+	 */
+	$: missingSystemRoleClues = isThreePlayerReadTeamReport
 		? missingReadRoleIds.flatMap((roleId) => {
 				const previousMission = course?.missions?.[currentMissionIndex - 1];
 				const roleMission = previousMission?.roleMissions?.[roleId];
@@ -785,18 +780,14 @@ $: missingSystemRoleClues =
 		  })
 		: [];
 
-/**
- * 왼쪽 MissionBriefingPanel에 들어갈 단서
- */
-$: briefingClues = isReadCourse
-	? currentMission?.type === 'team-json-report'
-		? [
-				...previousCurrentRoleClues,
-				...missingSystemRoleClues
-		  ]
-		: currentRoleMission?.sideClues ?? []
-	: currentRoleMission?.clues ?? [];
-
+	/**
+	 * 왼쪽 MissionBriefingPanel에 들어갈 단서
+	 */
+	$: briefingClues = isReadCourse
+		? currentMission?.type === 'team-json-report'
+			? [...previousCurrentRoleClues, ...missingSystemRoleClues]
+			: currentRoleMission?.sideClues ?? []
+		: currentRoleMission?.clues ?? [];
 
 	$: missionBriefingKey = [
 		course?.id ?? course?.themeId ?? '',
@@ -1729,68 +1720,10 @@ $: briefingClues = isReadCourse
 					</button>
 				</div>
 			{/if}
-			<div class="grid min-h-0 flex-1 grid-cols-[360px_470px_548px] gap-4">
-				<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
-					<!-- <MissionRoleCard role={powerMission.role} /> -->
-					{#key missionBriefingKey}
-						<MissionBriefingPanel
-							variant={isReadCourse ? 'read' : 'write'}
-							story={currentRoleMission?.story}
-							role={currentRoleMission?.role}
-							playerName={currentPlayer?.name ?? ''}
-							clues={briefingClues}
-							keyChips={isReadCourse ? [] : currentRoleMission?.keyChips ?? []}
-							panelLabel={isReadCourse ? 'DATA ANALYSIS PANEL' : 'MISSION PANEL'}
-							onInsertKey={insertKey}
-							missionNumber={currentMissionIndex + 1}
-						/>
-					{/key}
-					{#if shouldShowSupportGuide}
-						<div class="rounded-[22px] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-							<div class="flex items-start gap-3">
-								<div
-									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-xl"
-								>
-									🛰️
-								</div>
-
-								<div class="min-w-0">
-									<div class="text-[14px] font-black text-emerald-700">
-										{currentMission.supportGuideForThreePlayers.title}
-									</div>
-
-									<div class="mt-1 text-[12px] font-bold leading-5 text-emerald-700/80">
-										{currentMission.supportGuideForThreePlayers.description}
-									</div>
-
-									<ul class="mt-3 flex flex-col gap-1.5">
-										{#each currentMission.supportGuideForThreePlayers.items as item}
-											<li class="flex gap-2 text-[12px] font-bold leading-5 text-slate-700">
-												<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
-												></span>
-												<span>{item}</span>
-											</li>
-										{/each}
-									</ul>
-								</div>
-							</div>
-						</div>
-					{/if}
-					<!-- <MissionCluePanel clues={powerMission.clues} /> -->
-
-					<!-- <div class="min-h-0 flex-1 overflow-hidden">
-						<JsonAssistPanel
-							keyChips={powerMission.keyChips}
-							valueChips={powerMission.valueChips}
-							onInsertKey={insertKey}
-							onInsertValue={insertValue}
-						/>
-					</div> -->
-				</aside>
-
-				<main class="flex min-h-0 flex-col gap-4">
+			{#if isReadCourse}
+				<div class="min-h-0 flex-1">
 					{#if isCurrentReviewRejected}
-						<div class="rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
+						<div class="mb-3 rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 shadow-sm">
 							<div class="flex items-start gap-3">
 								<div
 									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-lg"
@@ -1808,14 +1741,17 @@ $: briefingClues = isReadCourse
 									</div>
 
 									<div class="mt-2 text-[12px] font-bold text-rose-400">
-										JSON을 고친 뒤 다시 제출하면 선생님 확인 대기로 바뀝니다.
+										정답을 고친 뒤 다시 제출하면 선생님 확인 대기로 바뀝니다.
 									</div>
 								</div>
 							</div>
 						</div>
 					{/if}
+
 					{#if isCurrentReviewApproved}
-						<div class="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+						<div
+							class="mb-3 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm"
+						>
 							<div class="flex items-start gap-3">
 								<div
 									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-lg"
@@ -1838,21 +1774,52 @@ $: briefingClues = isReadCourse
 						</div>
 					{/if}
 
-					{#if isReadCourse}
-						{#key readMissionPanelKey}
-							<ReadMissionPanel
-								clues={currentRoleMission?.clues ?? []}
-								question={readQuestion}
-								bind:answerText={jsonText}
-								{status}
-								logs={consoleLogs}
-								onReady={handleEditorReady}
-								onFormat={formatJson}
-								onSubmit={executeMission}
-								onReset={resetCurrentJsonToInitial}
+					{#key readMissionPanelKey}
+						<ReadMissionWorkspacePanel
+							clues={currentRoleMission?.clues ?? []}
+							question={readQuestion}
+							bind:answerText={jsonText}
+							{status}
+							logs={consoleLogs}
+							{players}
+							{currentPlayerId}
+							{currentMissionIndex}
+							{verificationEnergy}
+							{maxVerificationEnergy}
+							maxPlayers={course?.roles?.length ?? 4}
+							missionTitle={currentMission?.title ?? ''}
+							roleName={currentPlayer?.roleName ?? currentRoleMission?.role?.name ?? ''}
+							playerName={currentPlayer?.name ?? ''}
+							image={currentMission?.image ??
+								currentMission?.sceneImage ??
+								course?.intro?.image ??
+								''}
+							imageAlt={currentMission?.imageAlt ?? course?.intro?.imageAlt ?? '미션 이미지'}
+							answerKey={currentMission?.answerKey ?? '정답'}
+							onSubmit={executeMission}
+							onReset={resetCurrentJsonToInitial}
+						/>
+					{/key}
+				</div>
+			{:else}
+				<div class="grid min-h-0 flex-1 grid-cols-[360px_470px_548px] gap-4">
+					<aside class="flex min-h-0 flex-col gap-4 overflow-hidden">
+						{#key missionBriefingKey}
+							<MissionBriefingPanel
+								variant="write"
+								story={currentRoleMission?.story}
+								role={currentRoleMission?.role}
+								playerName={currentPlayer?.name ?? ''}
+								clues={briefingClues}
+								keyChips={currentRoleMission?.keyChips ?? []}
+								panelLabel="MISSION PANEL"
+								onInsertKey={insertKey}
+								missionNumber={currentMissionIndex + 1}
 							/>
 						{/key}
-					{:else}
+					</aside>
+
+					<main class="flex min-h-0 flex-col gap-4">
 						<JsonEditorPanel
 							bind:jsonText
 							canExecute={status === 'checked'}
@@ -1868,37 +1835,34 @@ $: briefingClues = isReadCourse
 						<div class="h-[300px] shrink-0">
 							<JsonEditorConsole logs={consoleLogs} {status} />
 						</div>
-					{/if}
-				</main>
+					</main>
 
-				<aside class="flex min-h-0 flex-col gap-2">
-					<div class="shrink-0">
-						<CommandTransmissionPanel state={transmissionState} />
-					</div>
+					<aside class="flex min-h-0 flex-col gap-2">
+						<div class="shrink-0">
+							<CommandTransmissionPanel state={transmissionState} />
+						</div>
 
-					<div class="h-[400px] z-0 shrink-0">
-						<SharedSimulationPanel
-							{themeId}
-							{simulationState}
-							onFinalResultShown={handleFinalResultShown}
-						/>
-					</div>
-					<div class="shrink-0">
-						<TeamExecutionBoard
-							{players}
-							{currentPlayerId}
-							{currentMissionIndex}
-							{verificationEnergy}
-							{maxVerificationEnergy}
-							maxPlayers={course?.roles?.length ?? 4}
-						/>
-					</div>
+						<div class="z-0 h-[400px] shrink-0">
+							<SharedSimulationPanel
+								{themeId}
+								{simulationState}
+								onFinalResultShown={handleFinalResultShown}
+							/>
+						</div>
 
-					<!-- <div class="shrink-0">
-						<ExecutionLogPanel {status} {hasExecuted} />
-					</div> -->
-				</aside>
-			</div>
+						<div class="shrink-0">
+							<TeamExecutionBoard
+								{players}
+								{currentPlayerId}
+								{currentMissionIndex}
+								{verificationEnergy}
+								{maxVerificationEnergy}
+								maxPlayers={course?.roles?.length ?? 4}
+							/>
+						</div>
+					</aside>
+				</div>
+			{/if}
 		</div>
 	</div>
 	<RoomIntroModal
