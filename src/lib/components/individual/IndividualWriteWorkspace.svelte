@@ -30,6 +30,7 @@
 	let isSubmitting = false;
 	let localMessage = '';
 	let localMessageType = 'info'; // info | success | error
+	let isLocalMessageOpen = true;
 
 	let lastLoadedKey = '';
 
@@ -107,9 +108,11 @@
 
 			localMessage = 'JSON 포맷을 정리했습니다.';
 			localMessageType = 'success';
+			isLocalMessageOpen = true;
 		} catch (error) {
 			localMessage = '아직 JSON 문법이 완성되지 않아 포맷을 정리할 수 없어요.';
 			localMessageType = 'error';
+			isLocalMessageOpen = true;
 		}
 	}
 
@@ -140,12 +143,14 @@
 		if (!validateResult.ok) {
 			localMessage = validateResult.message;
 			localMessageType = 'error';
+			isLocalMessageOpen = true;
 			return;
 		}
 
 		if (!lessonId || !roomId || !participantId) {
 			localMessage = '방 정보 또는 참가자 정보가 없습니다. 다시 입장해 주세요.';
 			localMessageType = 'error';
+			isLocalMessageOpen = true;
 			return;
 		}
 
@@ -161,10 +166,12 @@
 
 			localMessage = '제출했습니다. 선생님 확인을 기다려 주세요.';
 			localMessageType = 'success';
+			isLocalMessageOpen = true;
 		} catch (error) {
 			console.error(error);
 			localMessage = error?.message ?? '제출하지 못했습니다.';
 			localMessageType = 'error';
+			isLocalMessageOpen = true;
 		} finally {
 			isSubmitting = false;
 		}
@@ -416,15 +423,37 @@
 
 					{#if localMessage}
 						<div
-							class={`mt-4 whitespace-pre-line rounded-[22px] px-4 py-3 text-[13px] font-black leading-6 ${
+							class={`mt-4 overflow-hidden rounded-[22px] border text-[13px] font-black leading-6 ${
 								localMessageType === 'error'
-									? 'border border-rose-200 bg-rose-50 text-rose-700'
+									? 'border-rose-200 bg-rose-50 text-rose-700'
 									: localMessageType === 'success'
-									? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-									: 'border border-blue-200 bg-blue-50 text-blue-700'
+										? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+										: 'border-blue-200 bg-blue-50 text-blue-700'
 							}`}
 						>
-							{localMessage}
+							<button
+								type="button"
+								on:click={() => (isLocalMessageOpen = !isLocalMessageOpen)}
+								class="flex h-10 w-full items-center justify-between gap-3 px-4 text-left"
+							>
+								<span class="min-w-0 truncate">
+									{localMessageType === 'error'
+										? '문법 오류 확인'
+										: localMessageType === 'success'
+											? '처리 결과 확인'
+											: '안내 메시지'}
+								</span>
+
+								<span class="shrink-0 text-[12px] font-black opacity-70">
+									{isLocalMessageOpen ? '접기 ▲' : '펼치기 ▼'}
+								</span>
+							</button>
+
+							{#if isLocalMessageOpen}
+								<div class="whitespace-pre-line border-t border-current/10 px-4 pb-3 pt-2">
+									{localMessage}
+								</div>
+							{/if}
 						</div>
 					{/if}
 
