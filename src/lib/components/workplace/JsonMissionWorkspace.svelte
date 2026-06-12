@@ -1795,7 +1795,7 @@
 								course?.intro?.image ??
 								''}
 							imageAlt={currentMission?.imageAlt ?? course?.intro?.imageAlt ?? '미션 이미지'}
-							answerKey={currentMission?.answerKey ?? '정답'}
+							answerFields={currentMission?.answerFields ?? currentRoleMission?.answerFields ?? []}
 							onSubmit={executeMission}
 							onReset={resetCurrentJsonToInitial}
 						/>

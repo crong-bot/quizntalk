@@ -28,51 +28,92 @@
 
 	// 화면에는 일반 정답칸처럼 보이지만,
 	// 내부 제출값은 기존 검증 로직을 위해 JSON 문자열로 유지
-	export let answerKey = '정답';
+	export let answerFields = [];
 
-	let plainAnswer = '';
-	let lastParsedAnswerText = '';
+	let formAnswer = {};
+let lastParsedAnswerText = '';
+$: latestLog = logs?.[0] ?? null;
 
-	$: latestLog = logs?.[0] ?? null;
+$: safeClues = Array.isArray(clues) ? clues : [];
 
-	$: safeClues = Array.isArray(clues) ? clues : [];
-	$: jsonClues = safeClues.filter(
-		(clue) => clue && typeof clue === 'object' && clue.type === 'json'
-	);
-	$: textClues = safeClues.filter((clue) => typeof clue === 'string');
+$: jsonClues = safeClues.filter(
+	(clue) => clue && typeof clue === 'object' && clue.type === 'json'
+);
 
-	$: if (answerText && answerText !== lastParsedAnswerText) {
-		lastParsedAnswerText = answerText;
+$: textClues = safeClues.filter((clue) => typeof clue === 'string');
 
-		try {
-			const parsed = JSON.parse(answerText);
+$: safeAnswerFields =
+	Array.isArray(answerFields) && answerFields.length > 0
+		? answerFields.map((field) => {
+				if (typeof field === 'string') {
+					return {
+						key: field,
+						label: field,
+						placeholder: `${field}을 입력하세요.`,
+						multiline: false
+					};
+				}
 
-			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-				plainAnswer = parsed[answerKey] ?? parsed.answer ?? parsed.분석결과 ?? plainAnswer;
-			}
-		} catch {
-			plainAnswer = answerText;
+				return {
+					key: field.key,
+					label: field.label ?? field.key,
+					placeholder: field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`,
+					multiline: field.multiline ?? false
+				};
+		  })
+		: [
+				{
+					key: '정답',
+					label: '정답',
+					placeholder: '정답을 입력하세요.',
+					multiline: false
+				}
+		  ];
+
+$: if (answerText && answerText !== lastParsedAnswerText) {
+	lastParsedAnswerText = answerText;
+
+	try {
+		const parsed = JSON.parse(answerText);
+
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			formAnswer = {
+				...formAnswer,
+				...parsed
+			};
 		}
+	} catch {
+		const firstKey = safeAnswerFields[0]?.key ?? '정답';
+
+		formAnswer = {
+			...formAnswer,
+			[firstKey]: answerText
+		};
 	}
+}
 
-	function updatePlainAnswer(nextValue) {
-		plainAnswer = nextValue;
+function updateAnswerField(key, value) {
+	formAnswer = {
+		...formAnswer,
+		[key]: value
+	};
 
-		answerText = JSON.stringify(
-			{
-				[answerKey]: nextValue
-			},
-			null,
-			2
-		);
+	answerText = JSON.stringify(formAnswer, null, 2);
+	lastParsedAnswerText = answerText;
+}
 
-		lastParsedAnswerText = answerText;
-	}
+function resetAnswer() {
+	formAnswer = {};
 
-	function resetAnswer() {
-		plainAnswer = '';
-		onReset();
-	}
+	answerText = JSON.stringify(
+		Object.fromEntries(safeAnswerFields.map((field) => [field.key, ''])),
+		null,
+		2
+	);
+
+	lastParsedAnswerText = answerText;
+	onReset();
+}
 
 	function getJsonClueData(clue) {
 		return clue?.data ?? clue?.json ?? clue?.value ?? {};
@@ -321,17 +362,27 @@
 			<div
 				class="mt-2 font-gmarket text-[24px] font-black leading-tight tracking-[-0.06em] text-slate-950"
 			>
-				이번 미션에서<br />
-				해야 할 일
+				이번 미션에서 해야 할 일!
 			</div>
 
 			{#if question}
-				<div
-					class="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-[15px] font-black leading-6 text-blue-700"
-				>
+	<div class="mt-4 rounded-[22px] border-2 border-blue-200 bg-blue-50 p-4 shadow-[0_10px_24px_rgba(37,99,235,0.10)]">
+		<div class="flex items-start gap-3">
+			<div
+				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl text-white shadow-sm"
+			>
+				?
+			</div>
+
+			<div class="min-w-0 flex-1">
+				
+				<div class="mt-1 text-[19px] font-black leading-7 tracking-[-0.04em] text-slate-950">
 					{question}
 				</div>
-			{/if}
+			</div>
+		</div>
+	</div>
+{/if}
 
 			<div class="mt-4 rounded-2xl bg-slate-50 p-4">
 				<div class="text-[13px] font-black text-slate-700">진행 순서</div>
@@ -379,12 +430,33 @@
 			</div>
 
 			<div class="flex min-h-0 flex-1 flex-col p-4">
+				<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto">
+	{#each safeAnswerFields as field}
+		<div>
+			<label class="mb-1.5 block text-[13px] font-black text-slate-700">
+				{field.label ?? field.key}
+			</label>
+
+			{#if field.multiline}
 				<textarea
-					value={plainAnswer}
-					on:input={(event) => updatePlainAnswer(event.currentTarget.value)}
-					placeholder="예: 지하차도"
-					class="min-h-[160px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[20px] font-black leading-8 text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+					rows="2"
+					value={formAnswer[field.key] ?? ''}
+					on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
+					placeholder={field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`}
+					class="h-[76px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[16px] font-bold leading-6 text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
 				></textarea>
+			{:else}
+				<input
+					type="text"
+					value={formAnswer[field.key] ?? ''}
+					on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
+					placeholder={field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`}
+					class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+				/>
+			{/if}
+		</div>
+	{/each}
+</div>
 
 				<div
 					class={`mt-3 min-h-[54px] whitespace-pre-wrap rounded-2xl border px-4 py-3 text-[13px] font-extrabold leading-5 ${getResultClass(
