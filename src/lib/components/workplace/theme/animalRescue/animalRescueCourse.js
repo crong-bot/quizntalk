@@ -21,14 +21,14 @@ export const animalRescueCourse = {
 			'길을 잃은 늑구가 학교 주변에서 목격되었습니다. 하지만 늑구가 어디에 숨어 있는지는 아직 알 수 없습니다. 각 대원은 서로 다른 JSON 단서를 가지고 있습니다.',
 		goalTitle: '우리의 임무',
 		missionGoal:
-			'미션 1에서는 각자 맡은 JSON에서 중요한 단서를 찾아 제출합니다. 미션 2에서는 팀원들의 단서를 모아 후보 장소와 비교하고, 늑구가 숨어 있는 곳을 추리합니다.',
+			'미션 1에서는 각자 맡은 JSON에서 팀원에게 알려 줄 중요한 단서를 찾아 제출합니다. 미션 2에서는 팀원들의 단서를 모아 후보 장소와 비교하고, 늑구가 숨어 있는 곳을 추리합니다.',
 		steps: [
 			'내 역할에 주어진 JSON 단서를 읽습니다.',
 			'두 자료를 비교하고 여러 키를 함께 확인합니다.',
-			'찾은 단서를 제출하고 팀원의 단서를 기다립니다.',
+			'팀원에게 알려 줄 중요한 단서를 제출합니다.',
 			'팀 단서와 후보 장소를 비교해 늑구가 있는 곳을 정합니다.'
 		],
-		tip: '힌트: 미션 1에서는 장소를 바로 맞히는 것이 아니라, 미션 2에서 사용할 단서를 찾는 것이 중요합니다.',
+		tip: '힌트: 미션 1에서는 장소를 바로 맞히는 것이 아니라, 팀원에게 알려 줄 단서를 찾는 것이 중요합니다.',
 		buttonText: '추적 작전 시작하기'
 	},
 
@@ -40,10 +40,10 @@ export const animalRescueCourse = {
 		resultTitle: '늑구 발견 위치',
 		result: '하천 옆 수로',
 		reasons: [
-			'가장 믿을 만한 제보에서 물소리 나는 쪽으로 이동했다는 단서가 있음',
-			'가장 확실한 흔적이 물이 있는 길과 관련되어 있음',
-			'늑구는 어둡고 조용한 곳에서 안정되는 행동을 보임',
-			'사람이 적은 곳이 구조대가 조용히 접근하기 좋음'
+			'믿을 만한 제보에서 늑구가 물소리 나는 쪽으로 이동했다는 단서를 찾음',
+			'확실한 흔적에서 젖은 발자국이 물이 있는 길을 따라 이어졌다는 단서를 찾음',
+			'행동 기록에서 늑구가 어둡고 조용한 곳에 숨기 쉽다는 단서를 찾음',
+			'안전 조건에서 사람이 적은 곳이 구조하기 좋다는 단서를 찾음'
 		],
 		message: '팀의 JSON 단서 분석으로 늑구가 숨어 있는 곳을 찾았습니다!',
 		exitButtonText: '완료하기'
@@ -81,7 +81,7 @@ export const animalRescueCourse = {
 			id: 'clue-extract',
 			title: '역할별 JSON 단서 찾기',
 			type: 'role-analysis',
-			question: '내 JSON에서 늑구를 찾는 데 필요한 단서를 찾아 제출하세요.',
+			question: '내 JSON을 읽고 팀원에게 알려 줄 중요한 단서를 찾아보세요.',
 			initialJson: `{}`,
 
 			roleMissions: {
@@ -89,17 +89,24 @@ export const animalRescueCourse = {
 					story: {
 						title: '제보 JSON 해석',
 						call: '제보 분석 대원님, 목격 제보를 확인해 주세요.',
-						summary:
-							'두 제보의 시각, 신뢰도, 내용을 함께 비교해 더 믿을 만한 이동 방향 단서를 찾습니다.',
-						mission:
-							'가장 최근이고 신뢰도가 높은 제보를 찾아, 늑구가 이동한 방향 단서를 제출하세요.'
+						summary: '두 제보의 시각, 신뢰도, 내용을 함께 비교해 팀원에게 알려 줄 제보를 찾습니다.',
+						mission: '어떤 제보를 팀원에게 알려야 할지 고르고, 그 이유를 제출하세요.'
 					},
 					role: {
 						title: '제보 분석 대원',
 						icon: '📢',
-						description: '제보의 시각과 신뢰도를 비교해 이동 방향 단서를 찾는 역할'
+						description: '제보의 시각과 신뢰도를 비교해 팀에 알릴 단서를 찾는 역할'
 					},
-					answerFields: ['이동방향단서'],
+					answerFields: [
+						{
+							key: '제보',
+							label: '어떤 제보를 팀원에게 알려야 할까요?'
+						},
+						{
+							key: '이유',
+							label: '그 제보를 고른 이유는 무엇인가요?'
+						}
+					],
 					clues: [
 						{
 							type: 'json',
@@ -117,7 +124,7 @@ export const animalRescueCourse = {
 										신뢰도: '높음'
 									}
 								],
-								찾을것: '시각과 신뢰도를 함께 보고 더 믿을 만한 제보의 이동 방향을 찾기'
+								찾을것: '시각, 신뢰도, 내용을 함께 보고 팀원에게 알려 줄 제보를 고르기'
 							}
 						}
 					],
@@ -129,16 +136,24 @@ export const animalRescueCourse = {
 						title: '흔적 JSON 해석',
 						call: '흔적 분석 대원님, 현장 흔적을 확인해 주세요.',
 						summary:
-							'두 흔적의 상태, 위치설명, 이어진방향을 함께 비교해 더 확실한 흔적 단서를 찾습니다.',
-						mission:
-							'상태가 더 확실하고 방향을 알 수 있는 흔적을 찾아, 늑구가 지나간 길의 단서를 제출하세요.'
+							'두 흔적의 상태, 설명, 이어진 방향을 함께 비교해 팀원에게 알려 줄 흔적을 찾습니다.',
+						mission: '어떤 흔적을 팀원에게 알려야 할지 고르고, 그 이유를 제출하세요.'
 					},
 					role: {
 						title: '흔적 분석 대원',
 						icon: '🐾',
-						description: '흔적의 상태와 설명을 비교해 추적 단서를 찾는 역할'
+						description: '흔적의 상태와 설명을 비교해 팀에 알릴 단서를 찾는 역할'
 					},
-					answerFields: ['흔적단서'],
+					answerFields: [
+						{
+							key: '흔적',
+							label: '어떤 흔적을 팀원에게 알려야 할까요?'
+						},
+						{
+							key: '이유',
+							label: '그 흔적을 고른 이유는 무엇인가요?'
+						}
+					],
 					clues: [
 						{
 							type: 'json',
@@ -148,17 +163,17 @@ export const animalRescueCourse = {
 									{
 										흔적: '마른 흙 발자국',
 										상태: '흐릿함',
-										위치설명: '넓은 흙길 근처',
+										설명: '넓은 흙길 근처에서 조금 보임',
 										이어진방향: '알기 어려움'
 									},
 									{
 										흔적: '젖은 발자국',
 										상태: '선명함',
-										위치설명: '물이 있는 길 근처',
-										이어진방향: '물이 있는 길을 따라 이어짐'
+										설명: '물이 있는 길을 따라 이어짐',
+										이어진방향: '물소리 나는 쪽'
 									}
 								],
-								찾을것: '상태와 이어진방향을 함께 보고 더 확실한 흔적 단서 찾기'
+								찾을것: '상태, 설명, 이어진방향을 함께 보고 팀원에게 알려 줄 흔적 고르기'
 							}
 						}
 					],
@@ -170,16 +185,24 @@ export const animalRescueCourse = {
 						title: '행동 JSON 해석',
 						call: '행동 분석 대원님, 늑구의 행동 기록을 확인해 주세요.',
 						summary:
-							'두 환경에서 늑구의 반응과 상태를 비교해 늑구가 숨기 좋은 환경 단서를 찾습니다.',
-						mission:
-							'늑구가 불안해하는 환경이 아니라, 안정되는 환경 단서를 제출하세요.'
+							'두 환경에서 늑구의 반응과 상태를 비교해 늑구가 숨기 쉬운 곳의 특징을 찾습니다.',
+						mission: '늑구가 어떤 곳에 숨기 쉬울지 생각하고, 그 이유를 제출하세요.'
 					},
 					role: {
 						title: '행동 분석 대원',
 						icon: '🧠',
 						description: '환경에 따른 늑구의 반응과 상태를 비교하는 역할'
 					},
-					answerFields: ['숨는곳단서'],
+					answerFields: [
+						{
+							key: '행동',
+							label: '늑구는 어떤 곳에 숨기 쉬울까요?'
+						},
+						{
+							key: '이유',
+							label: '그렇게 생각한 이유는 무엇인가요?'
+						}
+					],
 					clues: [
 						{
 							type: 'json',
@@ -197,7 +220,7 @@ export const animalRescueCourse = {
 										상태: '안정'
 									}
 								],
-								찾을것: '반응과 상태를 함께 보고 늑구가 숨기 좋은 환경 찾기'
+								찾을것: '환경, 반응, 상태를 함께 보고 늑구가 숨기 쉬운 곳의 특징 찾기'
 							}
 						}
 					],
@@ -208,17 +231,24 @@ export const animalRescueCourse = {
 					story: {
 						title: '안전 JSON 해석',
 						call: '안전 분석 대원님, 구조 조건을 확인해 주세요.',
-						summary:
-							'두 조건의 안전도와 이유를 비교해 구조대가 접근하기 좋은 조건을 찾습니다.',
-						mission:
-							'안전도가 높고 이유가 적절한 조건을 찾아, 구조하기 좋은 단서를 제출하세요.'
+						summary: '두 조건의 안전도와 이유를 비교해 구조대가 접근하기 좋은 조건을 찾습니다.',
+						mission: '어떤 조건이 구조하기 좋은지 고르고, 그 이유를 제출하세요.'
 					},
 					role: {
 						title: '안전 분석 대원',
 						icon: '🛟',
 						description: '구조할 때 안전한 조건과 위험한 조건을 비교하는 역할'
 					},
-					answerFields: ['구조단서'],
+					answerFields: [
+						{
+							key: '안전조건',
+							label: '어떤 조건이 구조하기 좋을까요?'
+						},
+						{
+							key: '이유',
+							label: '그 이유는 무엇인가요?'
+						}
+					],
 					clues: [
 						{
 							type: 'json',
@@ -236,7 +266,7 @@ export const animalRescueCourse = {
 										이유: '구조대가 조용히 접근하기 좋음'
 									}
 								],
-								찾을것: '안전도와 이유를 함께 보고 구조하기 좋은 조건 찾기'
+								찾을것: '조건, 안전도, 이유를 함께 보고 구조하기 좋은 조건 고르기'
 							}
 						}
 					],
@@ -251,9 +281,13 @@ export const animalRescueCourse = {
 			type: 'team-inference',
 			question: '팀원들이 찾은 단서와 후보 장소를 비교해 늑구가 숨어 있을 곳을 정하세요.',
 			answerFields: [
-				'늑구가있는곳',
+				{
+					key: '늑구가있는곳',
+					label: '늑구가 숨어 있을 곳은 어디인가요?'
+				},
 				{
 					key: '그렇게생각한이유',
+					label: '그렇게 생각한 이유는 무엇인가요?',
 					multiline: true
 				}
 			],
@@ -266,18 +300,12 @@ export const animalRescueCourse = {
 			sourceAnswerTitle: '팀이 찾은 단서',
 
 			roleMissions: {
-				report: createFinalTraceRoleMission(
-					'팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'
-				),
-				trace: createFinalTraceRoleMission(
-					'팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'
-				),
+				report: createFinalTraceRoleMission('팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'),
+				trace: createFinalTraceRoleMission('팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'),
 				behavior: createFinalTraceRoleMission(
 					'팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'
 				),
-				safety: createFinalTraceRoleMission(
-					'팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.'
-				)
+				safety: createFinalTraceRoleMission('팀원들의 단서를 모아 늑구가 숨어 있을 곳을 정하세요.')
 			}
 		}
 	]
@@ -288,10 +316,8 @@ function createFinalTraceRoleMission(call) {
 		story: {
 			title: '팀 단서 토론',
 			call,
-			summary:
-				'각자 찾은 단서를 말하고, 후보 장소 중 가장 알맞은 곳을 함께 고릅니다.',
-			mission:
-				'팀 단서와 가장 많이 맞는 장소를 고르고 이유를 작성하세요.'
+			summary: '각자 찾은 단서를 말하고, 후보 장소 중 가장 알맞은 곳을 함께 고릅니다.',
+			mission: '팀 단서와 가장 많이 맞는 장소를 고르고 이유를 작성하세요.'
 		},
 		role: {
 			title: '팀 단서 토론',

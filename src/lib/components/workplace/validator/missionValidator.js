@@ -1,3 +1,4 @@
+import { validateTimeMuseumMissionJson } from '../theme/timeMuseum/timeMuseumValidator.js';
 import { validateAnimalRescueMissionJson } from './animalRescueValidator.js';
 import { validateMonsterDefenseMissionJson } from './monsterDefenseValidator.js';
 import { validateRobotCockpitMissionJson } from './robotCockpitValidator.js';
@@ -9,7 +10,8 @@ const validatorByThemeId = {
 	animalRescue: validateAnimalRescueMissionJson,
 	monsterDefense: validateMonsterDefenseMissionJson,
 	robotCockpit: validateRobotCockpitMissionJson,
-	weatherApp: validateWeatherAppMissionJson
+	weatherApp: validateWeatherAppMissionJson,
+	timeMuseum: validateTimeMuseumMissionJson
 };
 
 export function validateMissionJson({ jsonText, course, missionIndex, roleId }) {

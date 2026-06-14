@@ -8,6 +8,7 @@ import { mapMonsterDefenseRoomToSimulationState } from '../theme/monsterDefense/
 import { mapOwlBusRoomToSimulationState } from '../theme/owlBus/owlBusMapper';
 import { mapRobotCockpitJsonToSimulationState } from '../theme/robotCockpit/robotCockpitMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
+import { mapTimeMuseumJsonToSimulationState } from '../theme/timeMuseum/timeMuseumMapper';
 import { mapWeatherAppRoomToSimulationState } from '../theme/weatherApp/weatherAppMapper';
 
 const mapperByThemeId = {
@@ -20,7 +21,8 @@ const mapperByThemeId = {
 	owlBus: mapOwlBusRoomToSimulationState,
 	monsterDefense: mapMonsterDefenseRoomToSimulationState,
 	robotCockpit: mapRobotCockpitJsonToSimulationState,
-	weatherApp: mapWeatherAppRoomToSimulationState
+	weatherApp: mapWeatherAppRoomToSimulationState,
+	timeMuseum: mapTimeMuseumJsonToSimulationState
 };
 
 export function mapJsonToSimulationState(themeId, jsonText) {

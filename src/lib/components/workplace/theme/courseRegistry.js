@@ -7,6 +7,7 @@ import { monsterDefenseCourse } from './monsterDefense/monsterDefenseCourse.js';
 import { owlBusCourse } from './owlBus/owlBusCourse.js';
 import { robotCockpitCourse } from './robotCockpit/robotCockpitCourse.js';
 import { moonBaseCourse } from './spaceBase/spaceBaseCourse';
+import { timeMuseumCourse } from './timeMuseum/timeMuseumCourse.js';
 import { weatherAppCourse } from './weatherApp/weatherAppCourse.js';
 
 export const courses = [
@@ -19,7 +20,8 @@ export const courses = [
 	owlBusCourse,
 	weatherAppCourse,
 	robotCockpitCourse,
-	monsterDefenseCourse
+	monsterDefenseCourse,
+	timeMuseumCourse
 ];
 
 // const courseByThemeId = {
