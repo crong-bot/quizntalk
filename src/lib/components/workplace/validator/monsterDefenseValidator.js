@@ -4,6 +4,15 @@ import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonVal
 
 import { mapMonsterDefenseFinalJsonToSimulationState } from '../theme/monsterDefense/monsterDefenseMapper.js';
 
+const DIRECTIONS = ['북쪽', '동쪽', '남쪽', '서쪽'];
+const MONSTER_NAMES = ['초록괴물', '숲괴물'];
+const BODY_COLORS = ['초록'];
+const TRAP_TYPES = ['그물트랩', '미끄럼기름', '소리폭탄'];
+const CANNON_TYPES = ['불대포', '물대포', '바람대포'];
+const EFFECT_LEVELS = ['높음', '보통', '낮음'];
+const ALERT_POSITIONS = ['북쪽', '동쪽', '남쪽', '서쪽'];
+const DANGER_STATUS = ['접근중', '대기중', '후퇴중'];
+
 function getValueByPath(obj, path) {
 	return path.split('.').reduce((current, key) => current?.[key], obj);
 }
@@ -74,7 +83,11 @@ function validateObjectPath({ parsed, path, messages }) {
 	return true;
 }
 
-function validateStringPath({ parsed, path, messages }) {
+function normalizeChoice(value) {
+	return String(value).replaceAll(' ', '').trim();
+}
+
+function validateStringPath({ parsed, path, messages, allowedValues = null }) {
 	if (!hasPath(parsed, path)) {
 		pushMissing(messages, path);
 		return '';
@@ -87,12 +100,27 @@ function validateStringPath({ parsed, path, messages }) {
 		return '';
 	}
 
-	if (!value.trim()) {
+	const trimmedValue = value.trim();
+
+	if (!trimmedValue) {
 		messages.push({
 			type: 'error',
 			text: `"${path}" 값은 빈 문자열이면 안 됩니다.`
 		});
 		return '';
+	}
+
+	if (Array.isArray(allowedValues) && allowedValues.length > 0) {
+		const normalizedValue = normalizeChoice(value);
+		const normalizedAllowedValues = allowedValues.map(normalizeChoice);
+
+		if (!normalizedAllowedValues.includes(normalizedValue)) {
+			messages.push({
+				type: 'error',
+				text: `"${path}" 값은 ${allowedValues.join(', ')} 중에서 입력해야 합니다.`
+			});
+			return '';
+		}
 	}
 
 	messages.push({
@@ -102,6 +130,7 @@ function validateStringPath({ parsed, path, messages }) {
 
 	return value;
 }
+
 
 function validateBooleanPath({ parsed, path, messages }) {
 	if (!hasPath(parsed, path)) {
@@ -159,7 +188,8 @@ function validateScoutMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '정찰.예상방향',
-			messages
+			messages,
+			allowedValues: DIRECTIONS
 		});
 
 		validateStringPath({
@@ -175,20 +205,22 @@ function validateScoutMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '정찰.괴물이름',
-			messages
+			messages,
+			allowedValues: MONSTER_NAMES
 		});
 
 		validateStringPath({
 			parsed,
 			path: '정찰.침입방향',
-			messages
+			messages,
+			allowedValues: DIRECTIONS
 		});
 
-		validateStringPath({
-			parsed,
-			path: '정찰.몸색',
-			messages
-		});
+		// validateStringPath({
+		// 	parsed,
+		// 	path: '정찰.몸색',
+		// 	messages
+		// });
 
 		return makeStructureResult(messages, '정찰 기록 JSON이 확인되었습니다.');
 	}
@@ -197,7 +229,8 @@ function validateScoutMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '정찰.트랩종류',
-			messages
+			messages,
+			allowedValues: TRAP_TYPES
 		});
 
 		validateStringPath({
@@ -213,7 +246,8 @@ function validateScoutMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '정찰.대포종류',
-			messages
+			messages,
+			allowedValues: CANNON_TYPES
 		});
 
 		validateStringPath({
@@ -239,13 +273,13 @@ function validatePrepareToolsMission(parsed, roleId) {
 
 	const messages = [];
 
-	validateObjectPath({
-		parsed,
-		path: '방어도구',
-		messages
-	});
-
 	if (roleId === 'wall') {
+		validateObjectPath({
+			parsed,
+			path: '방어도구',
+			messages
+		});
+
 		validateObjectPath({
 			parsed,
 			path: '방어도구.성벽',
@@ -255,7 +289,8 @@ function validatePrepareToolsMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '방어도구.성벽.방향',
-			messages
+			messages,
+			allowedValues: DIRECTIONS
 		});
 
 		validateBooleanPath({
@@ -268,22 +303,35 @@ function validatePrepareToolsMission(parsed, roleId) {
 	}
 
 	if (roleId === 'scout') {
-		validateStringPath({
-			parsed,
-			path: '방어도구.괴물이름',
-			messages
-		});
+	validateObjectPath({
+		parsed,
+		path: '정찰기록',
+		messages
+	});
 
-		validateStringPath({
-			parsed,
-			path: '방어도구.침입방향',
-			messages
-		});
+	validateStringPath({
+		parsed,
+		path: '정찰기록.경보위치',
+		messages,
+		allowedValues: DIRECTIONS
+	});
 
-		return makeStructureResult(messages, '괴물 정보 JSON이 확인되었습니다.');
-	}
+	validateStringPath({
+		parsed,
+		path: '정찰기록.위험상태',
+		messages,
+		allowedValues: DANGER_STATUSES
+	});
 
+	return makeStructureResult(messages, '경보 상황 JSON이 확인되었습니다.');
+}
 	if (roleId === 'trap') {
+		validateObjectPath({
+			parsed,
+			path: '방어도구',
+			messages
+		});
+
 		validateObjectPath({
 			parsed,
 			path: '방어도구.트랩',
@@ -293,13 +341,15 @@ function validatePrepareToolsMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '방어도구.트랩.종류',
-			messages
+			messages,
+			allowedValues: TRAP_TYPES
 		});
 
 		validateStringPath({
 			parsed,
 			path: '방어도구.트랩.설치위치',
-			messages
+			messages,
+			allowedValues: DIRECTIONS
 		});
 
 		validateBooleanPath({
@@ -314,6 +364,12 @@ function validatePrepareToolsMission(parsed, roleId) {
 	if (roleId === 'attack') {
 		validateObjectPath({
 			parsed,
+			path: '방어도구',
+			messages
+		});
+
+		validateObjectPath({
+			parsed,
 			path: '방어도구.대포',
 			messages
 		});
@@ -321,14 +377,17 @@ function validatePrepareToolsMission(parsed, roleId) {
 		validateStringPath({
 			parsed,
 			path: '방어도구.대포.종류',
-			messages
+			messages,
+			allowedValues: CANNON_TYPES
 		});
 
 		validateStringPath({
 			parsed,
 			path: '방어도구.대포.설치위치',
-			messages
+			messages,
+			allowedValues: DIRECTIONS
 		});
+
 		validateBooleanPath({
 			parsed,
 			path: '방어도구.대포.작동',
