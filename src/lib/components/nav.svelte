@@ -68,7 +68,7 @@
 					<button
 						type="button"
 						class="font-gmarket rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-bold tracking-[-0.03em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-md"
-						on:click={() => goto('/signup')}
+						on:click={() => goto('/login?mode=signup')}
 					>
 						Sign up
 					</button>
