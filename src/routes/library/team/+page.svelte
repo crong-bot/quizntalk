@@ -185,7 +185,7 @@
 	}
 
 	function getThemeLevel(theme) {
-		return theme?.level ?? 'JSON 새싹';
+		return theme?.level ?? '새싹';
 	}
 
 	function getThemeLevelClass(theme) {
@@ -288,192 +288,180 @@ function getThemeDataLabelClass(theme) {
 						</div>
 					</div>
 
-					<!-- JSON 작성 -->
-					<div class="mt-6">
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-[20px]"
-							>
-								✍️
+					<div class="mt-7 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto_1fr]">
+						<!-- 왼쪽: JSON 작성 -->
+						<div>
+							<div class="flex items-center gap-3">
+								<div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-[20px]">
+									✍️
+								</div>
+
+								<div class="shrink-0">
+									<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
+										제이슨 작성 미션
+									</div>
+									<div class="text-[12px] font-bold text-slate-500">
+										단서를 보고 JSON을 직접 완성하는 활동
+									</div>
+								</div>
+
+								
 							</div>
 
-							<div>
-								<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
-									제이슨 작성 미션
-								</div>
-								<div class="text-[12px] font-bold text-slate-500">
-									단서를 보고 JSON을 직접 완성하는 활동
-								</div>
-							</div>
-						</div>
+							<div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+								{#each writeThemes as theme}
+									{@const tone = getCategoryTone(theme.categoryId)}
 
-						<div class="mt-3 grid grid-cols-4 gap-3">
-							{#each writeThemes as theme}
-								{@const tone = getCategoryTone(theme.categoryId)}
+									<button
+										type="button"
+										disabled={!theme.enabled}
+										on:click={() => selectTheme(theme)}
+										class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+											selectedThemeId === theme.id
+												? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
+												: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+										} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
+									>
+										<div class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"></div>
 
-								<button
-									type="button"
-									disabled={!theme.enabled}
-									on:click={() => selectTheme(theme)}
-									class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
-										selectedThemeId === theme.id
-											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
-											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
-									} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
-								>
-									<div
-										class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"
-									></div>
+										<div class="relative z-10 flex h-full flex-col">
+											<div class="flex items-start justify-between gap-2">
+												<div class="text-[34px]">{theme.icon}</div>
 
-									<div class="relative z-10 flex h-full flex-col">
-										<div class="flex items-start justify-between gap-2">
-											<div class="text-[34px]">{theme.icon}</div>
+												{#if theme.enabled}
+													<div
+														class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
+															theme
+														)}`}
+													>
+														<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
+														<span>{getThemeLevel(theme)}</span>
+													</div>
+												{:else}
+													<div class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300">
+														준비 중
+													</div>
+												{/if}
+											</div>
 
-											{#if theme.enabled}
-												<div
-													class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
-														theme
-													)}`}
-												>
-													<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
-													<span>{getThemeLevel(theme)}</span>
+											<div class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950">
+												{theme.title}
+											</div>
+
+											<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
+												{theme.subtitle}
+											</div>
+
+											<div class="mt-4 flex flex-wrap gap-1.5">
+												{#each theme.tags as tag}
+													<span class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200">
+														{tag}
+													</span>
+												{/each}
+											</div>
+
+											<div class="mt-auto pt-4">
+												<div class={`h-[3px] rounded-full ${getThemeDataBarClass(theme)}`}></div>
+
+												<div class="mt-2 flex items-center justify-end">
+													<div class={`text-[11px] font-black ${getThemeDataLabelClass(theme)}`}>
+														{getThemeDataLabel(theme)}
+													</div>
 												</div>
-											{:else}
-												<div
-													class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300"
-												>
-													준비 중
-												</div>
-											{/if}
-										</div>
-
-										<div
-											class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950"
-										>
-											{theme.title}
-										</div>
-
-										<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
-											{theme.subtitle}
-										</div>
-
-										<div class="mt-4 flex flex-wrap gap-1.5">
-											{#each theme.tags as tag}
-												<span
-													class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200"
-												>
-													{tag}
-												</span>
-											{/each}
-										</div>
-
-										<div class="mt-auto border-t border-slate-200/80 pt-3">
-											<div
-												class={`flex items-center gap-2 text-[11px] font-black ${getThemeDataTextClass(
-													theme
-												)}`}
-											>
-												<span class="text-[14px]">{getThemeDataIcon(theme)}</span>
-												<span>{getThemeDataLabel(theme)}</span>
 											</div>
 										</div>
-									</div>
-								</button>
-							{/each}
-						</div>
-					</div>
-
-					<!-- JSON 해석 -->
-					<div class="mt-8 border-t border-slate-100 pt-6">
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-50 text-[20px]"
-							>
-								🔎
-							</div>
-
-							<div>
-								<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
-									제이슨 해석 미션
-								</div>
-								<div class="text-[12px] font-bold text-slate-500">
-									주어진 JSON을 읽고 의미를 찾아내는 활동
-								</div>
+									</button>
+								{/each}
 							</div>
 						</div>
 
-						<div class="mt-3 grid grid-cols-4 gap-3">
-							{#each readThemes as theme}
-								{@const tone = getCategoryTone(theme.categoryId)}
+						<!-- 가운데 세로 디바이더 -->
+						<div class="hidden w-px bg-slate-300 xl:block"></div>
 
-								<button
-									type="button"
-									disabled={!theme.enabled}
-									on:click={() => selectTheme(theme)}
-									class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
-										selectedThemeId === theme.id
-											? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
-											: 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
-									} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
-								>
-									<div
-										class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"
-									></div>
+						<!-- 오른쪽: JSON 해석 -->
+						<div>
+							<div class="flex items-center gap-3">
+								<div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-50 text-[20px]">
+									🔎
+								</div>
 
-									<div class="relative z-10 flex h-full flex-col">
-										<div class="flex items-start justify-between gap-2">
-											<div class="text-[34px]">{theme.icon}</div>
-
-											{#if theme.enabled}
-												<div
-													class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
-														theme
-													)}`}
-												>
-													<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
-													<span>{getThemeLevel(theme)}</span>
-												</div>
-											{:else}
-												<div
-													class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300"
-												>
-													준비 중
-												</div>
-											{/if}
-										</div>
-
-										<div
-											class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950"
-										>
-											{theme.title}
-										</div>
-
-										<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
-											{theme.subtitle}
-										</div>
-
-										<div class="mt-4 flex flex-wrap gap-1.5">
-											{#each theme.tags as tag}
-												<span
-													class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200"
-												>
-													{tag}
-												</span>
-											{/each}
-										</div>
-
-										<div class="mt-auto pt-4">
-	<div class={`h-[3px] rounded-full ${getThemeDataBarClass(theme)}`}></div>
-
-	<div class="mt-2 flex items-center justify-end">
-		<div class={`text-[11px] font-black ${getThemeDataLabelClass(theme)}`}>
-			{getThemeDataLabel(theme)}
-		</div>
-	</div>
-</div>
+								<div class="shrink-0">
+									<div class="font-gmarket text-[18px] font-bold tracking-[-0.05em] text-slate-950">
+										제이슨 해석 미션
 									</div>
-								</button>
-							{/each}
+									<div class="text-[12px] font-bold text-slate-500">
+										주어진 JSON을 읽고 의미를 찾아내는 활동
+									</div>
+								</div>
+
+								
+							</div>
+
+							<div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+								{#each readThemes as theme}
+									{@const tone = getCategoryTone(theme.categoryId)}
+
+									<button
+										type="button"
+										disabled={!theme.enabled}
+										on:click={() => selectTheme(theme)}
+										class={`group relative min-h-[226px] overflow-hidden rounded-[24px] border p-4 text-left transition ${
+											selectedThemeId === theme.id
+												? `${tone.selectedBorder} ${tone.selectedBg} ${tone.selectedShadow}`
+												: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+										} ${!theme.enabled ? 'cursor-not-allowed opacity-50' : ''}`}
+									>
+										<div class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/80 blur-2xl"></div>
+
+										<div class="relative z-10 flex h-full flex-col">
+											<div class="flex items-start justify-between gap-2">
+												<div class="text-[34px]">{theme.icon}</div>
+
+												{#if theme.enabled}
+													<div
+														class={`flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[11px] font-black ring-1 ${getThemeLevelClass(
+															theme
+														)}`}
+													>
+														<span class="text-[13px]">{getThemeLevelIcon(theme)}</span>
+														<span>{getThemeLevel(theme)}</span>
+													</div>
+												{:else}
+													<div class="rounded-2xl bg-slate-500 px-3 py-2 text-[11px] font-black text-white ring-1 ring-slate-300">
+														준비 중
+													</div>
+												{/if}
+											</div>
+
+											<div class="mt-4 font-gmarket text-[17px] font-bold tracking-[-0.055em] text-slate-950">
+												{theme.title}
+											</div>
+
+											<div class="mt-2 line-clamp-3 text-[12px] font-bold leading-5 text-slate-500">
+												{theme.subtitle}
+											</div>
+
+											<div class="mt-4 flex flex-wrap gap-1.5">
+												{#each theme.tags as tag}
+													<span class="rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-slate-500 ring-1 ring-slate-200">
+														{tag}
+													</span>
+												{/each}
+											</div>
+
+											<div class="mt-auto pt-4">
+												<div class={`h-[3px] rounded-full ${getThemeDataBarClass(theme)}`}></div>
+
+												<div class="mt-2 flex items-center justify-end">
+													<div class={`text-[11px] font-black ${getThemeDataLabelClass(theme)}`}>
+														{getThemeDataLabel(theme)}
+													</div>
+												</div>
+											</div>
+										</div>
+									</button>
+								{/each}
+							</div>
 						</div>
 					</div>
 				</section>

@@ -31,35 +31,39 @@
 	}
 
 	async function submit() {
-		error = '';
-		loading = true;
+	error = '';
+	loading = true;
 
-		try {
-			if (!userId || !password) {
-				throw new Error('아이디와 비밀번호를 입력하세요.');
-			}
+	const cleanUserId = userId.trim();
+	const cleanPassword = password.trim();
+	const cleanPassword2 = password2.trim();
 
-			if (mode === 'signup') {
-				if (!password2) {
-					throw new Error('비밀번호 확인을 입력하세요.');
-				}
-
-				if (password !== password2) {
-					throw new Error('비밀번호가 일치하지 않습니다.');
-				}
-
-				await signupWithId(userId, password);
-			} else {
-				await loginWithId(userId, password);
-			}
-
-			window.location.href = '/';
-		} catch (e) {
-			error = e.message;
-		} finally {
-			loading = false;
+	try {
+		if (!cleanUserId || !cleanPassword) {
+			throw new Error('아이디와 비밀번호를 입력하세요.');
 		}
+
+		if (mode === 'signup') {
+			if (!cleanPassword2) {
+				throw new Error('비밀번호 확인을 입력하세요.');
+			}
+
+			if (cleanPassword !== cleanPassword2) {
+				throw new Error('비밀번호가 일치하지 않습니다.');
+			}
+
+			await signupWithId(cleanUserId, cleanPassword);
+		} else {
+			await loginWithId(cleanUserId, cleanPassword);
+		}
+
+		window.location.href = '/';
+	} catch (e) {
+		error = e.message;
+	} finally {
+		loading = false;
 	}
+}
 </script>
 
 <Nav />

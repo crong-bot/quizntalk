@@ -154,7 +154,7 @@ export const monsterDefenseCourse = {
 	subtitle: '정찰하고, 방어 도구를 만들고, 최종 방어 계획으로 도시를 지켜요.',
 	icon: '🛡️',
 	themeId: 'monsterDefense',
-	difficulty: 'JSON 전설',
+	difficulty: '전설',
 	completion: {
 		learningResults: [
 			{
@@ -368,7 +368,7 @@ export const monsterDefenseCourse = {
 		{
 			id: 'prepare-tools',
 			layerKey: 'prepareTools',
-			title: '방어 도구 생성하기',
+			title: '방어 도구 제작하기',
 			type: 'individual',
 			effectKey: 'prepareTools',
 			roleSuccessState: monsterDefenseRoleSuccessStates,
@@ -379,19 +379,20 @@ export const monsterDefenseCourse = {
 				wall: {
 					story: {
 						call: '성벽팀, 성벽 도구 JSON을 만드세요.',
-						summary: '성벽을 어느 방향에 세울지와 문을 닫을지 정합니다.',
+						summary: '성벽을 어느 방향에 건설할지와 문을 닫을지 정합니다.',
 						mission: '성벽의 방향과 문닫기 값을 입력하세요.'
 					},
 					role: {
 						title: '성벽팀',
 						icon: '🧱',
-						description: '성벽 도구를 만드는 역할'
+						description: '성벽을 건설하는 역할'
 					},
 					clues: [
 						mission2wallStructureHint,
-						'위험하다고 생각하는 방향에 성벽을 준비해야 합니다.',
+						'위험하다고 생각하는 방향에 성벽을 건설해야 합니다.',
+						'건설방향은 동쪽, 서쪽, 남쪽, 북쪽 중에 하나 입니다.',
 						'문닫기 값이 true이면 성벽 문이 닫힌 상태입니다.',
-						'문닫기 값이 false이면 성벽 문이 열린 상태입니다.'
+						
 					],
 					keyChips: ['방어도구', '성벽', '방향', '문닫기'],
 					valueChips: ['"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"', 'true', 'false'],
@@ -408,17 +409,17 @@ export const monsterDefenseCourse = {
 				trap: {
 					story: {
 						call: '트랩팀, 트랩 도구 JSON을 만드세요.',
-						summary: '트랩의 종류, 설치 위치, 작동 여부를 정합니다.',
+						summary: '제작할 트랩의 종류, 설치 위치, 작동 여부를 정합니다.',
 						mission: '트랩 종류, 설치위치, 작동 값을 입력하세요.'
 					},
 					role: {
 						title: '트랩팀',
 						icon: '🕸️',
-						description: '트랩 도구를 만드는 역할'
+						description: '트랩을 제작하는 역할'
 					},
 					clues: [
-						'효과가 좋아 보이는 트랩을 선택합니다.',
-						'괴물이 지나갈 것 같은 길에 설치해야 합니다.',
+						'효과가 좋아 보이는 트랩을 선택합니다.(그물트랩, 미끄럼기름, 소리폭탄)',
+						'괴물이 지나갈 것 같은 길에 설치해야 합니다.(동쪽, 서쪽, 남쪽, 북쪽)',
 						'작동 값이 true이면 트랩이 작동합니다.'
 					],
 					keyChips: ['방어도구', '트랩', '종류', '설치위치', '작동'],
@@ -437,7 +438,7 @@ export const monsterDefenseCourse = {
 				attack: {
 					story: {
 						call: '대포팀, 대포 도구 JSON을 만드세요.',
-						summary: '대포의 종류와 작동 여부를 정합니다.',
+						summary: '제작할 대포의 종류와 작동 여부를 정합니다.',
 						mission: '대포 종류와 작동 값을 입력하세요.'
 					},
 					role: {
@@ -446,7 +447,8 @@ export const monsterDefenseCourse = {
 						description: '대포 도구를 만드는 역할'
 					},
 					clues: [
-						'효과가 좋아 보이는 대포를 선택합니다.',
+						'효과가 좋아 보이는 대포를 제작해야 합니다.',
+						'물대포, 불대포, 바람대포 중 한 개만 제작',
 						'작동 값이 true이면 대포가 준비된 상태입니다.'
 					],
 					keyChips: ['방어도구', '대포', '종류', '작동'],
@@ -464,7 +466,7 @@ export const monsterDefenseCourse = {
 				scout: {
 					story: {
 						call: '정찰팀, 경보 상황 JSON을 만드세요.',
-						summary: '최종 계획에 참고할 경보 위치와 위험 상태를 정리합니다.',
+						summary: '최종 계획에 참고할 정찰보고서를 만들어야 합니다!',
 						mission: '경보 위치와 위험 상태를 입력하세요.'
 					},
 					role: {
@@ -474,7 +476,9 @@ export const monsterDefenseCourse = {
 					},
 					clues: [
 						'북쪽 감시탑에서 경보가 가장 먼저 울렸습니다.',
-						'초록괴물은 도시 쪽으로 계속 접근 중입니다.'
+						'초록괴물은 도시 쪽으로 계속 접근 중입니다.',
+						'경보위치는 북쪽, 동쪽, 남쪽, 서쪽 중 한 개만 고르세요.',
+						'위험상태는 접근중, 대기중, 후퇴중 중 한 개 입니다.'
 					],
 					keyChips: ['정찰기록', '경보위치', '위험상태'],
 					valueChips: ['"북쪽"', '"동쪽"', '"남쪽"', '"서쪽"', '"접근중"', '"대기중"', '"후퇴중"'],
