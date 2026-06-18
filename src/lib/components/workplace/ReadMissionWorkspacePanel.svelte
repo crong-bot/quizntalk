@@ -31,89 +31,89 @@
 	export let answerFields = [];
 
 	let formAnswer = {};
-let lastParsedAnswerText = '';
-$: latestLog = logs?.[0] ?? null;
+	let lastParsedAnswerText = '';
+	$: latestLog = logs?.[0] ?? null;
 
-$: safeClues = Array.isArray(clues) ? clues : [];
+	$: safeClues = Array.isArray(clues) ? clues : [];
 
-$: jsonClues = safeClues.filter(
-	(clue) => clue && typeof clue === 'object' && clue.type === 'json'
-);
-
-$: textClues = safeClues.filter((clue) => typeof clue === 'string');
-
-$: safeAnswerFields =
-	Array.isArray(answerFields) && answerFields.length > 0
-		? answerFields.map((field) => {
-				if (typeof field === 'string') {
-					return {
-						key: field,
-						label: field,
-						placeholder: `${field}을 입력하세요.`,
-						multiline: false
-					};
-				}
-
-				return {
-					key: field.key,
-					label: field.label ?? field.key,
-					placeholder: field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`,
-					multiline: field.multiline ?? false
-				};
-		  })
-		: [
-				{
-					key: '정답',
-					label: '정답',
-					placeholder: '정답을 입력하세요.',
-					multiline: false
-				}
-		  ];
-
-$: if (answerText && answerText !== lastParsedAnswerText) {
-	lastParsedAnswerText = answerText;
-
-	try {
-		const parsed = JSON.parse(answerText);
-
-		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-			formAnswer = {
-				...formAnswer,
-				...parsed
-			};
-		}
-	} catch {
-		const firstKey = safeAnswerFields[0]?.key ?? '정답';
-
-		formAnswer = {
-			...formAnswer,
-			[firstKey]: answerText
-		};
-	}
-}
-
-function updateAnswerField(key, value) {
-	formAnswer = {
-		...formAnswer,
-		[key]: value
-	};
-
-	answerText = JSON.stringify(formAnswer, null, 2);
-	lastParsedAnswerText = answerText;
-}
-
-function resetAnswer() {
-	formAnswer = {};
-
-	answerText = JSON.stringify(
-		Object.fromEntries(safeAnswerFields.map((field) => [field.key, ''])),
-		null,
-		2
+	$: jsonClues = safeClues.filter(
+		(clue) => clue && typeof clue === 'object' && clue.type === 'json'
 	);
 
-	lastParsedAnswerText = answerText;
-	onReset();
-}
+	$: textClues = safeClues.filter((clue) => typeof clue === 'string');
+
+	$: safeAnswerFields =
+		Array.isArray(answerFields) && answerFields.length > 0
+			? answerFields.map((field) => {
+					if (typeof field === 'string') {
+						return {
+							key: field,
+							label: field,
+							placeholder: `${field}을 입력하세요.`,
+							multiline: false
+						};
+					}
+
+					return {
+						key: field.key,
+						label: field.label ?? field.key,
+						placeholder: field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`,
+						multiline: field.multiline ?? false
+					};
+			  })
+			: [
+					{
+						key: '정답',
+						label: '정답',
+						placeholder: '정답을 입력하세요.',
+						multiline: false
+					}
+			  ];
+
+	$: if (answerText && answerText !== lastParsedAnswerText) {
+		lastParsedAnswerText = answerText;
+
+		try {
+			const parsed = JSON.parse(answerText);
+
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				formAnswer = {
+					...formAnswer,
+					...parsed
+				};
+			}
+		} catch {
+			const firstKey = safeAnswerFields[0]?.key ?? '정답';
+
+			formAnswer = {
+				...formAnswer,
+				[firstKey]: answerText
+			};
+		}
+	}
+
+	function updateAnswerField(key, value) {
+		formAnswer = {
+			...formAnswer,
+			[key]: value
+		};
+
+		answerText = JSON.stringify(formAnswer, null, 2);
+		lastParsedAnswerText = answerText;
+	}
+
+	function resetAnswer() {
+		formAnswer = {};
+
+		answerText = JSON.stringify(
+			Object.fromEntries(safeAnswerFields.map((field) => [field.key, ''])),
+			null,
+			2
+		);
+
+		lastParsedAnswerText = answerText;
+		onReset();
+	}
 
 	function getJsonClueData(clue) {
 		return clue?.data ?? clue?.json ?? clue?.value ?? {};
@@ -366,23 +366,24 @@ function resetAnswer() {
 			</div>
 
 			{#if question}
-	<div class="mt-4 rounded-[22px] border-2 border-blue-200 bg-blue-50 p-4 shadow-[0_10px_24px_rgba(37,99,235,0.10)]">
-		<div class="flex items-start gap-3">
-			<div
-				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl text-white shadow-sm"
-			>
-				?
-			</div>
+				<div
+					class="mt-4 rounded-[22px] border-2 border-blue-200 bg-blue-50 p-4 shadow-[0_10px_24px_rgba(37,99,235,0.10)]"
+				>
+					<div class="flex items-start gap-3">
+						<div
+							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl text-white shadow-sm"
+						>
+							?
+						</div>
 
-			<div class="min-w-0 flex-1">
-				
-				<div class="mt-1 text-[19px] font-black leading-7 tracking-[-0.04em] text-slate-950">
-					{question}
+						<div class="min-w-0 flex-1">
+							<div class="mt-1 text-[19px] font-black leading-7 tracking-[-0.04em] text-slate-950">
+								{question}
+							</div>
+						</div>
+					</div>
 				</div>
-			</div>
-		</div>
-	</div>
-{/if}
+			{/if}
 
 			<div class="mt-4 rounded-2xl bg-slate-50 p-4">
 				<div class="text-[13px] font-black text-slate-700">진행 순서</div>
@@ -426,37 +427,35 @@ function resetAnswer() {
 					정답 입력
 				</div>
 
-				<div class="mt-1 text-[12px] font-bold text-slate-400">찾은 답을 짧게 적어 제출하세요.</div>
+				<!-- <div class="mt-1 text-[12px] font-bold text-slate-400">찾은 답을 짧게 적어 제출하세요.</div> -->
 			</div>
 
 			<div class="flex min-h-0 flex-1 flex-col p-4">
 				<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-auto">
-	{#each safeAnswerFields as field}
-		<div>
-			<label class="mb-1.5 block text-[13px] font-black text-slate-700">
-				{field.label ?? field.key}
-			</label>
+					{#each safeAnswerFields as field}
+						<div>
+							<label class="mb-1.5 block text-[13px] font-black text-slate-700">
+								{field.label ?? field.key}
+							</label>
 
-			{#if field.multiline}
-				<textarea
-					rows="2"
-					value={formAnswer[field.key] ?? ''}
-					on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
-					placeholder={field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`}
-					class="h-[76px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[16px] font-bold leading-6 text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-				></textarea>
-			{:else}
-				<input
-					type="text"
-					value={formAnswer[field.key] ?? ''}
-					on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
-					placeholder={field.placeholder ?? `${field.label ?? field.key}을 입력하세요.`}
-					class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-				/>
-			{/if}
-		</div>
-	{/each}
-</div>
+							{#if field.multiline}
+								<textarea
+									rows="2"
+									value={formAnswer[field.key] ?? ''}
+									on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
+									class="h-[76px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[16px] font-bold leading-6 text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+								></textarea>
+							{:else}
+								<input
+									type="text"
+									value={formAnswer[field.key] ?? ''}
+									on:input={(event) => updateAnswerField(field.key, event.currentTarget.value)}
+									class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+								/>
+							{/if}
+						</div>
+					{/each}
+				</div>
 
 				<div
 					class={`mt-3 min-h-[54px] whitespace-pre-wrap rounded-2xl border px-4 py-3 text-[13px] font-extrabold leading-5 ${getResultClass(

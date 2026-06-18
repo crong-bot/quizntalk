@@ -2,8 +2,8 @@
 
 export const marketBasketCourse = {
 	id: 'marketBasket',
-	title: '장바구니 탐정단: 계절별 비상 대비 코너 만들기',
-	subtitle: '여러 장바구니 JSON을 분석하고, 계절과 상황에 맞는 상품 조합을 찾아보세요!',
+	title: '장바구니 탐정단: 우리 마트의 비상 대비 용품 코너 만들기',
+	subtitle: '여러 장바구니 데이터를 분석하고, 마트의 상품 진열을 해보세요!',
 	icon: '🛒',
 	themeId: 'marketBasket',
 	categoryId: 'read',
@@ -13,7 +13,7 @@ export const marketBasketCourse = {
 	intro: {
 		badge: 'DATA BRIEFING',
 		title: '장바구니 탐정단 출동',
-		subtitle: '장바구니 속에 숨어 있는 계절별 비상 대비 물품을 찾아보세요.',
+		subtitle: '장바구니 속에 숨어 있는 힌트를 찾아보세요..',
 		image: '/images/themes/market-basket/intro.png',
 		imageAlt: '마트 데이터 탐정단이 장바구니 데이터를 분석하는 장면',
 		summaryTitle: '현재 상황',
@@ -28,8 +28,7 @@ export const marketBasketCourse = {
 			'미션1에서는 고객들이 함께 구입한 상품 조합을 제출합니다.',
 			'미션2에서는 팀원들의 단서를 모아 계절별 비상 대비 상품 조합을 정합니다.'
 		],
-		tip:
-			'힌트: 모든 장바구니에 똑같이 들어 있는 상품만 찾는 것이 아닙니다. 3개 중 2개 정도에서 함께 반복되는 상품 조합도 중요한 단서가 될 수 있어요.',
+		tip: '힌트: 모든 장바구니에 똑같이 들어 있는 상품만 찾는 것이 아닙니다. 3개 중 2개 정도에서 함께 반복되는 상품 조합도 중요한 단서가 될 수 있어요.',
 		buttonText: '장바구니 분석 시작하기'
 	},
 
@@ -38,8 +37,8 @@ export const marketBasketCourse = {
 		badge: '최종 비상 대비 코너',
 		title: '장바구니 분석 완료!',
 		description:
-			'모둠원이 장바구니 JSON 데이터를 분석하고, 계절별 비상 대비 코너에 함께 진열할 상품 조합을 정했습니다.',
-		resultTitle: '계절별 비상 대비 진열 아이디어',
+			'모둠원이 장바구니 JSON 데이터를 분석하고, 비상물품 코너에 함께 진열할 상품 조합을 정했습니다.',
+		resultTitle: '비상물품 진열 아이디어',
 		result:
 			'계절이나 상황에 따라 함께 필요한 상품은 가까이 진열하면 고객이 더 쉽게 준비할 수 있습니다.',
 		reasons: [
@@ -56,25 +55,25 @@ export const marketBasketCourse = {
 		{
 			id: 'receipt',
 			name: '민서',
-			roleName: '봄철 대비 분석가',
+			roleName: '데이터분석가',
 			avatarSrc: '/images/avatars/1.png'
 		},
 		{
 			id: 'product',
 			name: '준호',
-			roleName: '여름철 대비 분석가',
+			roleName: '데이터분석가',
 			avatarSrc: '/images/avatars/2.png'
 		},
 		{
 			id: 'situation',
 			name: '서연',
-			roleName: '정전 대비 분석가',
+			roleName: '데이터분석가',
 			avatarSrc: '/images/avatars/3.png'
 		},
 		{
 			id: 'display',
 			name: '도윤',
-			roleName: '겨울철 대비 분석가',
+			roleName: '데이터분석가',
 			avatarSrc: '/images/avatars/4.png'
 		}
 	],
@@ -84,15 +83,13 @@ export const marketBasketCourse = {
 			id: 'basket-analysis',
 			title: '장바구니 JSON 분석하기',
 			type: 'role-analysis',
-			question:
-				'장바구니 데이터를 분석해서, 고객들이 어떤 비상 대비 상품을 함께 구입하는지 찾아보세요!',
+			question: '장바구니 데이터를 분석해서, 고객들이 주로 같이 구입한 상품 2가지를 찾아보세요!',
 			initialJson: `{}`,
 
 			roleMissions: {
 				receipt: createBasketAnalysisMission({
 					title: '장바구니 분석',
-					call:
-						'민서 분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
+					call: '분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
 					basketData: [
 						{
 							번호: 1,
@@ -117,8 +114,7 @@ export const marketBasketCourse = {
 
 				product: createBasketAnalysisMission({
 					title: '장바구니 분석',
-					call:
-						'준호 분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
+					call: '분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
 					basketData: [
 						{
 							번호: 4,
@@ -143,8 +139,7 @@ export const marketBasketCourse = {
 
 				situation: createBasketAnalysisMission({
 					title: '장바구니 분석',
-					call:
-						'서연 분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
+					call: '분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
 					basketData: [
 						{
 							번호: 7,
@@ -169,8 +164,7 @@ export const marketBasketCourse = {
 
 				display: createBasketAnalysisMission({
 					title: '장바구니 분석',
-					call:
-						'도윤 분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
+					call: '분석가님, 장바구니 데이터를 분석해서 고객들이 함께 구입한 상품 조합을 찾아 주세요.',
 					basketData: [
 						{
 							번호: 10,
@@ -204,8 +198,8 @@ export const marketBasketCourse = {
 			answerFields: [
 				{
 					key: '상품조합',
-					label: '같이 진열할 비상 대비 상품 2가지를 써보세요.',
-					multiline: true
+					label: '같이 진열할 비상대피용품 2가지를 써보세요.',
+					multiline: false
 				},
 				{
 					key: '이유',
@@ -241,8 +235,7 @@ function createBasketAnalysisMission({ title, call, basketData }) {
 		story: {
 			title,
 			call,
-			summary:
-				'장바구니 데이터를 읽고, 고객들이 반복해서 함께 구입한 상품 조합을 찾습니다.',
+			summary: '장바구니 데이터를 읽고, 고객들이 반복해서 함께 구입한 상품 조합을 찾습니다.',
 			mission: '함께구입한상품과 관련상황을 JSON으로 작성하세요.'
 		},
 		role: {
@@ -253,22 +246,21 @@ function createBasketAnalysisMission({ title, call, basketData }) {
 		answerFields: [
 			{
 				key: '함께구입한상품',
-				label: '고객들이 함께 구입한 비상 대비 상품은 무엇인가요?'
-			},
-			
+				label: '고객들이 자주 함께 구입한 상품 2가지를 적어보세요.'
+			}
 		],
 		clues: [
 			{
 				type: 'json',
 				title: '내가 맡은 장바구니 JSON',
 				data: {
-					장바구니기록: basketData,
-					찾을것: [
-						'장바구니마다 들어 있는 상품 비교하기',
-						'3개 중 2개 이상에서 함께 나온 상품 조합 찾기',
-						'상품 조합을 보고 어떤 계절이나 상황과 관련 있는지 생각하기',
-						'구매시간과 결제금액은 참고 정보로 살펴보기'
-					]
+					장바구니기록: basketData
+					// 찾을것: [
+					// 	'장바구니마다 들어 있는 상품 비교하기',
+					// 	'3개 중 2개 이상에서 함께 나온 상품 조합 찾기',
+					// 	'상품 조합을 보고 어떤 계절이나 상황과 관련 있는지 생각하기',
+					// 	'구매시간과 결제금액은 참고 정보로 살펴보기'
+					// ]
 				}
 			}
 		],
@@ -279,32 +271,30 @@ function createBasketAnalysisMission({ title, call, basketData }) {
 function createEmergencyDisplayMission(call) {
 	return {
 		story: {
-			title: '계절별 비상 대비 코너 만들기',
+			title: '비상대비용품 코너 만들기',
 			call,
 			summary:
-				'팀원들이 찾은 장바구니 단서를 서로 이야기하고, 우리 마트에 진열할 비상 대비 상품 조합을 정합니다.',
+				'팀원들이 찾은 장바구니 단서를 서로 이야기하고, 우리 마트에 진열할 비상대비용품 조합을 정합니다.',
 			mission: '상품조합과 이유를 JSON으로 작성하세요.'
 		},
 		role: {
 			title: '비상 대비 코너 기획',
 			icon: '💡',
-			description: '팀 단서를 모아 마트에 진열할 비상 대비 상품 조합을 정하는 역할'
+			description: '팀 단서를 모아 마트에 진열할 비상대비용품 조합을 정하는 역할'
 		},
 		clues: [
 			{
 				type: 'json',
 				title: '계절별 비상 대비 코너 작성 안내',
 				data: {
-					
 					생각할점: [
 						'혼자보다 같이 진열하면 좋을 물건이 무엇일까요?',
 						'친구들이 확인한 물건 중에 어떤 조합을 가장 진열하고 싶나고',
 						'같이 놓으면 좋은 점이 있나요?'
 					],
 					예시: {
-						상품조합: '지우개와 연필',
-						이유:
-							'지우개와 '
+						상품조합: '지우개, 연필',
+						이유: '연필자국을 지울 지우개가 필요해서 두 개가 모두 필요해서 같이 진열하면 좋을 것 같다.'
 					}
 				}
 			}
