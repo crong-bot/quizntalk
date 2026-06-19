@@ -75,7 +75,6 @@ function mapLostItemRegister(parsed, state) {
 		foundPlace: normalizeText(data?.발견장소),
 		storagePlace: normalizeText(data?.보관장소),
 		features: Array.isArray(data?.특징) ? data.특징.filter((value) => normalizeText(value)) : [],
-		hasPhoto: data?.사진있음 === true,
 		ownerFound: data?.주인찾음 === true
 	};
 

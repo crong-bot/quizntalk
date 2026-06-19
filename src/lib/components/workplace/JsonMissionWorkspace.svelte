@@ -1846,6 +1846,7 @@
 							<SharedSimulationPanel
 								{themeId}
 								{simulationState}
+								{currentMissionIndex}
 								onFinalResultShown={handleFinalResultShown}
 							/>
 						</div>

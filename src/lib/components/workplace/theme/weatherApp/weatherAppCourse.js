@@ -64,13 +64,13 @@ export const weatherAppCourse = {
 			type: 'individual',
 			roleSuccessState: weatherAppRoleSuccessStates.adminLogin,
 			successState: weatherAppMissionSuccessStates.adminLogin,
-			simulationScope: 'room',
+			simulationScope: 'local',
 			initialJson: `{
   "관리자접속": {
-    "앱이름": "분실물찾기",
-    "관리자": "선생님",
-    "학교": "미래초등학교",
-    "접속": false
+    "앱이름": 
+    "관리자": 
+    "학교": 
+    "접속":
   }
 }`,
 			roleMissions: {
@@ -87,7 +87,7 @@ export const weatherAppCourse = {
 			type: 'individual',
 			roleSuccessState: weatherAppRoleSuccessStates.categoryRule,
 			successState: weatherAppMissionSuccessStates.categoryRule,
-			simulationScope: 'room',
+			simulationScope: 'local',
 			initialJson: `{
   "분류기준": {
     "종류": ["학용품", "의류", "생활용품", "우산", "기타"],
@@ -188,7 +188,6 @@ export const weatherAppCourse = {
     "발견장소": "",
     "보관장소": "",
     "특징": [],
-    "사진있음": false,
     "주인찾음": false
   }
 }`,
@@ -239,11 +238,11 @@ function createAdminLoginRoleMission(roleTitle) {
 		clues: [
 			'앱이름은 "분실물찾기"입니다.',
 			'관리자는 "선생님"입니다.',
-			'학교는 "미래초등학교"입니다.',
+			'자신의 학교이름을 입력합니다.',
 			'접속 값은 true여야 합니다.'
 		],
 		keyChips: ['관리자접속', '앱이름', '관리자', '학교', '접속'],
-		valueChips: ['분실물찾기', '선생님', '미래초등학교', 'true', 'false']
+		valueChips: ['분실물찾기', '선생님', 'true', 'false']
 	};
 }
 

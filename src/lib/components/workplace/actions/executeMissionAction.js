@@ -345,13 +345,22 @@ export async function executeMissionAction({ context, actions }) {
 
 	const nextLocalSimulationState = mergeSimulationState(simulationState, mapResult.state);
 
+	const shouldUseMergedSimulationState = themeId === 'weatherApp';
+
+	const nextRoomSimulationState =
+		simulationScope === 'room'
+			? shouldUseMergedSimulationState
+				? nextLocalSimulationState
+				: mapResult.state
+			: null;
+
 	const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
 	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
 	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
 	await syncMissionSuccessToFirestore({
 		nextMissionProgress,
-		nextSimulationState: simulationScope === 'room' ? mapResult.state : null,
+		nextSimulationState: nextRoomSimulationState,
 		nextMissionIndex,
 		nextRoomStatus,
 		shouldSyncSimulationState: simulationScope === 'room'

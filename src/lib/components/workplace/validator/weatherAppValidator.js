@@ -240,6 +240,7 @@ function validateAdminLoginMission({ parsed, jsonText, mission }) {
 	validateObjectPath({ parsed, path: '관리자접속', messages });
 	validateStringPath({ parsed, path: '관리자접속.앱이름', messages });
 	validateStringPath({ parsed, path: '관리자접속.관리자', messages });
+	validateStringPath({ parsed, path: '관리자접속.학교', messages });
 
 	const connected = validateBooleanPath({
 		parsed,
@@ -337,7 +338,6 @@ function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
 		});
 	}
 
-	validateBooleanPath({ parsed, path: '분실물등록.사진있음', messages });
 	validateBooleanPath({ parsed, path: '분실물등록.주인찾음', messages });
 
 	if (!isOk(messages)) {
