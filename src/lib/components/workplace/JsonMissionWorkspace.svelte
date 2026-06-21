@@ -781,13 +781,48 @@
 		: [];
 
 	/**
+	 * 작성 미션 중 team-final에서만,
+	 * 3명 방이면 빠진 4번째 역할의 단서를 시스템 단서로 붙인다.
+	 */
+	$: writeTeamFinalRoleMissionIds = Object.keys(currentMission?.roleMissions ?? {});
+
+	$: isThreePlayerWriteTeamFinal =
+		!isReadCourse &&
+		currentMission?.type === 'team-final' &&
+		writeTeamFinalRoleMissionIds.length === 4 &&
+		(room?.maxParticipants === 3 || participants.length === 3 || joinedRoleIds.length === 3);
+
+	$: missingWriteTeamFinalRoleIds = isThreePlayerWriteTeamFinal
+		? writeTeamFinalRoleMissionIds.filter((roleId) => !joinedRoleIds.includes(roleId))
+		: [];
+
+	$: missingWriteTeamFinalSystemClues = isThreePlayerWriteTeamFinal
+		? missingWriteTeamFinalRoleIds.flatMap((roleId) => {
+				const roleMission = currentMission?.roleMissions?.[roleId];
+				const roleName = getRoleNameById(roleId);
+
+				return (roleMission?.clues ?? [])
+					.filter((clue) => {
+						// 시스템 단서로 붙일 때는 JSON 구조도 단서 제외
+						return !(clue && typeof clue === 'object' && clue.type === 'structure');
+					})
+					.map((clue) => withBriefingTitle(clue, `[시스템 단서 · ${roleName}]`));
+		  })
+		: [];
+
+	/**
 	 * 왼쪽 MissionBriefingPanel에 들어갈 단서
+	 * - 읽기 team-json-report: 기존 시스템 단서 유지
+	 * - 작성 team-final: 내 단서 + 빠진 역할 시스템 단서
+	 * - 그 외 작성 미션: 내 단서만
 	 */
 	$: briefingClues = isReadCourse
 		? currentMission?.type === 'team-json-report'
 			? [...previousCurrentRoleClues, ...missingSystemRoleClues]
 			: currentRoleMission?.sideClues ?? []
-		: currentRoleMission?.clues ?? [];
+		: currentMission?.type === 'team-final'
+		  ? [...(currentRoleMission?.clues ?? []), ...missingWriteTeamFinalSystemClues]
+		  : currentRoleMission?.clues ?? [];
 
 	$: missionBriefingKey = [
 		course?.id ?? course?.themeId ?? '',
@@ -1869,6 +1904,7 @@
 	<RoomIntroModal
 		show={showRoomIntroModal}
 		intro={course?.intro}
+		missions={course?.missions}
 		onClose={() => {
 			showRoomIntroModal = false;
 		}}

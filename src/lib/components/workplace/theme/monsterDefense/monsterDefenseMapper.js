@@ -70,20 +70,28 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 	const finalFail =
 		forcedResult === 'fail' ? true : forcedResult === 'success' ? false : hasPlan && !finalSuccess;
 
-	const monsterName = plan?.괴물이름 ?? '';
+	const target = plan?.목표 ?? {};
+	const defenseTools = Array.isArray(plan?.방어도구) ? plan.방어도구 : [];
 
-	const wallDirection = plan?.성벽?.방향 ?? '';
-	const wallDoorClosed = plan?.성벽?.문닫기 === true;
+	const monsterName = target?.괴물 ?? '';
+	const wallDirection = target?.방향 ?? MONSTER_DIRECTION;
 
-	const trapName = plan?.트랩?.종류 ?? '';
-	const trapPosition = plan?.트랩?.설치위치 ?? '';
-	const trapActive = plan?.트랩?.작동 === true;
+	const operationStarted = plan?.실행 === true || finalSuccess || finalFail;
 
-	const cannonType = plan?.대포?.종류 ?? '';
-	const cannonPosition = plan?.대포?.설치위치 ?? '';
-	const cannonActive = plan?.대포?.작동 === true;
+	const hasWall = defenseTools.includes('성벽');
+	const hasTrap = defenseTools.includes('그물트랩');
+	const hasFireCannon = defenseTools.includes('불대포');
+	const hasWaterCannon = defenseTools.includes('물대포');
 
-	const operationStarted = plan?.작전실행 === true || finalSuccess || finalFail;
+	const wallDoorClosed = operationStarted && hasWall;
+
+	const trapName = hasTrap ? '그물트랩' : '';
+	const trapPosition = wallDirection;
+	const trapActive = operationStarted && hasTrap;
+
+	const cannonType = hasFireCannon ? '불대포' : hasWaterCannon ? '물대포' : '';
+	const cannonPosition = wallDirection;
+	const cannonActive = operationStarted && Boolean(cannonType);
 
 	const wallLayer = getWallLayerByDirection(wallDirection);
 
@@ -93,8 +101,18 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 		layers[wallLayer] = true;
 	}
 
-	if (operationStarted && trapActive && trapName) {
+	if (operationStarted && trapActive) {
 		layers[monsterDefenseLayers.trap] = true;
+	}
+
+	if (operationStarted && cannonActive) {
+		if (cannonType === '불대포') {
+			layers[monsterDefenseLayers.fireCannon] = true;
+		}
+
+		if (cannonType === '물대포') {
+			layers[monsterDefenseLayers.waterCannon] = true;
+		}
 	}
 
 	return {
@@ -113,20 +131,16 @@ function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
 			finalSuccess,
 			finalFail,
 
-			// 괴물은 항상 북쪽에서 등장
 			monsterDirection: MONSTER_DIRECTION,
 			monsterName,
 
-			// 성벽은 방향별 이미지
 			wallDirection,
 			wallDoorClosed,
 
-			// 트랩은 공통 이미지지만, 위치 판단은 flags로 함
 			trapName,
 			trapPosition,
 			trapActive,
 
-			// 물대포도 공통 이미지
 			cannonType,
 			cannonPosition,
 			cannonActive
