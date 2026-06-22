@@ -1,7 +1,7 @@
 import { animalRescueCourse } from './animalRescue/animalRescueCourse.js';
 import { bikeRebalanceCourse } from './bike/bikeRebalanceCourse.js';
 import { disasterSafetyCourse } from './disasterSafety/disasterSafetyCourse.js';
-import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
+// import { hackerTraceCourse } from './hackerTrace/hackerTraceCourse.js';
 import { marketBasketCourse } from './market/marketBasketCourse.js';
 import { monsterDefenseCourse } from './monsterDefense/monsterDefenseCourse.js';
 import { owlBusCourse } from './owlBus/owlBusCourse.js';
@@ -13,7 +13,7 @@ import { weatherAppCourse } from './weatherApp/weatherAppCourse.js';
 export const courses = [
 	moonBaseCourse,
 	animalRescueCourse,
-	hackerTraceCourse,
+	// hackerTraceCourse,
 	marketBasketCourse,
 	bikeRebalanceCourse,
 	disasterSafetyCourse,

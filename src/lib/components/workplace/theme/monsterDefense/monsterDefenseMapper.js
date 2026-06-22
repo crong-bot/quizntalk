@@ -4,10 +4,6 @@ import { monsterDefenseLayers } from './monsterDefenseLayers.js';
 
 const MONSTER_DIRECTION = '북쪽';
 
-function normalizeJson(value) {
-	return JSON.stringify(value);
-}
-
 function getFinalPlanFromJsonText(jsonText) {
 	try {
 		const parsed = JSON.parse(jsonText);
@@ -17,9 +13,33 @@ function getFinalPlanFromJsonText(jsonText) {
 	}
 }
 
-function isFinalPlanCorrect(plan, answerPlan) {
-	if (!plan || !answerPlan) return false;
-	return normalizeJson(plan) === normalizeJson(answerPlan);
+function normalizeText(value = '') {
+	return String(value).replaceAll(' ', '').trim();
+}
+
+function hasAllDefenseTools(tools = []) {
+	if (!Array.isArray(tools)) return false;
+
+	const normalizedTools = tools.map((tool) => normalizeText(tool));
+
+	return (
+		normalizedTools.includes('성벽') &&
+		normalizedTools.includes('그물트랩') &&
+		normalizedTools.includes('불대포')
+	);
+}
+
+function isFinalPlanCorrect(plan) {
+	if (!plan) return false;
+
+	const target = plan?.목표 ?? {};
+
+	return (
+		normalizeText(target?.괴물) === '초록괴물' &&
+		normalizeText(target?.방향) === '북쪽' &&
+		hasAllDefenseTools(plan?.방어도구) &&
+		plan?.실행 === true
+	);
 }
 
 function getWallLayerByDirection(direction = '') {
@@ -57,15 +77,11 @@ function createBaseLayers() {
 	};
 }
 
-function mapFinalPlanToState({ plan, answerPlan, forcedResult = null }) {
+function mapFinalPlanToState({ plan, forcedResult = null }) {
 	const hasPlan = Boolean(plan);
 
 	const finalSuccess =
-		forcedResult === 'success'
-			? true
-			: forcedResult === 'fail'
-			  ? false
-			  : isFinalPlanCorrect(plan, answerPlan);
+		forcedResult === 'success' ? true : forcedResult === 'fail' ? false : isFinalPlanCorrect(plan);
 
 	const finalFail =
 		forcedResult === 'fail' ? true : forcedResult === 'success' ? false : hasPlan && !finalSuccess;
