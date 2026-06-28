@@ -1061,6 +1061,10 @@
 			camera: {
 				...(prevState.camera ?? {}),
 				...(nextState.camera ?? {})
+			},
+			flags: {
+				...(prevState.flags ?? {}),
+				...(nextState.flags ?? {})
 			}
 		};
 	}

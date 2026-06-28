@@ -9,7 +9,7 @@ import { mapOwlBusRoomToSimulationState } from '../theme/owlBus/owlBusMapper';
 import { mapRobotCockpitJsonToSimulationState } from '../theme/robotCockpit/robotCockpitMapper';
 import { mapSpaceBaseJsonToSimulationState } from '../theme/spaceBase/spaceBaseMapper';
 import { mapTimeMuseumJsonToSimulationState } from '../theme/timeMuseum/timeMuseumMapper';
-import { mapWeatherAppRoomToSimulationState } from '../theme/weatherApp/weatherAppMapper';
+import { mapWeatherAppJsonToSimulationState } from '../theme/weatherApp/weatherAppMapper';
 
 const mapperByThemeId = {
 	spaceBase: mapSpaceBaseJsonToSimulationState,
@@ -21,7 +21,7 @@ const mapperByThemeId = {
 	owlBus: mapOwlBusRoomToSimulationState,
 	monsterDefense: mapMonsterDefenseRoomToSimulationState,
 	robotCockpit: mapRobotCockpitJsonToSimulationState,
-	weatherApp: mapWeatherAppRoomToSimulationState,
+	weatherApp: mapWeatherAppJsonToSimulationState,
 	timeMuseum: mapTimeMuseumJsonToSimulationState
 };
 

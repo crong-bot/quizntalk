@@ -575,11 +575,12 @@ export function createMonsterDefenseRuntime({
 			resultText?.show('방어 실패!', 0xef4444);
 		}
 
-		//모달 콜백 연결
-		onFinalResultShown?.({
-			themeId: 'monsterDefense',
-			result
-		});
+		window.setTimeout(() => {
+			onFinalResultShown?.({
+				themeId: 'monsterDefense',
+				result
+			});
+		}, 1800);
 	}
 
 	function updateFinalResultQueue(delta) {
