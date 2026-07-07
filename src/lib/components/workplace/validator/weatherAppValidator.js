@@ -315,7 +315,7 @@ function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
 		allowed: [1, 2, 3, 4]
 	});
 
-	validateStringPath({ parsed, path: '분실물등록.물건이름', messages });
+	// validateStringPath({ parsed, path: '분실물등록.물건이름', messages });
 	validateStringPath({ parsed, path: '분실물등록.종류', messages });
 	validateStringPath({ parsed, path: '분실물등록.색깔', messages });
 	validateStringPath({ parsed, path: '분실물등록.발견장소', messages });

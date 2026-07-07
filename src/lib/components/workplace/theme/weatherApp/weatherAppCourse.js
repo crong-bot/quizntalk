@@ -90,7 +90,7 @@ export const weatherAppCourse = {
 			simulationScope: 'local',
 			initialJson: `{
   "분류기준": {
-    "종류": ["학용품", "의류", "생활용품", "우산", "기타"],
+    "종류": ["학용품", "의류", "우산","생활용품",  "기타"],
     "보관장소": ["교무실", "교실", "도서관", "분실물보관함"],
     "기준사용": false
   }
@@ -182,7 +182,6 @@ export const weatherAppCourse = {
 			initialJson: `{
   "분실물등록": {
     "카드번호": 1,
-    "물건이름": "",
     "종류": "",
     "색깔": "",
     "발견장소": "",
@@ -267,7 +266,7 @@ function createRegisterRoleMission({ roleTitle, cardNumber }) {
 		story: {
 			call: `${roleTitle}, 실제 조사한 분실물 1개를 등록하세요.`,
 			summary: `카드번호 ${cardNumber}번에 실제 분실물 정보를 입력하면 앱 목록에 ${cardNumber}번째 카드가 생깁니다.`,
-			mission: '물건이름, 종류, 색깔, 발견장소, 보관장소, 특징을 입력하세요.'
+			mission: '종류, 색깔, 발견장소, 보관장소, 특징을 입력하세요.'
 		},
 		role: {
 			title: roleTitle,
@@ -283,7 +282,6 @@ function createRegisterRoleMission({ roleTitle, cardNumber }) {
 		keyChips: [
 			'분실물등록',
 			'카드번호',
-			'물건이름',
 			'종류',
 			'색깔',
 			'발견장소',
@@ -309,7 +307,6 @@ function createRegisterRoleMission({ roleTitle, cardNumber }) {
 		initialJson: `{
   "분실물등록": {
     "카드번호": ${cardNumber},
-    "물건이름": "",
     "종류": "",
     "색깔": "",
     "발견장소": "",

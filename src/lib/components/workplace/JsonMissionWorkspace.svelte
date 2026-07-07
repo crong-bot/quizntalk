@@ -418,6 +418,20 @@
 	}
 
 	function getNextRoomStatusAfterMissionClear() {
+		if (themeId === 'weatherApp') {
+			const allClearedAfterCurrentSuccess = players.every((player) => {
+				if (player.id === currentPlayerId) {
+					return true;
+				}
+
+				return player.missionProgress?.[currentMissionIndex] === 'cleared';
+			});
+
+			if (!allClearedAfterCurrentSuccess) {
+				return 'playing';
+			}
+		}
+
 		if (currentMissionIndex >= course.missions.length - 1) {
 			return 'completed';
 		}

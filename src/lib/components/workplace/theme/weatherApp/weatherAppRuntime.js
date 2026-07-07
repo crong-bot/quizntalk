@@ -289,7 +289,7 @@ function drawCategoryScreen(PIXI, container, flags) {
 
 	const categories = flags.categories?.length
 		? flags.categories
-		: ['학용품', '의류', '생활용품', '우산', '기타'];
+		: ['학용품', '의류', '우산', '생활용품','기타'];
 
 	categories.slice(0, 6).forEach((category, index) => {
 		const x = PHONE_SCREEN.x + 115 + (index % 2) * 315;

@@ -114,7 +114,7 @@
 					<div class="mt-6 rounded-2xl bg-slate-100 p-4">
 						<div class="text-sm font-black text-slate-900">사용 가능한 종류</div>
 						<div class="mt-3 flex flex-wrap gap-2">
-							{#each flags.categories?.length ? flags.categories : ['학용품', '의류', '생활용품', '우산', '기타'] as category}
+							{#each flags.categories?.length ? flags.categories : ['학용품', '의류', '우산', '생활용품', '기타'] as category}
 								<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">
 									{category}
 								</span>
