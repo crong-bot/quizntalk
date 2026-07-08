@@ -24,7 +24,7 @@ export async function executeMissionAction({ context, actions }) {
 		roomId,
 		activeParticipantId,
 		verificationEnergy,
-		simulationState
+		simulationState,
 	} = context;
 
 	const {
@@ -43,7 +43,8 @@ export async function executeMissionAction({ context, actions }) {
 		syncMissionSuccessToFirestore,
 		handleFinalMissionSubmit,
 		markCurrentPlayerMissionCleared,
-		unlockNextMissionIfReady
+		unlockNextMissionIfReady,
+		patchRoomState
 	} = actions;
 
 	if (status === 'sending') {
@@ -294,23 +295,31 @@ export async function executeMissionAction({ context, actions }) {
 	await wait(450);
 	const simulationScope = currentMission?.simulationScope ?? 'room';
 
-	const mapResult =
-		simulationScope === 'none'
-			? {
-					ok: true,
-					state: {
-						layers: {},
-						sprites: {},
-						camera: {},
-						flags: {}
-					}
-			  }
-			: validateResult.simulationState
-			  ? {
+const shouldMapWithMissionContext = themeId === 'weatherApp';
+
+const mapResult =
+	simulationScope === 'none'
+		? {
+				ok: true,
+				state: {
+					layers: {},
+					sprites: {},
+					camera: {},
+					flags: {}
+				}
+		  }
+		: shouldMapWithMissionContext
+		  ? mapJsonToSimulationState(themeId, {
+					jsonText,
+					missionId: currentMission?.id ?? null,
+					roleId: currentPlayer?.roleId ?? null
+		    })
+		  : validateResult.simulationState
+		    ? {
 						ok: true,
 						state: validateResult.simulationState
-			    }
-			  : mapJsonToSimulationState(themeId, jsonText);
+		      }
+		    : mapJsonToSimulationState(themeId, jsonText);
 
 	if (!mapResult.ok) {
 		setStatus('editing');
@@ -345,30 +354,113 @@ export async function executeMissionAction({ context, actions }) {
 
 	const nextLocalSimulationState = mergeSimulationState(simulationState, mapResult.state);
 
-	const shouldUseMergedSimulationState = themeId === 'weatherApp';
+const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
+const nextMissionIndex = getNextMissionIndexAfterMissionClear();
+const nextRoomStatus = getNextRoomStatusAfterMissionClear();
 
-	const nextRoomSimulationState =
-		simulationScope === 'room'
-			? shouldUseMergedSimulationState
-				? nextLocalSimulationState
-				: mapResult.state
-			: null;
+const isWeatherAppRegisterMission =
+	themeId === 'weatherApp' &&
+	currentMission?.id === 'register-lost-item' &&
+	simulationScope === 'room';
 
-	const nextMissionProgress = getNextProgressForCurrentPlayer('cleared');
-	const nextMissionIndex = getNextMissionIndexAfterMissionClear();
-	const nextRoomStatus = getNextRoomStatusAfterMissionClear();
+if (isWeatherAppRegisterMission) {
+	const nextFlags = mapResult.state?.flags ?? {};
+	const itemKey = Object.keys(nextFlags).find((key) => /^item[1-4]$/.test(key));
+	const item = itemKey ? nextFlags[itemKey] : null;
 
-	await syncMissionSuccessToFirestore({
-		nextMissionProgress,
-		nextSimulationState: nextRoomSimulationState,
-		nextMissionIndex,
-		nextRoomStatus,
-		shouldSyncSimulationState: simulationScope === 'room'
+	if (!itemKey || !item) {
+		setStatus('editing');
+
+		setTransmissionState({
+			visible: true,
+			phase: 'error',
+			roleName: currentPlayer?.roleName ?? '',
+			message: '등록할 분실물 카드를 찾지 못했습니다.',
+			progress: 100
+		});
+
+		setConsoleLogs([
+			{
+				type: 'error',
+				text: '등록할 분실물 카드 정보가 만들어지지 않았습니다.'
+			}
+		]);
+
+		return;
+	}
+
+	// 1. 내 화면에는 바로 카드 표시
+	setSimulationState(nextLocalSimulationState);
+
+	// 2. Firestore에는 전체 simulationState가 아니라 내 카드 하나만 저장
+	await patchRoomState({
+		patch: {
+			[`simulationState.flags.${itemKey}`]: item,
+			'simulationState.flags.managerConnected': true,
+			'simulationState.flags.categoryReady': true,
+			'simulationState.flags.registerMode': true
+		}
 	});
 
-	setSimulationState(nextLocalSimulationState);
+	// 3. 미션 진행 상태만 저장. simulationState 전체 저장 금지.
+	await syncMissionSuccessToFirestore({
+		nextMissionProgress,
+		nextSimulationState: null,
+		nextMissionIndex,
+		nextRoomStatus,
+		shouldSyncSimulationState: false
+	});
+
 	setHasExecuted(true);
 	setStatus('executed');
+
+	setTransmissionState({
+		visible: true,
+		phase: 'success',
+		roleName: currentPlayer?.roleName ?? '',
+		message: '분실물 카드가 앱 목록에 등록되었습니다.',
+		progress: 100
+	});
+
+	setConsoleLogs([
+		{
+			type: 'success',
+			text: `${currentPlayer?.roleName ?? '요원'}의 분실물 카드가 등록되었습니다.`
+		},
+		{
+			type: 'success',
+			text: `미션 ${currentMissionIndex + 1}이 완료되었습니다.`
+		}
+	]);
+
+	await wait(600);
+
+	markCurrentPlayerMissionCleared();
+	unlockNextMissionIfReady();
+
+	return;
+}
+
+const shouldUseMergedSimulationState = themeId === 'weatherApp';
+
+const nextRoomSimulationState =
+	simulationScope === 'room'
+		? shouldUseMergedSimulationState
+			? nextLocalSimulationState
+			: mapResult.state
+		: null;
+
+await syncMissionSuccessToFirestore({
+	nextMissionProgress,
+	nextSimulationState: nextRoomSimulationState,
+	nextMissionIndex,
+	nextRoomStatus,
+	shouldSyncSimulationState: simulationScope === 'room'
+});
+
+setSimulationState(nextLocalSimulationState);
+setHasExecuted(true);
+setStatus('executed');
 
 	setTransmissionState({
 		visible: true,

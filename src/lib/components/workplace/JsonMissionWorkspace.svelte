@@ -252,18 +252,36 @@
 	let autoFinalExecutionStarted = false;
 
 	let simulationState = {
-		layers: {}
-	};
-	let lastRoomSimulationStateKey = '';
+	layers: {},
+	sprites: {},
+	camera: {},
+	flags: {}
+};
 
-	$: if (shouldUseFirebase && room?.simulationState) {
-		const nextRoomSimulationStateKey = JSON.stringify(room.simulationState);
+let lastRoomSimulationStateKey = '';
 
-		if (nextRoomSimulationStateKey !== lastRoomSimulationStateKey) {
-			lastRoomSimulationStateKey = nextRoomSimulationStateKey;
+$: if (shouldUseFirebase && room?.simulationState) {
+	const nextRoomSimulationStateKey = JSON.stringify(room.simulationState);
+
+	if (nextRoomSimulationStateKey !== lastRoomSimulationStateKey) {
+		lastRoomSimulationStateKey = nextRoomSimulationStateKey;
+
+		if (themeId === 'weatherApp') {
+			const nextSimulationState = mergeLayerState(simulationState, room.simulationState);
+
+			console.log('🔵 [ROOM → LOCAL] weatherApp room 변경 감지 후 병합', {
+				currentMissionIndex,
+				roomFlags: room.simulationState?.flags,
+				beforeLocalFlags: simulationState?.flags,
+				afterLocalFlags: nextSimulationState?.flags
+			});
+
+			simulationState = nextSimulationState;
+		} else {
 			simulationState = mergeLayerState(simulationState, room.simulationState);
 		}
 	}
+}
 	let transmissionState = {
 		visible: false,
 		phase: 'idle', // idle | sending | validating | mapping | applying | success | error
@@ -440,49 +458,54 @@
 	}
 
 	async function syncMissionSuccessToFirestore({
-		nextMissionProgress,
-		nextSimulationState,
-		nextMissionIndex,
-		nextRoomStatus,
-		shouldSyncSimulationState = true
-	}) {
-		if (!canSyncToFirestore()) {
-			return;
+	nextMissionProgress,
+	nextSimulationState,
+	nextMissionIndex,
+	nextRoomStatus,
+	shouldSyncSimulationState = true
+}) {
+	if (!canSyncToFirestore()) {
+		return;
+	}
+
+	try {
+		const missionSuccessPayload = {
+			lessonId,
+			roomId,
+			participantId: activeParticipantId,
+			missionProgress: nextMissionProgress,
+			currentMissionIndex: nextMissionIndex,
+			status: nextRoomStatus,
+			lastMissionEvent:
+				nextMissionIndex !== currentMissionIndex || nextRoomStatus === 'completed'
+					? {
+							type: 'mission_completed',
+							missionId: currentMission?.id ?? '',
+							missionTitle: currentMission?.title ?? `미션 ${currentMissionIndex + 1}`,
+							missionIndex: currentMissionIndex,
+							nextMissionIndex,
+							status: nextRoomStatus,
+							message:
+								nextRoomStatus === 'completed'
+									? '모든 미션이 완료되었습니다.'
+									: `${
+											currentMission?.title ?? `미션 ${currentMissionIndex + 1}`
+									  }이 완료되었습니다.`,
+							version: Date.now(),
+							createdAt: new Date().toISOString()
+					  }
+					: null
+		};
+
+		if (shouldSyncSimulationState) {
+			missionSuccessPayload.simulationState = nextSimulationState;
 		}
 
-		try {
-			await applyMissionSuccess({
-				lessonId,
-				roomId,
-				participantId: activeParticipantId,
-				missionProgress: nextMissionProgress,
-				simulationState: shouldSyncSimulationState ? nextSimulationState : null,
-				currentMissionIndex: nextMissionIndex,
-				status: nextRoomStatus,
-				lastMissionEvent:
-					nextMissionIndex !== currentMissionIndex || nextRoomStatus === 'completed'
-						? {
-								type: 'mission_completed',
-								missionId: currentMission?.id ?? '',
-								missionTitle: currentMission?.title ?? `미션 ${currentMissionIndex + 1}`,
-								missionIndex: currentMissionIndex,
-								nextMissionIndex,
-								status: nextRoomStatus,
-								message:
-									nextRoomStatus === 'completed'
-										? '모든 미션이 완료되었습니다.'
-										: `${
-												currentMission?.title ?? `미션 ${currentMissionIndex + 1}`
-										  }이 완료되었습니다.`,
-								version: Date.now(),
-								createdAt: new Date().toISOString()
-						  }
-						: null
-			});
-		} catch (error) {
-			console.error('미션 성공 동기화 실패:', error);
-		}
+		await applyMissionSuccess(missionSuccessPayload);
+	} catch (error) {
+		console.error('미션 성공 동기화 실패:', error);
 	}
+}
 	function requestLeaveCurrentRoom() {
 		if (isLeavingRoom) return;
 		showLeaveRoomModal = true;
@@ -571,7 +594,8 @@
 				roomId,
 				activeParticipantId,
 				verificationEnergy,
-				simulationState
+				simulationState,
+				roomSimulationState: room?.simulationState ?? null
 			},
 			actions: {
 				setStatus: (nextStatus) => {
@@ -590,8 +614,13 @@
 					hasExecuted = nextHasExecuted;
 				},
 				setSimulationState: (nextSimulationState) => {
-					simulationState = nextSimulationState;
-				},
+	console.log('🟢 [ACTION → LOCAL] setSimulationState 받음', {
+		currentMissionIndex,
+		nextFlags: nextSimulationState?.flags
+	});
+
+	simulationState = nextSimulationState;
+},
 
 				recordCurrentAttempt,
 				consumeEnergyOnWrongAnswer,
@@ -601,7 +630,19 @@
 				syncMissionSuccessToFirestore,
 				handleFinalMissionSubmit,
 				markCurrentPlayerMissionCleared,
-				unlockNextMissionIfReady
+				unlockNextMissionIfReady,
+
+				patchRoomState: async ({ patch }) => {
+		if (!canSyncToFirestore()) {
+			return;
+		}
+
+		await updateRoomState({
+			lessonId,
+			roomId,
+			patch
+		});
+	}
 			}
 		});
 	}
@@ -1154,6 +1195,7 @@
 					  }
 					: null
 			});
+		
 		} catch (error) {
 			console.error('최종 미션 제출 동기화 실패:', error);
 		}

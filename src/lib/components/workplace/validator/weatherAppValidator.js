@@ -3,8 +3,6 @@
 import { mapWeatherAppJsonToSimulationState } from '../theme/weatherApp/weatherAppMapper.js';
 import { isPlainObject, makeResult, parseJsonWithFriendlyError } from './jsonValidator.js';
 
-
-
 function isIndexKey(key) {
 	return /^\d+$/.test(key);
 }
@@ -206,14 +204,23 @@ function isOk(messages) {
 	return messages.length > 0 && messages.every((message) => message.type === 'success');
 }
 
-function makeState({ jsonText, mission }) {
+/**
+ * roleId를 mapper까지 넘겨야
+ * 미션3에서 item1~item4 중 어느 카드인지 알 수 있음.
+ */
+function makeState({ jsonText, mission, roleId }) {
 	return mapWeatherAppJsonToSimulationState({
 		jsonText,
-		missionId: mission?.id
+		missionId: mission?.id,
+		roleId
 	});
 }
 
-function successResult({ text, jsonText, mission, extra = {} }) {
+function successResult({ text, jsonText, mission, roleId, extra = {} }) {
+	const simulationState = makeState({ jsonText, mission, roleId });
+
+	
+
 	return makeResult(
 		true,
 		'success',
@@ -225,13 +232,13 @@ function successResult({ text, jsonText, mission, extra = {} }) {
 		],
 		{
 			correct: true,
-			simulationState: makeState({ jsonText, mission }),
+			simulationState,
 			...extra
 		}
 	);
 }
 
-function validateAdminLoginMission({ parsed, jsonText, mission }) {
+function validateAdminLoginMission({ parsed, jsonText, mission, roleId }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
@@ -262,11 +269,12 @@ function validateAdminLoginMission({ parsed, jsonText, mission }) {
 	return successResult({
 		text: '분실물찾기 관리자 접속 JSON이 확인되었습니다.',
 		jsonText,
-		mission
+		mission,
+		roleId
 	});
 }
 
-function validateCategoryRuleMission({ parsed, jsonText, mission }) {
+function validateCategoryRuleMission({ parsed, jsonText, mission, roleId }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
@@ -296,11 +304,12 @@ function validateCategoryRuleMission({ parsed, jsonText, mission }) {
 	return successResult({
 		text: '분실물 분류 기준이 준비되었습니다.',
 		jsonText,
-		mission
+		mission,
+		roleId
 	});
 }
 
-function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
+function validateRegisterLostItemMission({ parsed, jsonText, mission, roleId }) {
 	const rootError = validateRootObject(parsed);
 	if (rootError) return rootError;
 
@@ -315,7 +324,10 @@ function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
 		allowed: [1, 2, 3, 4]
 	});
 
+	// 현재 course의 initialJson에 물건이름이 없을 수 있어서 필수 검사는 하지 않음.
+	// 물건이름을 필수로 쓰고 싶으면 course initialJson/keyChips에도 물건이름을 추가한 뒤 아래 주석을 풀면 됨.
 	// validateStringPath({ parsed, path: '분실물등록.물건이름', messages });
+
 	validateStringPath({ parsed, path: '분실물등록.종류', messages });
 	validateStringPath({ parsed, path: '분실물등록.색깔', messages });
 	validateStringPath({ parsed, path: '분실물등록.발견장소', messages });
@@ -338,6 +350,10 @@ function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
 		});
 	}
 
+	// 사진있음은 선택값으로 둠.
+	// 필수로 하고 싶으면 course initialJson/keyChips에도 사진있음을 넣고 아래 주석을 풀면 됨.
+	// validateBooleanPath({ parsed, path: '분실물등록.사진있음', messages });
+
 	validateBooleanPath({ parsed, path: '분실물등록.주인찾음', messages });
 
 	if (!isOk(messages)) {
@@ -347,7 +363,8 @@ function validateRegisterLostItemMission({ parsed, jsonText, mission }) {
 	return successResult({
 		text: '분실물 카드 등록 JSON이 확인되었습니다.',
 		jsonText,
-		mission
+		mission,
+		roleId
 	});
 }
 
@@ -378,7 +395,8 @@ export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, 
 		return validateAdminLoginMission({
 			parsed: parsedResult.data,
 			jsonText,
-			mission
+			mission,
+			roleId
 		});
 	}
 
@@ -386,7 +404,8 @@ export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, 
 		return validateCategoryRuleMission({
 			parsed: parsedResult.data,
 			jsonText,
-			mission
+			mission,
+			roleId
 		});
 	}
 
@@ -394,7 +413,8 @@ export function validateWeatherAppMissionJson({ jsonText, course, missionIndex, 
 		return validateRegisterLostItemMission({
 			parsed: parsedResult.data,
 			jsonText,
-			mission
+			mission,
+			roleId
 		});
 	}
 

@@ -3,7 +3,7 @@
 	import { onDestroy, onMount, tick as svelteTick } from 'svelte';
 	import { createMonsterDefenseRuntime } from './theme/monsterDefense/monsterDefenseRuntime';
 	import { createRobotCockpitRuntime } from './theme/robotCockpit/robotCockpitRuntime';
-	import { createWeatherAppRuntime } from './theme/weatherApp/weatherAppRuntime';
+	//import { createWeatherAppRuntime } from './theme/weatherApp/weatherAppRuntime';
 
 	export let theme;
 	export let simulationState = {
@@ -88,13 +88,13 @@
 				onFinalResultShown
 			});
 		}
-		if (theme?.id === 'weatherApp') {
-			themeRuntime = createWeatherAppRuntime({
-				app,
-				PIXI,
-				getState: () => simulationState
-			});
-		}
+		// if (theme?.id === 'weatherApp') {
+		// 	themeRuntime = createWeatherAppRuntime({
+		// 		app,
+		// 		PIXI,
+		// 		getState: () => simulationState
+		// 	});
+		// }
 
 		await svelteTick();
 		resizeCanvas();
