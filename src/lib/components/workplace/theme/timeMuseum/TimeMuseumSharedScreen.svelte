@@ -189,9 +189,7 @@
 					<div class="text-[16px] font-black text-slate-950">
 						국립중앙박물관 유물정보관리시스템
 					</div>
-					<div class="mt-0.5 text-[11px] font-bold text-slate-500">
-						시대별 전시관 유물 데이터 복구 화면
-					</div>
+					
 				</div>
 
 				<div class="text-[11px] font-black text-slate-400">전체 유물 {timeMuseumRelics.length}개</div>
