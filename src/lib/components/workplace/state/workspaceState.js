@@ -1,9 +1,9 @@
 // src/lib/components/workplace/state/workspaceState.js
 
 export function createInitialMissionProgress(course) {
-	return course?.missions?.map((_, missionIndex) =>
-		missionIndex === 0 ? 'playing' : 'locked'
-	) ?? [];
+	return (
+		course?.missions?.map((_, missionIndex) => (missionIndex === 0 ? 'playing' : 'locked')) ?? []
+	);
 }
 
 export function createMockPlayers(course) {
@@ -50,12 +50,15 @@ export function buildWorkspacePlayers({
 		? participants.map((participant) => ({
 				id: participant.id,
 				name: participant.name,
-				avatarSrc: participant.avatarSrc,
+				avatarSrc: `/images/avatars/${Math.max(
+					1,
+					Math.min(Number(participant.avatarNumber) || 1, 6)
+				)}.png`,
 				roleId: participant.roleId,
 				roleName: participant.roleName,
 				isAutoCleared: false,
 				missionProgress: participant.missionProgress ?? createInitialMissionProgress(course)
-			}))
+		  }))
 		: createMockPlayers(course);
 
 	const autoClearedRoles = shouldUseFirebase ? room?.autoClearedRoles ?? [] : [];

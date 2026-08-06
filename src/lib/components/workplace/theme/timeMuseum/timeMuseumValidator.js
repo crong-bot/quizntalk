@@ -1,307 +1,432 @@
 // src/lib/components/workplace/theme/timeMuseum/timeMuseumValidator.js
 
-const PERIODS = ['선사시대', '삼국시대', '고려시대', '조선시대'];
+const ROLE_IDS = ['prehistory', 'threeKingdoms', 'goryeo', 'joseon'];
 
-export const TIME_MUSEUM_RELICS = [
-	// 선사시대
-	{ id: 'hand-axe', name: '주먹도끼', shortName: '주먹도끼', period: '선사시대', type: '석기' },
-	{
-		id: 'comb-pattern-pottery',
-		name: '빗살무늬토기',
-		shortName: '빗살무늬토기',
-		period: '선사시대',
-		type: '토기'
-	},
-	{
-		id: 'half-moon-stone-knife',
-		name: '반달돌칼',
-		shortName: '반달돌칼',
-		period: '선사시대',
-		type: '농경도구'
-	},
-
-	// 삼국시대
-	{
-		id: 'gilt-bronze-pensive-bodhisattva',
-		name: '금동반가사유상',
-		shortName: '금동반가사유상',
-		period: '삼국시대',
-		type: '불상'
-	},
-	{
-		id: 'mounted-warrior-pottery',
-		name: '가마 인물형 토기',
-		shortName: '가마 인물형 토기',
-		period: '삼국시대',
-		type: '토기'
-	},
-	{
-		id: 'silla-gold-crown',
-		name: '신라 금관',
-		shortName: '신라 금관',
-		period: '삼국시대',
-		type: '장신구'
-	},
-
-	// 고려시대
-	{
-		id: 'gyeongcheonsa-pagoda',
-		name: '경천사지 10층 석탑',
-		shortName: '경천사지 10층 석탑',
-		period: '고려시대',
-		type: '석탑'
-	},
-	{
-		id: 'celadon-maebyeong',
-		name: '청자 상감 구름 학 무늬 매병',
-		shortName: '청자 매병',
-		period: '고려시대',
-		type: '도자기'
-	},
-	{
-		id: 'metal-type',
-		name: '금속활자',
-		shortName: '금속활자',
-		period: '고려시대',
-		type: '인쇄도구'
-	},
-
-	// 조선시대
-	{
-		id: 'moon-jar',
-		name: '백자 달항아리',
-		shortName: '백자 달항아리',
-		period: '조선시대',
-		type: '도자기'
-	},
-	{
-		id: 'genre-paintings',
-		name: '단원 풍속도첩',
-		shortName: '단원 풍속도첩',
-		period: '조선시대',
-		type: '그림'
-	},
-	{
-		id: 'daedongyeojido',
-		name: '대동여지도',
-		shortName: '대동여지도',
-		period: '조선시대',
-		type: '지도'
-	}
-];
-
-export const TIME_MUSEUM_RELICS_BY_PERIOD = {
-	선사시대: ['주먹도끼', '빗살무늬토기', '반달돌칼'],
-	삼국시대: ['금동반가사유상', '가마 인물형 토기', '신라 금관'],
-	고려시대: ['경천사지 10층 석탑', '청자 상감 구름 학 무늬 매병', '금속활자'],
-	조선시대: ['백자 달항아리', '단원 풍속도첩', '대동여지도']
+const MISSION1_ANSWERS = {
+	prehistory: '이름 오류',
+	threeKingdoms: '종류 오류',
+	goryeo: '이름 오류',
+	joseon: '배치 오류'
 };
 
-const RELIC_BY_NAME = new Map(TIME_MUSEUM_RELICS.map((relic) => [relic.name, relic]));
-const RELIC_BY_SHORT_NAME = new Map(TIME_MUSEUM_RELICS.map((relic) => [relic.shortName, relic]));
+const MISSION2_ANSWERS = {
+	prehistory: {
+		담당시대: '선사시대',
+		이름: '주먹도끼',
+		종류: '석기'
+	},
 
-function makeResult(ok, messages = [], extra = {}) {
+	threeKingdoms: {
+		담당시대: '삼국시대',
+		이름: '신라 금관',
+		종류: '장신구'
+	},
+
+	goryeo: {
+		담당시대: '고려시대',
+		이름: '청자 매병',
+		종류: '도자기'
+	},
+
+	joseon: {
+		담당시대: '조선시대',
+		이름: '대동여지도',
+		종류: '지도'
+	}
+};
+
+const FINAL_COMMAND_KEYS = ['복구명령-01', '복구명령-02', '복구명령-03', '복구명령-04'];
+
+const ROLE_COMMAND_KEY = {
+	prehistory: '복구명령-01',
+	threeKingdoms: '복구명령-02',
+	goryeo: '복구명령-03',
+	joseon: '복구명령-04'
+};
+
+const FINAL_COMMAND_VALUE = {
+	선사시대: '주먹도끼',
+	삼국시대: '장신구',
+	고려시대: '청자 매병',
+	조선시대: '대동여지도'
+};
+
+function normalizeText(value) {
+	return String(value ?? '')
+		.replace(/\s+/g, '')
+		.trim();
+}
+
+function sameText(a, b) {
+	return normalizeText(a) === normalizeText(b);
+}
+
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function emptySimulationState() {
 	return {
-		ok,
-		messages,
-		...extra
+		layers: {},
+		sprites: {},
+		camera: {},
+		flags: {}
 	};
 }
 
-function success(text, extra = {}) {
-	return makeResult(
-		true,
-		[
+function successResult(course, missionIndex, roleId) {
+	const mission = course?.missions?.[missionIndex];
+
+	const simulationState =
+		roleId === 'team'
+			? mission?.successState
+			: mission?.roleSuccessState?.[roleId] ?? mission?.successState;
+
+	return {
+		ok: true,
+		messages: [],
+		simulationState: simulationState ?? emptySimulationState()
+	};
+}
+
+function fail(message) {
+	return {
+		ok: false,
+		messages: [
 			{
-				type: 'success',
-				text
+				type: 'error',
+				text: message
 			}
-		],
-		extra
-	);
+		]
+	};
 }
 
-function error(text, concept = 'data') {
-	return makeResult(false, [
-		{
-			type: 'error',
-			text,
-			concept
-		}
-	]);
-}
-
-function parseJsonWithMessage(jsonText) {
+function parseJson(jsonText) {
 	try {
 		return {
 			ok: true,
-			value: JSON.parse(jsonText)
+			data: JSON.parse(jsonText)
 		};
 	} catch {
-		return {
-			ok: false,
-			message: 'JSON 문법이 올바르지 않습니다. 쉼표, 따옴표, 중괄호를 다시 확인하세요.'
-		};
+		return fail('JSON 형식을 확인하세요. 따옴표, 쉼표, 중괄호가 올바른지 살펴보세요.');
 	}
 }
 
-function normalizeText(value) {
-	return String(value ?? '').trim();
-}
+// =====================================================
+// 미션1 검사
+// =====================================================
 
-function getRelicByInputName(name) {
-	const normalized = normalizeText(name);
-	return RELIC_BY_NAME.get(normalized) ?? RELIC_BY_SHORT_NAME.get(normalized);
-}
-
-function sameArrayIgnoreOrder(input = [], answer = []) {
-	if (!Array.isArray(input)) return false;
-	if (input.length !== answer.length) return false;
-
-	const normalizedInput = input.map(normalizeText).sort();
-	const normalizedAnswer = answer.map(normalizeText).sort();
-
-	return normalizedAnswer.every((item, index) => normalizedInput[index] === item);
-}
-
-function validateMission1(data) {
-	const systemError = data?.시스템오류;
-
-	if (!systemError || typeof systemError !== 'object' || Array.isArray(systemError)) {
-		return error('"시스템오류"는 객체 { } 형태로 작성해야 합니다.', 'object');
+function validateMission1({ data, roleId, course, missionIndex }) {
+	if (!ROLE_IDS.includes(roleId)) {
+		return fail('담당 역할을 확인할 수 없습니다.');
 	}
 
-	const requiredTrueKeys = ['이름정보오류', '시대정보오류', '전시관배치오류', '복구필요'];
+	if (!isPlainObject(data)) {
+		return fail('JSON 객체 형태로 작성하세요.');
+	}
 
-	for (const key of requiredTrueKeys) {
-		if (systemError[key] !== true) {
-			return error(`"${key}" 값은 true여야 합니다.`, 'boolean');
+	if (typeof data.오류종류 !== 'string' || normalizeText(data.오류종류) === '') {
+		return fail('"오류종류"에 찾은 오류를 작성하세요.');
+	}
+
+	const expected = MISSION1_ANSWERS[roleId];
+
+	if (!sameText(data.오류종류, expected)) {
+		return fail('자기 시대의 오류 종류를 다시 확인하세요.');
+	}
+
+	return successResult(course, missionIndex, roleId);
+}
+
+// =====================================================
+// 미션2 검사
+// =====================================================
+
+function validateMission2({ data, roleId, course, missionIndex }) {
+	if (!ROLE_IDS.includes(roleId)) {
+		return fail('담당 역할을 확인할 수 없습니다.');
+	}
+
+	if (!isPlainObject(data)) {
+		return fail('JSON 객체 형태로 작성하세요.');
+	}
+
+	const expected = MISSION2_ANSWERS[roleId];
+
+	if (!sameText(data.담당시대, expected.담당시대)) {
+		return fail(`"담당시대"는 "${expected.담당시대}"입니다.`);
+	}
+
+	if (!isPlainObject(data.수정유물)) {
+		return fail('"수정유물"은 객체로 작성하세요.');
+	}
+
+	if (!sameText(data.수정유물.이름, expected.이름)) {
+		return fail('수정할 유물의 이름을 다시 확인하세요.');
+	}
+
+	if (!sameText(data.수정유물.종류, expected.종류)) {
+		return fail(`"${expected.이름}"의 올바른 종류를 다시 확인하세요.`);
+	}
+
+	const topLevelKeys = Object.keys(data);
+
+	if (
+		topLevelKeys.length !== 2 ||
+		!topLevelKeys.includes('담당시대') ||
+		!topLevelKeys.includes('수정유물')
+	) {
+		return fail('"담당시대"와 "수정유물"만 작성하세요.');
+	}
+
+	const repairKeys = Object.keys(data.수정유물);
+
+	if (repairKeys.length !== 2 || !repairKeys.includes('이름') || !repairKeys.includes('종류')) {
+		return fail('"수정유물"에는 "이름"과 "종류"만 작성하세요.');
+	}
+
+	return successResult(course, missionIndex, roleId);
+}
+
+// =====================================================
+// 미션3 복구명령 하나 검사
+// =====================================================
+
+function validateOneCommand(commandValue) {
+	if (!isPlainObject(commandValue)) {
+		return fail('복구명령 안에는 시대별 복구값을 객체로 작성하세요.');
+	}
+
+	const periods = Object.keys(FINAL_COMMAND_VALUE);
+
+	for (const period of periods) {
+		if (!sameText(commandValue[period], FINAL_COMMAND_VALUE[period])) {
+			return fail(`${period}의 복구값을 다시 확인하세요.`);
 		}
 	}
 
-	return success('시스템 오류 진단 완료! 틀린 부분이 확인되었습니다.');
+	const actualPeriods = Object.keys(commandValue);
+
+	if (actualPeriods.length !== periods.length) {
+		return fail('복구명령에는 선사시대, 삼국시대, 고려시대, 조선시대만 작성하세요.');
+	}
+
+	for (const period of actualPeriods) {
+		if (!periods.includes(period)) {
+			return fail('복구명령에는 선사시대, 삼국시대, 고려시대, 조선시대만 작성하세요.');
+		}
+	}
+
+	return {
+		ok: true,
+		messages: []
+	};
 }
 
-function validateMission2(data, roleId) {
-	const relicInfos = data?.유물정보;
+// =====================================================
+// JSON 전체에서 복구명령 찾기
+// =====================================================
 
-	if (!Array.isArray(relicInfos)) {
-		return error('"유물정보"는 배열 [ ] 형태로 작성해야 합니다.', 'array');
+function collectRestoreCommands(value, result = {}) {
+	/*
+	 * Firebase 조합값 안에 JSON이 문자열로 들어오는 경우도 처리
+	 */
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+
+		if (
+			(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+			(trimmed.startsWith('[') && trimmed.endsWith(']'))
+		) {
+			try {
+				const parsed = JSON.parse(trimmed);
+				collectRestoreCommands(parsed, result);
+			} catch {
+				// 일반 문자열은 무시
+			}
+		}
+
+		return result;
 	}
 
-	if (relicInfos.length !== 3) {
-		return error('각 담당자는 유물 3개의 정보를 복구해야 합니다.', 'array');
+	if (Array.isArray(value)) {
+		for (const item of value) {
+			collectRestoreCommands(item, result);
+		}
+
+		return result;
 	}
 
-	const rolePeriodMap = {
-		prehistory: '선사시대',
-		threeKingdoms: '삼국시대',
-		goryeo: '고려시대',
-		joseon: '조선시대'
-	};
-
-	const expectedPeriod = rolePeriodMap[roleId];
-
-	if (!expectedPeriod) {
-		return error('역할 정보를 확인할 수 없습니다.', 'role');
+	if (!isPlainObject(value)) {
+		return result;
 	}
 
-	const expectedNames = TIME_MUSEUM_RELICS_BY_PERIOD[expectedPeriod];
-	const inputNames = relicInfos.map((item) => normalizeText(item?.이름));
+	for (const [key, childValue] of Object.entries(value)) {
+		if (FINAL_COMMAND_KEYS.includes(key)) {
+			result[key] = childValue;
+			continue;
+		}
 
-	if (!sameArrayIgnoreOrder(inputNames, expectedNames)) {
-		return error(
-			`${expectedPeriod} 담당자는 ${expectedNames.join(', ')} 정보를 복구해야 합니다.`,
-			'data'
+		collectRestoreCommands(childValue, result);
+	}
+
+	return result;
+}
+
+// =====================================================
+// 미션3 검사
+// =====================================================
+
+function validateMission3({ data, roleId, course, missionIndex }) {
+	/*
+	 * 학생 개인 제출 검사
+	 */
+	if (roleId !== 'team') {
+		if (!ROLE_IDS.includes(roleId)) {
+			return fail('담당 역할을 확인할 수 없습니다.');
+		}
+
+		if (!isPlainObject(data)) {
+			return fail('JSON 객체 형태로 작성하세요.');
+		}
+
+		const expectedKey = ROLE_COMMAND_KEY[roleId];
+
+		const commands = collectRestoreCommands(data);
+
+		const commandKeys = Object.keys(commands);
+
+		if (commandKeys.length !== 1 || commandKeys[0] !== expectedKey) {
+			return fail(`"${expectedKey}" 키를 그대로 사용하세요.`);
+		}
+
+		const commandResult = validateOneCommand(commands[expectedKey]);
+
+		if (!commandResult.ok) {
+			return commandResult;
+		}
+
+		const result = successResult(course, missionIndex, roleId);
+
+		/*
+		 * 중요:
+		 * JsonMissionWorkspace.svelte에서
+		 * validateResult.finalPiece를 Firebase에 저장한다.
+		 */
+		return {
+			...result,
+			finalPiece: {
+				key: expectedKey,
+				value: commands[expectedKey]
+			}
+		};
+	}
+
+	/*
+	 * 최종 조합 결과 검사
+	 *
+	 * finalSubmissions에는 보통 다음 형태가 저장된다.
+	 *
+	 * {
+	 *   "prehistory": {
+	 *     "key": "복구명령-01",
+	 *     "value": {
+	 *       "선사시대": "주먹도끼",
+	 *       "삼국시대": "장신구",
+	 *       "고려시대": "청자 매병",
+	 *       "조선시대": "대동여지도"
+	 *     }
+	 *   }
+	 * }
+	 *
+	 * buildFinalJsonBySubmitMode에서 이를 합치면
+	 * 복구명령-01~04가 최상위 키로 만들어진다.
+	 */
+	if (!isPlainObject(data) && !Array.isArray(data)) {
+		return fail('최종 JSON 조합 결과를 확인할 수 없습니다.');
+	}
+
+	const commands = collectRestoreCommands(data);
+
+	const submittedKeys = Object.keys(commands);
+
+	if (submittedKeys.length !== 3 && submittedKeys.length !== 4) {
+		return fail(
+			`복구명령이 ${submittedKeys.length}개 확인되었습니다. 모둠원 3명 또는 4명의 복구명령이 필요합니다.`
 		);
 	}
 
-	for (const item of relicInfos) {
-		if (!item || typeof item !== 'object' || Array.isArray(item)) {
-			return error('"유물정보" 배열 안에는 객체 { }가 들어가야 합니다.', 'object');
-		}
+	for (const commandKey of submittedKeys) {
+		const commandResult = validateOneCommand(commands[commandKey]);
 
-		const name = normalizeText(item.이름);
-		const period = normalizeText(item.시대);
-		const type = normalizeText(item.종류);
+		if (!commandResult.ok) {
+			const detail = commandResult.messages?.[0]?.text ?? '복구값을 확인하세요.';
 
-		if (!name || !period || !type) {
-			return error('각 유물에는 "이름", "시대", "종류"가 모두 필요합니다.', 'object');
-		}
-
-		const relic = getRelicByInputName(name);
-
-		if (!relic) {
-			return error(`"${name}"은 이번 유물정보 복구 대상에 없는 유물입니다.`, 'data');
-		}
-
-		if (relic.period !== period) {
-			return error(`"${name}"의 시대는 "${relic.period}"입니다.`, 'data');
-		}
-
-		if (relic.type !== type) {
-			return error(`"${name}"의 종류는 "${relic.type}"입니다.`, 'data');
+			return fail(`${commandKey}: ${detail}`);
 		}
 	}
 
-	return success('유물정보 카드 복구 완료! 이름, 시대, 종류가 정상으로 돌아왔습니다.');
+	return successResult(course, missionIndex, roleId);
 }
 
-function validateMission3(data) {
-	const arrangement = data?.전시관배치;
+// =====================================================
+// 외부 호출
+// =====================================================
 
-	if (!arrangement || typeof arrangement !== 'object' || Array.isArray(arrangement)) {
-		return error('"전시관배치"는 객체 { } 형태로 작성해야 합니다.', 'object');
-	}
-
-	for (const period of PERIODS) {
-		if (!Array.isArray(arrangement[period])) {
-			return error(`"${period}" 값은 배열 [ ] 형태여야 합니다.`, 'array');
-		}
-
-		const expectedNames = TIME_MUSEUM_RELICS_BY_PERIOD[period];
-
-		if (!sameArrayIgnoreOrder(arrangement[period], expectedNames)) {
-			return error(`"${period}" 전시관에는 ${expectedNames.join(', ')}가 들어가야 합니다.`, 'data');
-		}
-	}
-
-	return success('시대별 전시관 배치 완료! 유물정보관리시스템이 정상 복구되었습니다.', {
-		finalCorrect: true
-	});
-}
-
-export function validateTimeMuseumMissionJson({
+export function validateTimeMuseumMission({
 	jsonText,
+	data,
+	course,
 	missionIndex,
 	currentMissionIndex,
 	roleId
 }) {
-	const parsed = parseJsonWithMessage(jsonText);
+	let parsedData = data;
 
-	if (!parsed.ok) {
-		return error(parsed.message, 'syntax');
+	if (parsedData === undefined) {
+		const parsed = parseJson(jsonText);
+
+		if (!parsed.ok) {
+			return parsed;
+		}
+
+		parsedData = parsed.data;
 	}
 
-	const data = parsed.value;
+	const index = typeof missionIndex === 'number' ? missionIndex : currentMissionIndex;
 
-	if (!data || typeof data !== 'object' || Array.isArray(data)) {
-		return error('가장 바깥쪽은 객체 { } 형태여야 합니다.', 'object');
+	switch (index) {
+		case 0:
+			return validateMission1({
+				data: parsedData,
+				roleId,
+				course,
+				missionIndex: index
+			});
+
+		case 1:
+			return validateMission2({
+				data: parsedData,
+				roleId,
+				course,
+				missionIndex: index
+			});
+
+		case 2:
+			return validateMission3({
+				data: parsedData,
+				roleId,
+				course,
+				missionIndex: index
+			});
+
+		default:
+			return fail('확인할 수 없는 미션입니다.');
 	}
-
-	const index = Number.isInteger(missionIndex) ? missionIndex : currentMissionIndex;
-
-	if (index === 0) {
-		return validateMission1(data);
-	}
-
-	if (index === 1) {
-		return validateMission2(data, roleId);
-	}
-
-	if (index === 2) {
-		return validateMission3(data);
-	}
-
-	return error('알 수 없는 미션입니다.', 'mission');
 }
+
+export const validateTimeMuseumMissionJson = validateTimeMuseumMission;
+
+export const validateTimeMuseumJson = validateTimeMuseumMission;
+
+export default validateTimeMuseumMission;

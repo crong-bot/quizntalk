@@ -8,6 +8,9 @@
 	let errorMessage = '';
 	let isJoining = false;
 
+	const avatars = [1, 2, 3, 4, 5, 6];
+	let selectedAvatarNumber = 1;
+
 	async function joinMission() {
 		if (isJoining) return;
 
@@ -17,7 +20,8 @@
 		try {
 			const result = await joinRoomByCode({
 				code,
-				name: studentName
+				name: studentName,
+				avatarNumber: selectedAvatarNumber
 			});
 
 			if (result.missionType === 'individual-write') {
@@ -75,6 +79,36 @@
 					placeholder="이름을 입력하세요"
 					class="mt-2 h-20 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[26px] font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
 				/>
+			</div>
+			<div class="mt-5">
+				<div class="text-sm font-extrabold text-slate-700">아바타 선택</div>
+
+				<div class="mt-3 grid grid-cols-6 gap-2">
+					{#each avatars as avatarNumber}
+						<button
+							type="button"
+							on:click={() => {
+								selectedAvatarNumber = avatarNumber;
+							}}
+							aria-label={`아바타 ${avatarNumber} 선택`}
+							class={`aspect-square overflow-hidden rounded-2xl border-4 bg-slate-100 p-1 transition ${
+								selectedAvatarNumber === avatarNumber
+									? 'border-blue-500 ring-4 ring-blue-100'
+									: 'border-transparent hover:border-slate-300'
+							}`}
+						>
+							<img
+								src={`/images/avatars/${avatarNumber}.png`}
+								alt={`아바타 ${avatarNumber}`}
+								class="h-full w-full object-contain"
+							/>
+						</button>
+					{/each}
+				</div>
+
+				<div class="mt-3 text-center text-sm font-bold text-blue-600">
+					선택한 아바타 {selectedAvatarNumber}번
+				</div>
 			</div>
 
 			{#if errorMessage}

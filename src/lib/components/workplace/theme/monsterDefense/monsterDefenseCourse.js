@@ -175,7 +175,7 @@ export const monsterDefenseCourse = {
 	subtitle: '정찰하고, 방어 도구를 만들고, 최종 방어 계획으로 도시를 지켜요.',
 	icon: '🛡️',
 	themeId: 'monsterDefense',
-	difficulty: '전설',
+	difficulty: 'JSON 고수',
 	completion: {
 		learningResults: [
 			{

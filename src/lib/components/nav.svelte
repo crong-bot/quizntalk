@@ -128,6 +128,17 @@
 								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
 							/>
 						</button>
+
+						<button
+							type="button"
+							class="group relative whitespace-nowrap font-gmarket text-[14px] font-bold tracking-[-0.06em] text-slate-500 transition hover:text-slate-950 lg:text-[15px]"
+							on:click={() => goto('/help')}
+						>
+							교사용매뉴얼
+							<span
+								class="absolute -bottom-2 left-0 h-[2px] w-0 rounded-full bg-slate-950 transition-all duration-300 group-hover:w-full"
+							/>
+						</button>
 					</nav>
 
 					<!-- 아바타 클릭 시 이메일 + 로그아웃 -->

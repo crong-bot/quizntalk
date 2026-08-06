@@ -411,15 +411,17 @@ export function subscribeParticipants({ lessonId, roomId }, callback, errorCallb
 		}
 	);
 }
-
 export async function joinRoom({
 	lessonId,
 	roomId,
 	participantId,
 	name,
+	avatarNumber = 1,
 	roles = [],
 	missionCount = 3
 }) {
+	const safeAvatarNumber = Math.max(1, Math.min(Number(avatarNumber) || 1, 6));
+
 	if (!lessonId || !roomId) {
 		throw new Error('방 정보가 부족합니다.');
 	}
@@ -464,7 +466,6 @@ export async function joinRoom({
 			if (!wasLeft) {
 				const savedRoleId = savedParticipant.roleId ?? null;
 				const savedRoleName = savedParticipant.roleName ?? null;
-				const savedAvatarSrc = savedParticipant.avatarSrc ?? null;
 
 				tx.set(
 					participantRef,
@@ -474,7 +475,7 @@ export async function joinRoom({
 
 						roleId: savedRoleId,
 						roleName: savedRoleName,
-						avatarSrc: savedAvatarSrc,
+						avatarNumber: safeAvatarNumber,
 
 						active: true,
 						status: 'playing',
@@ -501,7 +502,7 @@ export async function joinRoom({
 						name: name.trim(),
 						roleId: savedRoleId,
 						roleName: savedRoleName,
-						avatarSrc: savedAvatarSrc
+						avatarNumber: safeAvatarNumber
 					},
 					updatedAt: serverTimestamp()
 				});
@@ -509,7 +510,7 @@ export async function joinRoom({
 				return {
 					roleId: savedRoleId,
 					roleName: savedRoleName,
-					avatarSrc: savedAvatarSrc
+					avatarNumber: safeAvatarNumber
 				};
 			}
 
@@ -528,7 +529,6 @@ export async function joinRoom({
 
 			const assignedRoleId = assignedRole.id ?? null;
 			const assignedRoleName = assignedRole.roleName ?? assignedRole.name ?? null;
-			const assignedAvatarSrc = assignedRole.avatarSrc ?? null;
 
 			const nextCount = currentCount + 1;
 
@@ -540,8 +540,7 @@ export async function joinRoom({
 
 					roleId: assignedRoleId,
 					roleName: assignedRoleName,
-					avatarSrc: assignedAvatarSrc,
-
+					avatarNumber: safeAvatarNumber,
 					active: true,
 					status: 'playing',
 
@@ -569,7 +568,7 @@ export async function joinRoom({
 					name: name.trim(),
 					roleId: assignedRoleId,
 					roleName: assignedRoleName,
-					avatarSrc: assignedAvatarSrc
+					avatarNumber: safeAvatarNumber
 				},
 				status: nextCount >= maxParticipants ? 'playing' : 'waiting',
 				updatedAt: serverTimestamp()
@@ -578,7 +577,7 @@ export async function joinRoom({
 			return {
 				roleId: assignedRoleId,
 				roleName: assignedRoleName,
-				avatarSrc: assignedAvatarSrc
+				avatarNumber: safeAvatarNumber
 			};
 		}
 
@@ -600,7 +599,6 @@ export async function joinRoom({
 
 		const assignedRoleId = assignedRole.id ?? null;
 		const assignedRoleName = assignedRole.roleName ?? assignedRole.name ?? null;
-		const assignedAvatarSrc = assignedRole.avatarSrc ?? null;
 
 		tx.set(
 			participantRef,
@@ -610,7 +608,7 @@ export async function joinRoom({
 
 				roleId: assignedRoleId,
 				roleName: assignedRoleName,
-				avatarSrc: assignedAvatarSrc,
+				avatarNumber: safeAvatarNumber,
 
 				active: true,
 				status: 'playing',
@@ -638,7 +636,7 @@ export async function joinRoom({
 				name: name.trim(),
 				roleId: assignedRoleId,
 				roleName: assignedRoleName,
-				avatarSrc: assignedAvatarSrc
+				avatarNumber: safeAvatarNumber
 			},
 			status: participantCount + 1 >= maxParticipants ? 'playing' : 'waiting',
 			updatedAt: serverTimestamp()
@@ -647,7 +645,7 @@ export async function joinRoom({
 		return {
 			roleId: assignedRoleId,
 			roleName: assignedRoleName,
-			avatarSrc: assignedAvatarSrc
+			avatarNumber: safeAvatarNumber
 		};
 	});
 }
@@ -1175,8 +1173,7 @@ export async function completeLesson({ lessonId }) {
 				name: participant.name ?? '',
 				roleId: participant.roleId ?? '',
 				roleName: participant.roleName ?? '',
-				avatarSrc: participant.avatarSrc ?? '',
-
+				avatarNumber: Math.max(1, Math.min(Number(participant.avatarNumber) || 1, 6)),
 				missionProgress: participant.missionProgress ?? [],
 
 				totalAttempts: learningStats.totalAttempts ?? 0,
@@ -1419,7 +1416,15 @@ export async function createIndividualWriteLessonRoom({
 
 	throw new Error('방 코드 생성 실패. 다시 시도해 주세요.');
 }
-export async function joinIndividualWriteRoom({ lessonId, roomId, participantId, name }) {
+export async function joinIndividualWriteRoom({
+	lessonId,
+	roomId,
+	participantId,
+	name,
+	avatarNumber = 1
+}) {
+	const safeAvatarNumber = Math.max(1, Math.min(Number(avatarNumber) || 1, 6));
+
 	if (!lessonId || !roomId) {
 		throw new Error('방 정보가 부족합니다.');
 	}
@@ -1475,9 +1480,12 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 					{
 						id: participantId,
 						name: name.trim(),
+						avatarNumber: safeAvatarNumber,
+
 						active: true,
 						status: savedParticipant.status ?? 'playing',
 						individualWrite: savedIndividualWrite,
+
 						joinedAt: savedParticipant.joinedAt,
 						updatedAt: serverTimestamp()
 					},
@@ -1488,6 +1496,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 					[`participantSummaries.${participantId}`]: {
 						id: participantId,
 						name: name.trim(),
+						avatarNumber: safeAvatarNumber,
 						status: savedParticipant.status ?? 'playing',
 						individualWrite: savedIndividualWrite
 					},
@@ -1495,7 +1504,8 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				});
 
 				return {
-					ok: true
+					ok: true,
+					avatarNumber: safeAvatarNumber
 				};
 			}
 
@@ -1508,9 +1518,12 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				{
 					id: participantId,
 					name: name.trim(),
+					avatarNumber: safeAvatarNumber,
+
 					active: true,
 					status: 'playing',
 					individualWrite: savedIndividualWrite,
+
 					joinedAt: savedParticipant.joinedAt ?? serverTimestamp(),
 					rejoinedAt: serverTimestamp(),
 					updatedAt: serverTimestamp()
@@ -1524,6 +1537,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 				[`participantSummaries.${participantId}`]: {
 					id: participantId,
 					name: name.trim(),
+					avatarNumber: safeAvatarNumber,
 					status: 'playing',
 					individualWrite: savedIndividualWrite
 				},
@@ -1532,7 +1546,8 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 			});
 
 			return {
-				ok: true
+				ok: true,
+				avatarNumber: safeAvatarNumber
 			};
 		}
 
@@ -1545,9 +1560,12 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 			{
 				id: participantId,
 				name: name.trim(),
+				avatarNumber: safeAvatarNumber,
+
 				active: true,
 				status: 'playing',
 				individualWrite: defaultIndividualWrite,
+
 				joinedAt: serverTimestamp(),
 				updatedAt: serverTimestamp()
 			},
@@ -1560,6 +1578,7 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 			[`participantSummaries.${participantId}`]: {
 				id: participantId,
 				name: name.trim(),
+				avatarNumber: safeAvatarNumber,
 				status: 'playing',
 				individualWrite: defaultIndividualWrite
 			},
@@ -1568,7 +1587,8 @@ export async function joinIndividualWriteRoom({ lessonId, roomId, participantId,
 		});
 
 		return {
-			ok: true
+			ok: true,
+			avatarNumber: safeAvatarNumber
 		};
 	});
 }

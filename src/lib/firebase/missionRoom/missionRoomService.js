@@ -104,8 +104,9 @@ export async function createClassroomSession({
 		initialThemeState
 	});
 }
+export async function joinRoomByCode({ code, name, avatarNumber = 1 }) {
+	const safeAvatarNumber = Math.max(1, Math.min(Number(avatarNumber) || 1, 6));
 
-export async function joinRoomByCode({ code, name }) {
 	const normalizedCode = normalizeInviteCode(code);
 	const studentName = name.trim();
 
@@ -132,13 +133,15 @@ export async function joinRoomByCode({ code, name }) {
 			lessonId: roomResult.lessonId,
 			roomId: roomResult.roomId,
 			participantId,
-			name: studentName
+			name: studentName,
+			avatarNumber: safeAvatarNumber
 		});
 
 		return {
 			...roomResult,
 			participantId,
 			participantName: studentName,
+			avatarNumber: safeAvatarNumber,
 			missionType: 'individual-write'
 		};
 	}
@@ -152,6 +155,7 @@ export async function joinRoomByCode({ code, name }) {
 		roomId: roomResult.roomId,
 		participantId,
 		name: studentName,
+		avatarNumber: safeAvatarNumber,
 		roles,
 		missionCount
 	});
@@ -160,7 +164,8 @@ export async function joinRoomByCode({ code, name }) {
 		...roomResult,
 		participantId,
 		participantName: studentName,
-		roleName: joinResult.roleName
+		roleName: joinResult.roleName,
+		avatarNumber: joinResult.avatarNumber
 	};
 }
 

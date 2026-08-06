@@ -6,6 +6,7 @@ export const marketBasketCourse = {
 	subtitle: '여러 장바구니 데이터를 분석하고, 마트의 상품 진열을 해보세요!',
 	icon: '🛒',
 	themeId: 'marketBasket',
+	difficulty: 'JSON 입문',
 	categoryId: 'read',
 	categoryTitle: '제이슨 해석',
 	mode: 'read',
@@ -296,8 +297,7 @@ function createEmergencyDisplayMission(call) {
 						'혼자보다 같이 진열하면 좋을 물건이 무엇일까요?',
 						'친구들이 확인한 물건 중에 어떤 조합을 가장 진열하고 싶나요?',
 						'같이 놓으면 좋은 점이 있나요?'
-					],
-					
+					]
 				}
 			}
 		],

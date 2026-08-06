@@ -98,13 +98,13 @@
 				<p class="text-xs font-bold text-slate-400">데이터를 배우고 친구들과 미션을 해결해요.</p>
 			</div>
 
-			<div class="flex items-center gap-3 text-xs font-bold text-slate-400">
+			<!-- <div class="flex items-center gap-3 text-xs font-bold text-slate-400">
 				<button type="button" class="transition hover:text-slate-700">학습</button>
 				<span class="h-3 w-px bg-slate-200"></span>
 				<button type="button" class="transition hover:text-slate-700">게임 참여</button>
 				<span class="h-3 w-px bg-slate-200"></span>
 				<button type="button" class="transition hover:text-slate-700">교사용</button>
-			</div>
+			</div> -->
 		</div>
 	</footer>
 </div>

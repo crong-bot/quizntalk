@@ -6,6 +6,7 @@ export const animalRescueCourse = {
 	subtitle: '각자 JSON 단서를 해석하고, 팀 단서를 모아 늑구가 숨어 있는 곳을 찾아보세요!',
 	icon: '🐾',
 	themeId: 'animalRescue',
+	difficulty: 'JSON 새싹',
 	categoryId: 'read',
 	categoryTitle: '제이슨 해석',
 	mode: 'read',

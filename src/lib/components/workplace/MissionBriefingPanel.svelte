@@ -173,6 +173,10 @@
 		if (type === 'null') return 'text-red-300';
 		return 'text-slate-300';
 	}
+	$: console.log('🟣 브리핑 패널이 받은 값', {
+		missionNumber,
+		clues
+	});
 </script>
 
 <div
@@ -459,26 +463,22 @@
 								<div class="p-3">
 									<div class="rounded-2xl border border-blue-100 bg-white p-3 shadow-sm">
 										<div class="grid grid-cols-[minmax(92px,0.8fr)_minmax(0,1.2fr)] gap-2">
-	<div>
-		<div class="text-[10px] font-black tracking-[0.14em] text-blue-500">
-			키
-		</div>
+											<div>
+												<div class="text-[10px] font-black tracking-[0.14em] text-blue-500">키</div>
 
-		<div class="mt-1 truncate text-[15px] font-black text-slate-950">
-			{clue.rootLabel ?? clue.title ?? '구조도'}
-		</div>
-	</div>
+												<div class="mt-1 truncate text-[15px] font-black text-slate-950">
+													{clue.rootLabel ?? clue.title ?? '구조도'}
+												</div>
+											</div>
 
-	<div>
-		<div class="text-[10px] font-black tracking-[0.14em] text-blue-500">
-			값
-		</div>
+											<div>
+												<div class="text-[10px] font-black tracking-[0.14em] text-blue-500">값</div>
 
-		<div class="mt-1 text-[12px] font-black text-slate-400">
-			{clue.rootValueType ?? ''}
-		</div>
-	</div>
-</div>
+												<div class="mt-1 text-[12px] font-black text-slate-400">
+													{clue.rootValueType ?? ''}
+												</div>
+											</div>
+										</div>
 
 										<div class="relative mt-4 border-l-2 border-blue-200 pl-4">
 											{#each clue.items ?? [] as item}
@@ -493,7 +493,6 @@
 																>
 																	키
 																</div>
-																
 
 																<div
 																	class="rounded-xl border border-blue-100 bg-white px-1 py-1 text-[12px] font-black text-slate-950 shadow-sm"

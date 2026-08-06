@@ -12,6 +12,7 @@ import { weatherAppCourse } from './weatherApp/weatherAppCourse.js';
 
 export const courses = [
 	moonBaseCourse,
+	timeMuseumCourse,
 	animalRescueCourse,
 	// hackerTraceCourse,
 	marketBasketCourse,
@@ -19,9 +20,8 @@ export const courses = [
 	disasterSafetyCourse,
 	owlBusCourse,
 	weatherAppCourse,
-	robotCockpitCourse,
 	monsterDefenseCourse,
-	timeMuseumCourse
+	robotCockpitCourse
 ];
 
 // const courseByThemeId = {

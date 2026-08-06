@@ -33,7 +33,7 @@
 			return 'bg-sky-500 text-white ring-sky-200 shadow-[0_8px_18px_rgba(14,165,233,0.28)]';
 		}
 
-		if (level === 'JSON 도전자') {
+		if (level === 'JSON 입문') {
 			return 'bg-amber-500 text-white ring-amber-200 shadow-[0_8px_18px_rgba(245,158,11,0.28)]';
 		}
 
@@ -52,7 +52,7 @@
 		const level = getChallengeLevel(course);
 
 		if (level === 'JSON 새싹') return '🌱';
-		if (level === 'JSON 실력자') return '⚡';
+		if (level === 'JSON 입문') return '⚡';
 		if (level === 'JSON 고수') return '🔥';
 		if (level === 'JSON 전설') return '👑';
 
